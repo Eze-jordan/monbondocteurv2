@@ -1,9 +1,10 @@
 package com.esiitech.monbondocteurv2.model;
 
+import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import jakarta.persistence.*;
 
 @Entity
-public class Medecin {
+public class Medecin  {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -12,6 +13,7 @@ public class Medecin {
     @Enumerated(EnumType.STRING)
     private RefGrade refGrade;
     @Enumerated(EnumType.STRING)
+
     private  RefSpecialite refSpecialite;
     @Column(unique = true, nullable = false)
     private String email;
