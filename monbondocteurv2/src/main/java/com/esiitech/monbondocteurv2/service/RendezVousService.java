@@ -4,6 +4,8 @@ import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
 import com.esiitech.monbondocteurv2.mapper.RendezVousMapper;
 import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +22,10 @@ public class RendezVousService {
     private final DateRdvRepository dateRdvRepository;
     private final HoraireRdvRepository horaireRdvRepository;
     private final RendezVousMapper rendezVousMapper;
+    private final NotificationService notificationService; // Ajout du service de notification
+    private final UtilisateurRepository utilisateurRepository;
 
+    @Autowired
     public RendezVousService(
             RendezVousRepository rendezVousRepository,
             StructureSanitaireRepository structureSanitaireRepository,
@@ -28,7 +33,8 @@ public class RendezVousService {
             AgendaMedecinRepository agendaMedecinRepository,
             DateRdvRepository dateRdvRepository,
             HoraireRdvRepository horaireRdvRepository,
-            RendezVousMapper rendezVousMapper
+            RendezVousMapper rendezVousMapper,
+            NotificationService notificationService, UtilisateurRepository utilisateurRepository // Injection du service NotificationService
     ) {
         this.rendezVousRepository = rendezVousRepository;
         this.structureSanitaireRepository = structureSanitaireRepository;
@@ -37,12 +43,15 @@ public class RendezVousService {
         this.dateRdvRepository = dateRdvRepository;
         this.horaireRdvRepository = horaireRdvRepository;
         this.rendezVousMapper = rendezVousMapper;
+        this.notificationService = notificationService;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @Transactional
     public RendezVousDTO creerRendezVous(RendezVousDTO dto) {
         RendezVous rendezVous = new RendezVous();
 
+        // Récupérer les entités liées au rendez-vous
         StructureSanitaire structure = structureSanitaireRepository
                 .findById(dto.getStructureSanitaireId())
                 .orElseThrow(() -> new RuntimeException("Structure sanitaire introuvable"));
@@ -59,13 +68,12 @@ public class RendezVousService {
                 .findById(dto.getHoraireRdvId())
                 .orElseThrow(() -> new RuntimeException("Horaire RDV introuvable"));
 
-        // Vérifie si un rendez-vous existe déjà à cette date/heure
-        Optional<RendezVous> existing = rendezVousRepository
-                .findByDateRdvAndHoraireRdv(dateRdv, horaireRdv);
-        if (existing.isPresent()) {
-            throw new RuntimeException("Un rendez-vous existe déjà à cette date et à cet horaire.");
-        }
+        // Récupérer l'utilisateur authentifié (si vous utilisez Spring Security)
+        String emailUtilisateur = SecurityContextHolder.getContext().getAuthentication().getName();
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
+        // Créer le rendez-vous
         rendezVous.setStructureSanitaire(structure);
         rendezVous.setMedecin(medecin);
         rendezVous.setAgendaMedecin(agenda);
@@ -80,9 +88,21 @@ public class RendezVousService {
         rendezVous.setMotif(dto.getMotif());
         rendezVous.setMontantPaye(dto.getMontantPaye());
 
+        // Associer l'utilisateur au rendez-vous
+        rendezVous.setUtilisateur(utilisateur);  // Assurez-vous que cette méthode existe dans votre modèle
+
+        // Sauvegarder le rendez-vous
         RendezVous saved = rendezVousRepository.save(rendezVous);
+
+        // Envoyer les notifications par e-mail
+        notificationService.envoyerAuPatient(dto.getEmail(), dto.getNom(), medecin.getNomMedecin());
+        notificationService.envoyerAuMedecin(medecin.getEmail(), medecin.getNomMedecin(), dto.getNom());
+
+        // Retourner le DTO du rendez-vous sauvegardé
         return rendezVousMapper.toDTO(saved);
     }
+
+
 
     public List<RendezVousDTO> listerTous() {
         return rendezVousRepository.findAll()

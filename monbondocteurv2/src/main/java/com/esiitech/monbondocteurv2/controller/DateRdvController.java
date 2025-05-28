@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/date-rdv")
-public class DateRdvController {
+public class  DateRdvController {
 
     @Autowired
     private DateRdvService service;

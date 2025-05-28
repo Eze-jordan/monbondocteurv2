@@ -21,7 +21,9 @@ public class SecurityConfig {
                               authorize
                                     .requestMatchers("/api/users/create").permitAll()
                                       .requestMatchers("/api/users/all").permitAll()
-                                    .requestMatchers("/api/users/activation").permitAll()
+                                    .requestMatchers("/api/users/activation"
+                                    ,"/api/rendezvous/**","api/medecins/**").permitAll()
+                                      .requestMatchers("/send-test-email").permitAll()  // Permet l'accès à cette route sans authentification
                                       .anyRequest().authenticated()
 
                 ).build();

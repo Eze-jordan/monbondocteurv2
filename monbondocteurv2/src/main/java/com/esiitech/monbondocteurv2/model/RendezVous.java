@@ -147,4 +147,7 @@ public class RendezVous {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public void setUtilisateur(Utilisateur utilisateur) {
+    }
 }
