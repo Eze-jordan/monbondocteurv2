@@ -1,15 +1,10 @@
 package com.esiitech.monbondocteurv2.controller;
 
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
-import com.esiitech.monbondocteurv2.model.RefGrade;
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
 import com.esiitech.monbondocteurv2.service.MedecinService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -17,10 +12,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/medecins")
+@CrossOrigin(origins = "*")
 public class MedecinController {
 
-    @Autowired
-    private MedecinService medecinService;
+    private final MedecinService medecinService;
+
+    public MedecinController(MedecinService medecinService) {
+        this.medecinService = medecinService;
+    }
 
     /**
      * Enregistrer un médecin avec une photo envoyée en multipart et des données en JSON.
@@ -28,14 +27,9 @@ public class MedecinController {
     @PostMapping("/create")
     public ResponseEntity<MedecinDto> saveMedecin(@RequestParam("photo") MultipartFile photo,
                                                   @RequestParam("medecin") String medecinJson) throws IOException {
-
-        // Convertir les données JSON du médecin en DTO
         ObjectMapper objectMapper = new ObjectMapper();
         MedecinDto dto = objectMapper.readValue(medecinJson, MedecinDto.class);
-
-        // Enregistrer le médecin avec la photo
         MedecinDto savedMedecin = medecinService.save(dto, photo);
-
         return new ResponseEntity<>(savedMedecin, HttpStatus.CREATED);
     }
 
@@ -44,14 +38,11 @@ public class MedecinController {
      */
     @PutMapping("/update/{id}")
     public ResponseEntity<MedecinDto> updateMedecin(@PathVariable Long id,
-                                                    @RequestPart("medecin") MedecinDto medecinDto,
+                                                    @RequestBody MedecinDto medecinDto,
                                                     @RequestPart(value = "photo", required = false) MultipartFile photo) throws IOException {
-        // Appeler le service pour mettre à jour le médecin
         MedecinDto updatedMedecin = medecinService.update(id, medecinDto, photo);
         return new ResponseEntity<>(updatedMedecin, HttpStatus.OK);
     }
-
-
 
     /**
      * Récupérer tous les médecins.
@@ -71,8 +62,6 @@ public class MedecinController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-
-
     /**
      * Mettre à jour le statut actif/inactif d'un médecin.
      */
@@ -89,5 +78,42 @@ public class MedecinController {
     public ResponseEntity<Long> countAllMedecins() {
         long count = medecinService.countAll();
         return new ResponseEntity<>(count, HttpStatus.OK);
+    }
+
+    // ✅ 🔽 Ajout des nouveaux endpoints demandés 🔽
+
+    // 1. 🔍 Rechercher un médecin par email
+    @GetMapping("/email/{email}")
+    public ResponseEntity<MedecinDto> getByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(medecinService.findByEmail(email));
+    }
+
+    // 2. 🗑️ Supprimer un médecin par email
+    @DeleteMapping("/email/{email}")
+    public ResponseEntity<Void> deleteByEmail(@PathVariable String email) {
+        medecinService.deleteByEmail(email);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 3. 🖼️ Récupérer la photo du médecin
+    @GetMapping("/{id}/photo")
+    public ResponseEntity<byte[]> getPhoto(@PathVariable Long id) throws IOException {
+        byte[] image = medecinService.getPhoto(id);
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.IMAGE_JPEG) // ou IMAGE_PNG selon le cas
+                .body(image);
+    }
+
+    // 4. 🩺 Rechercher les médecins par spécialité
+    @GetMapping("/specialite/{specialite}")
+    public ResponseEntity<List<MedecinDto>> getBySpecialite(@PathVariable String specialite) {
+        return ResponseEntity.ok(medecinService.searchBySpeciality(specialite));
+    }
+
+    // 5. ✅ Obtenir la liste des médecins actifs
+    @GetMapping("/actifs")
+    public ResponseEntity<List<MedecinDto>> getActiveMedecins() {
+        return ResponseEntity.ok(medecinService.getActiveMedecins());
     }
 }

@@ -4,10 +4,8 @@ import com.esiitech.monbondocteurv2.model.RefGrade;
 import com.esiitech.monbondocteurv2.model.RefSpecialite;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
-public class MedecinDto {
+public class DemandeMedecinDTO {
     private Long id;
     private String nomMedecin;
     private String prenomMedecin;
@@ -16,18 +14,7 @@ public class MedecinDto {
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Email invalide")
     private String email;
-
-    @NotBlank(message = "Le mot de passe est obligatoire")
-    @Size(min = 12, message = "Le mot de passe doit contenir au moins 8 caractères")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
-            message = "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
-    )
-    private String motDePasse;
-    private String photoPath;
-    private boolean actif;
-
-    // Getters and setters
+    private String matricule;
 
     public Long getId() {
         return id;
@@ -77,28 +64,14 @@ public class MedecinDto {
         this.email = email;
     }
 
-    public String getMotDePasse() {
-        return motDePasse;
+
+    public String getMatricule() {
+        return matricule;
     }
 
-    public void setMotDePasse(String motDePasse) {
-        this.motDePasse = motDePasse;
+    public void setMatricule(String matricule) {
+        this.matricule = matricule;
     }
 
-    public String getPhotoPath() {
-        return photoPath;
-    }
-
-    public void setPhotoPath(String photoPath) {
-        this.photoPath = photoPath;
-    }
-
-
-    public boolean isActif() {
-        return actif;
-    }
-
-    public void setActif(boolean actif) {
-        this.actif = actif;
-    }
+    // Getters et setters
 }

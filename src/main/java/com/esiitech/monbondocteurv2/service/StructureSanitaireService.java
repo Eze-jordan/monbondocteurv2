@@ -22,6 +22,8 @@ public class StructureSanitaireService {
     private StructureSanitaireRepository repository;
 
     @Autowired
+    private NotificationService notificationService;
+    @Autowired
     private StructureSanitaireMapper mapper;
 
     @Value("${app.upload.dir.structureSanitaire}")  // Le répertoire où les photos des structures sanitaires sont stockées
@@ -50,6 +52,10 @@ public class StructureSanitaireService {
 
         // Sauvegarder dans la base de données
         structureSanitaire = repository.save(structureSanitaire);
+
+        // Envoyer un message de bienvenue au médecin après la création de son compte
+        notificationService.envoyerBienvenueAuStructures(structureSanitaire.getEmail(), structureSanitaire.getNomStructureSanitaire());
+
 
         // Retourner le DTO de la structure sanitaire sauvegardée avec l'URL de la photo
         return mapper.toDto(structureSanitaire);

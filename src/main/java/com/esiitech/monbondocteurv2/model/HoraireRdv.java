@@ -44,7 +44,9 @@ public class HoraireRdv {
         return heureFin;
     }
 
+
     public void setHeureFin(LocalTime heureFin) {
         this.heureFin = heureFin;
     }
 }
+

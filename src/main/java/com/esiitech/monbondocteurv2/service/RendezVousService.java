@@ -46,34 +46,32 @@ public class RendezVousService {
         this.notificationService = notificationService;
         this.utilisateurRepository = utilisateurRepository;
     }
-
     @Transactional
     public RendezVousDTO creerRendezVous(RendezVousDTO dto) {
-        RendezVous rendezVous = new RendezVous();
 
-        // Récupérer les entités liées au rendez-vous
-        StructureSanitaire structure = structureSanitaireRepository
-                .findById(dto.getStructureSanitaireId())
-                .orElseThrow(() -> new RuntimeException("Structure sanitaire introuvable"));
-        Medecin medecin = medecinRepository
-                .findById(dto.getMedecinId())
-                .orElseThrow(() -> new RuntimeException("Médecin introuvable"));
-        AgendaMedecin agenda = agendaMedecinRepository
-                .findById(dto.getAgendaMedecinId())
-                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
-        DateRdv dateRdv = dateRdvRepository
-                .findById(dto.getDateRdvId())
+        DateRdv dateRdv = dateRdvRepository.findById(dto.getDateRdvId())
                 .orElseThrow(() -> new RuntimeException("Date RDV introuvable"));
-        HoraireRdv horaireRdv = horaireRdvRepository
-                .findById(dto.getHoraireRdvId())
+
+        HoraireRdv horaireRdv = horaireRdvRepository.findById(dto.getHoraireRdvId())
                 .orElseThrow(() -> new RuntimeException("Horaire RDV introuvable"));
 
-        // Récupérer l'utilisateur authentifié
-        String emailUtilisateur = SecurityContextHolder.getContext().getAuthentication().getName();
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable avec l'email: " + emailUtilisateur));
+        // ✅ Vérification basée sur email + date + horaire
+        long nbRdvPourEmail = rendezVousRepository.countByEmailAndDateRdvAndHoraireRdv(
+                dto.getEmail(), dateRdv, horaireRdv);
 
-        // Créer le rendez-vous
+        if (nbRdvPourEmail >= 4) {
+            throw new RuntimeException("Ce patient a déjà atteint la limite de 3 rendez-vous pour ce créneau.");
+        }
+
+        // ➕ Création du rendez-vous (comme déjà fait)
+        StructureSanitaire structure = structureSanitaireRepository.findById(dto.getStructureSanitaireId())
+                .orElseThrow(() -> new RuntimeException("Structure sanitaire introuvable"));
+        Medecin medecin = medecinRepository.findById(dto.getMedecinId())
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable"));
+        AgendaMedecin agenda = agendaMedecinRepository.findById(dto.getAgendaMedecinId())
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
+
+        RendezVous rendezVous = new RendezVous();
         rendezVous.setStructureSanitaire(structure);
         rendezVous.setMedecin(medecin);
         rendezVous.setAgendaMedecin(agenda);
@@ -87,17 +85,12 @@ public class RendezVousService {
         rendezVous.setAge(dto.getAge());
         rendezVous.setMotif(dto.getMotif());
 
-        // Associer l'utilisateur au rendez-vous
-        rendezVous.setUtilisateur(utilisateur);  // Assurez-vous que cette méthode existe dans votre modèle
-
-        // Sauvegarder le rendez-vous
         RendezVous saved = rendezVousRepository.save(rendezVous);
 
-        // Envoyer les notifications par e-mail
+        // ✅ Notifications
         notificationService.envoyerAuPatient(dto.getEmail(), dto.getNom(), medecin.getNomMedecin());
         notificationService.envoyerAuMedecin(medecin.getEmail(), medecin.getNomMedecin(), dto.getNom());
 
-        // Retourner le DTO du rendez-vous sauvegardé
         return rendezVousMapper.toDTO(saved);
     }
 

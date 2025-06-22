@@ -3,7 +3,6 @@ package com.esiitech.monbondocteurv2.mapper;
 import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
 import com.esiitech.monbondocteurv2.model.RendezVous;
 import org.springframework.stereotype.Component;
-
 @Component
 public class RendezVousMapper {
 
@@ -45,6 +44,7 @@ public class RendezVousMapper {
     public RendezVous toEntity(RendezVousDTO dto) {
         RendezVous entity = new RendezVous();
         entity.setId(dto.getId());
+
         entity.setRefSpecialite(dto.getRefSpecialite());
         entity.setNom(dto.getNom());
         entity.setPrenom(dto.getPrenom());
@@ -52,6 +52,7 @@ public class RendezVousMapper {
         entity.setSexe(dto.getSexe());
         entity.setAge(dto.getAge());
         entity.setMotif(dto.getMotif());
+
 
         // Note : les relations avec les entités (medecin, date, horaire, etc.)
         // doivent être mises en place dans le service, pas ici

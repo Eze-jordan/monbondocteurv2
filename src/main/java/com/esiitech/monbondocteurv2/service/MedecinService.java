@@ -29,6 +29,9 @@ public class MedecinService {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
+    @Autowired
+    private NotificationService notificationService;  // Inject NotificationService here
+
     @Value("${app.upload.dir.medecins}")  // Dossier où les photos des médecins sont stockées
     private String uploadDir;
 
@@ -53,6 +56,9 @@ public class MedecinService {
 
         // Sauvegarder dans la base de données
         Medecin savedMedecin = repository.save(entity);
+
+        // Envoyer un message de bienvenue au médecin après la création de son compte
+        notificationService.envoyerBienvenueAuMedecin(savedMedecin.getEmail(), savedMedecin.getNomMedecin());
 
         // Convertir l'entité sauvegardée en DTO et retourner le DTO
         return mapper.toDto(savedMedecin);
@@ -120,8 +126,6 @@ public class MedecinService {
         return mapper.toDto(updatedMedecin);
     }
 
-
-
     /**
      * Supprimer un médecin par son ID.
      */
@@ -134,6 +138,11 @@ public class MedecinService {
      * Cela permet d'afficher la photo depuis le front-end via une URL publique.
      */
 
+    // 5. Méthode countAll()
+    public long countAll() {
+        return repository.count();
+    }
+
 
     // 1. Méthode findAll()
     public List<MedecinDto> findAll() {
@@ -143,12 +152,6 @@ public class MedecinService {
                 .collect(Collectors.toList());
     }
 
-    // 2. Méthode findByEmail()
-    public MedecinDto findByEmail(String email) {
-        Medecin entity = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
-        return mapper.toDto(entity);
-    }
 
     // 3. Méthode updateStatus()
     public MedecinDto updateStatus(Long id, boolean actif) {
@@ -159,16 +162,17 @@ public class MedecinService {
         return mapper.toDto(updatedMedecin);
     }
 
+    // 2. Méthode findByEmail()
+    public MedecinDto findByEmail(String email) {
+        Medecin entity = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
+        return mapper.toDto(entity);
+    }
     // 4. Méthode deleteByEmail()
     public void deleteByEmail(String email) {
         Medecin entity = repository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
         repository.delete(entity);
-    }
-
-    // 5. Méthode countAll()
-    public long countAll() {
-        return repository.count();
     }
 
     // 6. Méthode getPhoto()
