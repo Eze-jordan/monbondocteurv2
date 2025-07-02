@@ -2,7 +2,10 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.MedecinStructureSanitaireDto;
 import com.esiitech.monbondocteurv2.mapper.MedecinStructureSanitaireMapper;
+import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.MedecinStructureSanitaire;
+import com.esiitech.monbondocteurv2.model.RefSpecialite;
+import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import com.esiitech.monbondocteurv2.repository.MedecinStructureSanitaireRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,4 +36,15 @@ public class MedecinStructureSanitaireService {
     public void deleteById(Long id) {
         repository.deleteById(id);
     }
+
+    public List<Medecin> getMedecinsByStructureAndSpecialite(Long structureId, RefSpecialite specialite) {
+        return repository.findMedecinsByStructureAndSpecialite(structureId, specialite);
+    }
+
+    public StructureSanitaire getStructureSanitaireActifByMedecin(Medecin medecin) {
+        return repository.findByMedecinAndActifTrue(medecin)
+                .map(MedecinStructureSanitaire::getStructureSanitaire)
+                .orElse(null); // ou gérer avec exception si nécessaire
+    }
+
 }

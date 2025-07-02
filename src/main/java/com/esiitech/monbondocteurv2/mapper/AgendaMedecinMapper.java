@@ -13,13 +13,16 @@ import org.springframework.stereotype.Component;
 public class AgendaMedecinMapper {
 
     @Autowired private MedecinRepository medecinRepository;
-    @Autowired private StructureSanitaireRepository structureSanitaireRepository;
 
     public AgendaMedecinDto toDto(AgendaMedecin entity) {
         AgendaMedecinDto dto = new AgendaMedecinDto();
         dto.setId(entity.getId());
         dto.setMedecinId(entity.getMedecin().getId());
-        dto.setStructureSanitaireId(entity.getStructureSanitaire().getId());
+        dto.setDate(entity.getDate());
+        dto.setHeureDebut(entity.getHeureDebut());
+        dto.setHeureFin(entity.getHeureFin());
+        dto.setNombrePatient(entity.getNombrePatient());
+        dto.setRdvPris(entity.getRdvPris());
         dto.setActif(entity.isActif());
         return dto;
     }
@@ -29,9 +32,12 @@ public class AgendaMedecinMapper {
         entity.setId(dto.getId());
         entity.setActif(dto.isActif());
         Medecin medecin = medecinRepository.findById(dto.getMedecinId()).orElseThrow();
-        StructureSanitaire structure = structureSanitaireRepository.findById(dto.getStructureSanitaireId()).orElseThrow();
         entity.setMedecin(medecin);
-        entity.setStructureSanitaire(structure);
+        entity.setDate(dto.getDate());
+        entity.setHeureDebut(dto.getHeureDebut());
+        entity.setHeureFin(dto.getHeureFin());
+        entity.setNombrePatient(dto.getNombrePatient());
+        entity.setRdvPris(dto.getRdvPris());
         return entity;
     }
 }

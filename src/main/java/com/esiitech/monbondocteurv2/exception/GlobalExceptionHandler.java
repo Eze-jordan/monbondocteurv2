@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)  // Erreur 500 - Internal Server Error
     public ResponseEntity<ErrorDetails> handleGenericException(Exception ex) {
-        ErrorDetails errorDetails = new ErrorDetails(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Une erreur interne s'est produite.");
+        ErrorDetails errorDetails = new ErrorDetails(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Une erreur interne s'est produite lors du traitement de la demande. Veuillez réessayer plus tard. Si le problème persiste, contactez l'assistance technique.");
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

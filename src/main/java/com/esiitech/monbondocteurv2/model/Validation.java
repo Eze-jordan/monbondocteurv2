@@ -17,6 +17,10 @@ public class Validation {
     private String code;
     @OneToOne(cascade = CascadeType.ALL)
     private Utilisateur utilisateur;
+    @OneToOne(cascade = CascadeType.ALL)
+    private Medecin medecin;
+    @OneToOne(cascade = CascadeType.ALL)
+    private StructureSanitaire structureSanitaire;
 
     public Validation() {
 
@@ -70,12 +74,30 @@ public class Validation {
         this.utilisateur = utilisateur;
     }
 
-    public Validation(Long id, Instant creation, Instant expiration, Instant activation, String code, Utilisateur utilisateur) {
+    public StructureSanitaire getStructureSanitaire() {
+        return structureSanitaire;
+    }
+
+    public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
+        this.structureSanitaire = structureSanitaire;
+    }
+
+    public Medecin getMedecin() {
+        return medecin;
+    }
+
+    public void setMedecin(Medecin medecin) {
+        this.medecin = medecin;
+    }
+
+    public Validation(Long id, Instant creation, Instant expiration, Instant activation, String code, Utilisateur utilisateur, Medecin medecin, StructureSanitaire structureSanitaire) {
         this.id = id;
         this.creation = creation;
         this.expiration = expiration;
         this.activation = activation;
         this.code = code;
         this.utilisateur = utilisateur;
+        this.medecin = medecin;
+        this.structureSanitaire = structureSanitaire;
     }
 }

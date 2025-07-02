@@ -17,6 +17,7 @@ public class MedecinMapper {
         dto.setRefGrade(entity.getRefGrade());
         dto.setRefSpecialite(entity.getRefSpecialite());
         dto.setEmail(entity.getEmail());
+        dto.setRole(entity.getRole());
         dto.setPhotoPath(entity.getPhotoPath());
         dto.setActif(entity.isActif());
         return dto;
@@ -34,6 +35,7 @@ public class MedecinMapper {
         entity.setEmail(dto.getEmail());
         entity.setMotDePasse(dto.getMotDePasse());
         entity.setPhotoPath(dto.getPhotoPath());
+        entity.setRole(dto.getRole());
         entity.setActif(dto.isActif());
         return entity;
     }

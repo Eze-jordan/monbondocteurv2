@@ -2,45 +2,73 @@
 
     import jakarta.persistence.*;
 
+    import java.util.HashSet;
+    import java.util.Set;
+
     @Entity
     public class RendezVous {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
-        @ManyToOne (cascade = CascadeType.PERSIST)
-        @JoinColumn(name = "structureSanitaire_id")
-        private StructureSanitaire structureSanitaire;
-        @Enumerated(EnumType.STRING)
-        private RefSpecialite refSpecialite;
-        @ManyToOne (cascade = CascadeType.PERSIST)
-        @JoinColumn(name = "medecin_id")
-        private Medecin medecin;
-        @ManyToOne (cascade = CascadeType.PERSIST)
-        @JoinColumn(name = "agenda_medecin_id")
+        @ManyToOne(cascade = CascadeType.PERSIST)
         private AgendaMedecin agendaMedecin;
-        @ManyToOne (cascade = CascadeType.PERSIST)
-        @JoinColumn(name = "dateRsv_id")
-        private DateRdv dateRdv;
-        @ManyToOne (cascade = CascadeType.PERSIST)
-        @JoinColumn(name = "horaireRdv_id")
-        private HoraireRdv horaireRdv;
+        @ManyToOne(cascade = CascadeType.PERSIST)
+        private Medecin medecin;
+        @ManyToOne
+        @JoinColumn(name = "structure_sanitaire_id")
+        private StructureSanitaire structureSanitaire;
+        @ElementCollection(targetClass = RefSpecialite.class)
+        @Enumerated(EnumType.STRING)
+        @CollectionTable(name = "utilisateur_specialite", joinColumns = @JoinColumn(name = "utilisateur_id"))
+        @Column(name = "specialite")
+        private Set<RefSpecialite> refSpecialites = new HashSet<>();
         @Column(nullable = false)
         private String nom;
         @Column(nullable = false)
         private String prenom;
         @Column(nullable = false)
         private String email;
+        @Column(nullable = false)
+        private String adresse;
+        @Column(nullable = false)
+        private String telephone;
         @Enumerated(EnumType.STRING)
         private Sexe sexe;
         @Column(nullable = false)
         private int age;
         @Column(nullable = false)
         private String motif;
+
         @ManyToOne
         @JoinColumn(name = "utilisateur_id", referencedColumnName = "id")
         private Utilisateur utilisateur;
 
+        public Set<RefSpecialite> getRefSpecialites() {
+            return refSpecialites;
+        }
 
+        public void setRefSpecialites(Set<RefSpecialite> refSpecialites) {
+            this.refSpecialites = refSpecialites;
+        }
+        public StructureSanitaire getStructureSanitaire() {
+            return structureSanitaire;
+        }
+
+        public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
+            this.structureSanitaire = structureSanitaire;
+        }
+        public Medecin getMedecin() {
+            return medecin;
+        }
+        public void setMedecin(Medecin medecin) {
+            this.medecin = medecin;
+        }
+        public AgendaMedecin getAgendaMedecin() {
+            return agendaMedecin;
+        }
+        public void setAgendaMedecin(AgendaMedecin agendaMedecin) {
+            this.agendaMedecin = agendaMedecin;
+        }
         public Long getId() {
             return id;
         }
@@ -49,54 +77,21 @@
             this.id = id;
         }
 
-        public StructureSanitaire getStructureSanitaire() {
-            return structureSanitaire;
+        public String getAdresse() {
+            return adresse;
         }
 
-        public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
-            this.structureSanitaire = structureSanitaire;
+        public void setAdresse(String adresse) {
+            this.adresse = adresse;
         }
 
-        public RefSpecialite getRefSpecialite() {
-            return refSpecialite;
+        public String getTelephone() {
+            return telephone;
         }
 
-        public void setRefSpecialite(RefSpecialite refSpecialite) {
-            this.refSpecialite = refSpecialite;
+        public void setTelephone(String telephone) {
+            this.telephone = telephone;
         }
-
-        public Medecin getMedecin() {
-            return medecin;
-        }
-
-        public void setMedecin(Medecin medecin) {
-            this.medecin = medecin;
-        }
-
-        public AgendaMedecin getAgendaMedecin() {
-            return agendaMedecin;
-        }
-
-        public void setAgendaMedecin(AgendaMedecin agendaMedecin) {
-            this.agendaMedecin = agendaMedecin;
-        }
-
-        public DateRdv getDateRdv() {
-            return dateRdv;
-        }
-
-        public void setDateRdv(DateRdv dateRdv) {
-            this.dateRdv = dateRdv;
-        }
-
-        public HoraireRdv getHoraireRdv() {
-            return horaireRdv;
-        }
-
-        public void setHoraireRdv(HoraireRdv horaireRdv) {
-            this.horaireRdv = horaireRdv;
-        }
-
 
         public Sexe getSexe() {
             return sexe;

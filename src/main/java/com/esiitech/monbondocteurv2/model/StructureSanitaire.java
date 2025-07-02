@@ -1,12 +1,14 @@
 package com.esiitech.monbondocteurv2.model;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
-public class StructureSanitaire {
+public class StructureSanitaire implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,6 +36,12 @@ public class StructureSanitaire {
     @Column(name = "specialite")
     private Set<RefSpecialite> refSpecialites = new HashSet<RefSpecialite>();
 
+    @Column(nullable = false)
+    private boolean actif = false;
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+
     // Méthode pour obtenir l'ID formaté sur 4 chiffres
     public String getIdFormate() {
         return String.format("%04d", this.id);
@@ -49,6 +57,14 @@ public class StructureSanitaire {
 
     public Ville getVille() {
         return ville;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
     }
 
     public void setVille(Ville ville) {
@@ -133,5 +149,28 @@ public class StructureSanitaire {
 
     public void setRefSpecialites(Set<RefSpecialite> refSpecialites) {
         this.refSpecialites = refSpecialites;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.motDePasse;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
     }
 }

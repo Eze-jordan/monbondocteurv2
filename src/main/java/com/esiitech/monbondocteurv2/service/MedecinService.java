@@ -3,9 +3,15 @@ package com.esiitech.monbondocteurv2.service;
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
 import com.esiitech.monbondocteurv2.model.Medecin;
+import com.esiitech.monbondocteurv2.model.Role;
+import com.esiitech.monbondocteurv2.model.Utilisateur;
+import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.repository.MedecinRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,20 +20,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-public class MedecinService {
+public class MedecinService implements UserDetailsService {
 
     @Autowired
     private MedecinRepository repository;
 
     @Autowired
     private MedecinMapper mapper;
+    @Autowired
+    private  ValidationService validationService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+    @Autowired
+    private MedecinRepository medecinRepository;
 
     @Autowired
     private NotificationService notificationService;  // Inject NotificationService here
@@ -41,6 +53,11 @@ public class MedecinService {
     public MedecinDto save(MedecinDto dto, MultipartFile photo) throws IOException {
         // Valider les données du DTO avant de les sauvegarder
         validateMedecinDto(dto);
+
+        // Affecter le rôle par défaut AVANT le mapping
+        if (dto.getRole() == null) {
+            dto.setRole(Role.MEDECIN);
+        }
 
         // Convertir le DTO en entité
         Medecin entity = mapper.toEntity(dto);
@@ -56,13 +73,35 @@ public class MedecinService {
 
         // Sauvegarder dans la base de données
         Medecin savedMedecin = repository.save(entity);
-
-        // Envoyer un message de bienvenue au médecin après la création de son compte
-        notificationService.envoyerBienvenueAuMedecin(savedMedecin.getEmail(), savedMedecin.getNomMedecin());
+        this.validationService.enregisterMedecin(savedMedecin);
 
         // Convertir l'entité sauvegardée en DTO et retourner le DTO
         return mapper.toDto(savedMedecin);
     }
+
+
+    public void activation(Map<String, String> activation) {
+        Validation validation = validationService.lireEnFonctionDuCode(activation.get("code"));
+        if (Instant.now().isAfter(validation.getExpiration())) {
+            throw new RuntimeException("Votre code a expiré");
+        }
+
+        Medecin MedecinActiver = repository.findById(validation.getMedecin().getId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu"));
+
+        MedecinActiver.setActif(true);
+        repository.save(MedecinActiver);
+        notificationService.envoyerBienvenueAuMedecin(MedecinActiver.getEmail(), MedecinActiver.getNomMedecin());
+
+    }
+
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return this.medecinRepository.findByEmail(username).orElseThrow (()
+                -> new UsernameNotFoundException(
+                "Aucun utilisateur ne conrespond à cet identifiant"
+        ));
+    }
+
 
     /**
      * Sauvegarder la photo et retourner son chemin
@@ -203,4 +242,9 @@ public class MedecinService {
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
     }
+    public Medecin getById(Long id) {
+        return medecinRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
+    }
+
 }

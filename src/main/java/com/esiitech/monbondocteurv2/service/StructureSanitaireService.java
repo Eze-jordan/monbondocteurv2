@@ -2,10 +2,16 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.StructureSanitaireDto;
 import com.esiitech.monbondocteurv2.mapper.StructureSanitaireMapper;
-import com.esiitech.monbondocteurv2.model.StructureSanitaire;
+import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,14 +19,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 @Service
-public class StructureSanitaireService {
+public class StructureSanitaireService implements UserDetailsService {
 
     @Autowired
     private StructureSanitaireRepository repository;
-
+    @Autowired
+    private ValidationService validationService;
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
     @Autowired
     private NotificationService notificationService;
     @Autowired
@@ -50,16 +62,65 @@ public class StructureSanitaireService {
             structureSanitaire.setPhotoPath(DEFAULT_PHOTO_PATH);
         }
 
+        // Vérification du rôle et assignation du rôle par défaut (USER) si nécessaire
+        if (structureSanitaire.getRole() == null) {
+            structureSanitaire.setRole(Role.STRUCTURESANITAIRE);  // Assigner le rôle USER par défaut
+        }
+        // ✅ Encodage correct du mot de passe
+        structureSanitaire.setMotDePasse(passwordEncoder.encode(structureSanitaire.getMotDePasse()));
+
         // Sauvegarder dans la base de données
         structureSanitaire = repository.save(structureSanitaire);
+        this.validationService.enregisterStructure(structureSanitaire);
 
-        // Envoyer un message de bienvenue au médecin après la création de son compte
-        notificationService.envoyerBienvenueAuStructures(structureSanitaire.getEmail(), structureSanitaire.getNomStructureSanitaire());
 
 
         // Retourner le DTO de la structure sanitaire sauvegardée avec l'URL de la photo
         return mapper.toDto(structureSanitaire);
     }
+
+    public void activation(Map<String, String> activation) {
+        Validation validation = validationService.lireEnFonctionDuCode(activation.get("code"));
+        if (Instant.now().isAfter(validation.getExpiration())) {
+            throw new RuntimeException("Votre code a expiré");
+        }
+
+        StructureSanitaire StructureActiver = repository.findById(validation.getStructureSanitaire().getId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu"));
+
+        StructureActiver.setActif(true);
+        repository.save(StructureActiver);
+        notificationService.envoyerBienvenueAuStructures(StructureActiver.getEmail(), StructureActiver.getNomStructureSanitaire());
+
+    }
+
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return this.repository.findByEmail(username).orElseThrow (()
+                -> new UsernameNotFoundException(
+                "Aucun utilisateur ne conrespond à cet identifiant"
+        ));
+    }
+
+    public Set<RefSpecialite> getSpecialitesStructure(Long id) {
+        StructureSanitaire structure = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+        return structure.getRefSpecialites();
+    }
+
+    public Set<RefSpecialite> getToutesLesSpecialitesUtilisees() {
+        List<StructureSanitaire> structures = repository.findAll();
+
+        // On regroupe toutes les spécialités dans un Set pour éliminer les doublons
+        return structures.stream()
+                .flatMap(structure -> structure.getRefSpecialites().stream())
+                .collect(Collectors.toSet());
+    }
+
+    public List<StructureSanitaire> getStructuresParVille(Ville ville) {
+        return repository.findByVille(ville);
+    }
+
+
 
     /**
      * Valider les données du DTO de la structure sanitaire avant d'effectuer l'enregistrement

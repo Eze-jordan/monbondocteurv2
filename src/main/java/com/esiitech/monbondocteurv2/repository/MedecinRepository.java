@@ -13,4 +13,8 @@ public interface MedecinRepository extends JpaRepository<Medecin, Long> {
 
     List<Medecin> findByActif(boolean actif);
 
+    // Dans MedecinRepository
+    Optional<Medecin> findByNomMedecinIgnoreCase(String nomMedecin);
+
+
 }

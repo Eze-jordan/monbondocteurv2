@@ -2,24 +2,32 @@ package com.esiitech.monbondocteurv2.dto;
 
 import com.esiitech.monbondocteurv2.model.RefSpecialite;
 import com.esiitech.monbondocteurv2.model.Sexe;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class RendezVousDTO {
 
     private Long id;
-    private Long structureSanitaireId;
-    private RefSpecialite refSpecialite;
-    private Long medecinId;
-    private Long agendaMedecinId;
-    private Long dateRdvId;
-    private Long horaireRdvId;
     private String nom;
     private String prenom;
+    @NotBlank(message = "L'email est obligatoire")
+    @Email(message = "Email invalide")
     private String email;
+    private String adresse;
+    @Size(min = 15, message = "Le Numero doit contenir au moins 15 caractères")
+    private String telephone;
     private Sexe sexe;
     private int age;
     private String motif;
 
-    // Getters & Setters
+    private Long agendaId;
+    public Long getAgendaId() {
+        return agendaId;
+    }
+    public void setAgendaId(Long agendaId) {
+        this.agendaId = agendaId;
+    }
 
     public Long getId() {
         return id;
@@ -29,52 +37,20 @@ public class RendezVousDTO {
         this.id = id;
     }
 
-    public Long getStructureSanitaireId() {
-        return structureSanitaireId;
+    public String getAdresse() {
+        return adresse;
     }
 
-    public void setStructureSanitaireId(Long structureSanitaireId) {
-        this.structureSanitaireId = structureSanitaireId;
+    public void setAdresse(String adresse) {
+        this.adresse = adresse;
     }
 
-    public RefSpecialite getRefSpecialite() {
-        return refSpecialite;
+    public String getTelephone() {
+        return telephone;
     }
 
-    public void setRefSpecialite(RefSpecialite refSpecialite) {
-        this.refSpecialite = refSpecialite;
-    }
-
-    public Long getMedecinId() {
-        return medecinId;
-    }
-
-    public void setMedecinId(Long medecinId) {
-        this.medecinId = medecinId;
-    }
-
-    public Long getAgendaMedecinId() {
-        return agendaMedecinId;
-    }
-
-    public void setAgendaMedecinId(Long agendaMedecinId) {
-        this.agendaMedecinId = agendaMedecinId;
-    }
-
-    public Long getDateRdvId() {
-        return dateRdvId;
-    }
-
-    public void setDateRdvId(Long dateRdvId) {
-        this.dateRdvId = dateRdvId;
-    }
-
-    public Long getHoraireRdvId() {
-        return horaireRdvId;
-    }
-
-    public void setHoraireRdvId(Long horaireRdvId) {
-        this.horaireRdvId = horaireRdvId;
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
     }
 
     public String getNom() {

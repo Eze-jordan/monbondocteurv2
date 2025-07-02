@@ -19,7 +19,7 @@ public class StructureSanitaireDto {
     private String email;
 
     @NotBlank(message = "Le mot de passe est obligatoire")
-    @Size(min = 12, message = "Le mot de passe doit contenir au moins 8 caractères")
+    @Size(min = 12, message = "Le mot de passe doit contenir au moins 12 caractères")
     @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
             message = "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
@@ -32,6 +32,8 @@ public class StructureSanitaireDto {
     private Float gpsLongitude;
     private Float gpsLatitude;
     private Set<RefSpecialite> refSpecialites;
+    private boolean actif;
+
 
     // Getters et setters
 
@@ -49,6 +51,14 @@ public class StructureSanitaireDto {
 
     public void setNomStructureSanitaire(String nomStructureSanitaire) {
         this.nomStructureSanitaire = nomStructureSanitaire;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
     }
 
     public String getMotDePasse() {

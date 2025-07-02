@@ -2,9 +2,17 @@ package com.esiitech.monbondocteurv2.model;
 
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
-public class Medecin  {
+public class Medecin  implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,6 +29,9 @@ public class Medecin  {
     private String motDePasse;
     @Column(name = "photo")
     private String photoPath;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Column(nullable = false)
     private boolean actif = false;
@@ -89,7 +100,13 @@ public class Medecin  {
         this.photoPath = photoPath;
     }
 
+    public Role getRole() {
+        return role;
+    }
 
+    public void setRole(Role role) {
+        this.role = role;
+    }
 
     public boolean isActif() {
         return actif;
@@ -97,5 +114,20 @@ public class Medecin  {
 
     public void setActif(boolean actif) {
         this.actif = actif;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role));
+    }
+
+    @Override
+    public String getPassword() {
+         return this.motDePasse;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
     }
 }

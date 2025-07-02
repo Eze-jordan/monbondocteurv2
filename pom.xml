@@ -15,7 +15,7 @@
 	<groupId>com.esiitech</groupId>
 	<artifactId>monbondocteurv2</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>MonBonDocteur V2</name>
+	<name>MonBonDocteurV2</name>
 	<description>Application de gestion de rendez-vous médicaux</description>
 
 	<properties>
@@ -98,6 +98,7 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.5.0</version>
 		</dependency>
+
 	</dependencies>
 
 

@@ -29,7 +29,7 @@ public class NotificationService {
             <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
                 <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
                     <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
-                    <p>Bonjour <strong>%s</strong>,</p>
+                    <p>Bonjour M/Mme/Mlle.<strong>%s</strong>,</p>
                     <p>Merci de vous être inscrit sur MonBonDocteur.</p>
                     <p>Voici votre code d'activation :</p>
                     <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
@@ -41,6 +41,71 @@ public class NotificationService {
                 </div>
             </div>
         """.formatted(validation.getUtilisateur().getNom(), validation.getCode());
+
+            helper.setText(htmlContent, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void envoyerMedecin(Validation validation) {
+        MimeMessage message = javaMailSender.createMimeMessage();
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("notify@eservices-gabon.com");
+            helper.setTo(validation.getMedecin().getEmail());
+            helper.setSubject("Votre code d'activation");
+
+            String htmlContent = """
+            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
+                    <p>Bonjour M/Mme/Mlle<strong>%s</strong>,</p>
+                    <p>Merci de vous être inscrit sur MonBonDocteur.</p>
+                    <p>Voici votre code d'activation :</p>
+                    <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
+                    <p>⏳ Ce code est valable pendant 60 minutes.</p>
+                    <p style="color: #888; font-size: 12px; text-align: center;">
+                        Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
+                    </p>
+                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
+                </div>
+            </div>
+        """.formatted(validation.getMedecin().getNomMedecin(), validation.getCode());
+
+            helper.setText(htmlContent, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+    public void envoyerStructure(Validation validation) {
+        MimeMessage message = javaMailSender.createMimeMessage();
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("notify@eservices-gabon.com");
+            helper.setTo(validation.getStructureSanitaire().getEmail());
+            helper.setSubject("Votre code d'activation");
+
+            String htmlContent = """
+            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
+                    <p>Bonjour <strong>%s</strong>,</p>
+                    <p>Merci de vous être inscrit sur MonBonDocteur.</p>
+                    <p>Voici votre code d'activation :</p>
+                    <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
+                    <p>⏳ Ce code est valable pendant 60 minutes.</p>
+                    <p style="color: #888; font-size: 12px; text-align: center;">
+                        Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
+                    </p>
+                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
+                </div>
+            </div>
+        """.formatted(validation.getStructureSanitaire().getNomStructureSanitaire(), validation.getCode());
 
             helper.setText(htmlContent, true);
             javaMailSender.send(message);
@@ -181,7 +246,7 @@ public class NotificationService {
                     <p>Vous pouvez dès maintenant inscrire vos médecins et gérer les rendez-vous via votre tableau de bord.</p>
                     <div style="text-align: center; margin-top: 30px;">
                         <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
-                            Accéder à mon tableau de bord
+                            Accéder au tableau de bord
                         </a>
                     </div>
                     <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
