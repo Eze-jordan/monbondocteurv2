@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
+import java.util.UUID;
 
 import static java.time.temporal.ChronoUnit.HOURS;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -32,7 +33,7 @@ public class ValidationService {
         String code = String.format("%06d", randomInteger);
 
         validation.setCode(code);
-
+        validation.setId("validation-" + UUID.randomUUID());
         this.validationRipository.save(validation);
         this.notificationService.envoyer(validation);
     }
@@ -50,6 +51,7 @@ public class ValidationService {
             validation.setCreation(now);
             validation.setExpiration(now.plus(60, MINUTES));
 
+            validation.setId("validation-" + UUID.randomUUID());
             validationRipository.save(validation);
             notificationService.envoyer(validation);
         } else {
@@ -70,7 +72,7 @@ public class ValidationService {
         String code = String.format("%06d", randomInteger);
 
         validation.setCode(code);
-
+        validation.setId("validation-" + UUID.randomUUID());
         this.validationRipository.save(validation);
         this.notificationService.envoyerMedecin(validation); // Envoie le code de validation
     }
@@ -87,7 +89,7 @@ public class ValidationService {
             validation.setCode(newCode);
             validation.setCreation(now);
             validation.setExpiration(now.plus(60, MINUTES));
-
+            validation.setId("validation-" + UUID.randomUUID());
             validationRipository.save(validation);
             notificationService.envoyerMedecin(validation);
         } else {
@@ -110,6 +112,7 @@ public class ValidationService {
 
         validation.setCode(code);
 
+        validation.setId("validation-" + UUID.randomUUID());
         this.validationRipository.save(validation);
         this.notificationService.envoyerStructure(validation); // Envoie le code de validation
     }
@@ -127,6 +130,7 @@ public class ValidationService {
             validation.setCreation(now);
             validation.setExpiration(now.plus(60, MINUTES));
 
+            validation.setId("validation-" + UUID.randomUUID());
             validationRipository.save(validation);
             notificationService.envoyerStructure(validation);
         } else {

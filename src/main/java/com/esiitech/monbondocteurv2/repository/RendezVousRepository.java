@@ -9,8 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface RendezVousRepository extends JpaRepository<RendezVous, Long> {
-    int countByAgendaMedecinIdAndEmail(Long agendaId, String email);
+public interface RendezVousRepository extends JpaRepository<RendezVous, String> {
+    int countByAgendaMedecinIdAndEmail(String agendaId, String email);
     // 🔍 Par spécialité
     List<RendezVous> findByRefSpecialitesContaining(RefSpecialite specialite);
 

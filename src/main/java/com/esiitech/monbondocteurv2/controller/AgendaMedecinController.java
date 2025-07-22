@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/agendas")
+@RequestMapping("/api/V2/agendas")
 @Tag(name = "Agendas des Médecins", description = "Gestion des agendas (disponibilités) des médecins")
 public class AgendaMedecinController {
 
@@ -28,7 +28,7 @@ public class AgendaMedecinController {
 
     @Operation(summary = "Récupérer un agenda par ID")
     @GetMapping("/{id}")
-    public ResponseEntity<AgendaMedecinDto> getById(@PathVariable Long id) {
+    public ResponseEntity<AgendaMedecinDto> getById(@PathVariable String id) {
         return service.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -42,14 +42,14 @@ public class AgendaMedecinController {
 
     @Operation(summary = "Mettre à jour un agenda existant")
     @PutMapping("/{id}")
-    public ResponseEntity<AgendaMedecinDto> update(@PathVariable Long id, @RequestBody AgendaMedecinDto dto) {
+    public ResponseEntity<AgendaMedecinDto> update(@PathVariable String id, @RequestBody AgendaMedecinDto dto) {
         dto.setId(id);
         return ResponseEntity.ok(service.save(dto));
     }
 
     @Operation(summary = "Supprimer un agenda par ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -57,7 +57,7 @@ public class AgendaMedecinController {
     @Operation(summary = "Lister les agendas d’un médecin dans une structure donnée")
     @GetMapping("/medecin/{medecinId}/structure/{structureId}")
     public ResponseEntity<List<AgendaMedecinDto>> getByMedecinAndStructure(
-            @PathVariable Long medecinId,
+            @PathVariable String medecinId,
             @PathVariable Long structureId) {
         return ResponseEntity.ok(service.findByMedecinAndStructure(medecinId, structureId));
     }
@@ -72,7 +72,7 @@ public class AgendaMedecinController {
 
     @Operation(summary = "Désactiver un agenda par ID")
     @PutMapping("/{id}/desactiver")
-    public ResponseEntity<String> desactiverAgenda(@PathVariable Long id) {
+    public ResponseEntity<String> desactiverAgenda(@PathVariable String id) {
         boolean result = service.desactiverAgenda(id);
         if (result) {
             return ResponseEntity.ok("Agenda désactivé avec succès.");

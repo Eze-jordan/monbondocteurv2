@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/liaisons")
+@RequestMapping("/api/V2/liaisons")
 @Tag(name = "Liaisons Médecin-Structure", description = "Endpoints pour gérer les associations entre les médecins et les structures sanitaires")
 public class MedecinStructureSanitaireController {
 
@@ -32,7 +32,7 @@ public class MedecinStructureSanitaireController {
 
     @Operation(summary = "Obtenir une liaison par ID")
     @GetMapping("/{id}")
-    public ResponseEntity<MedecinStructureSanitaireDto> getById(@PathVariable Long id) {
+    public ResponseEntity<MedecinStructureSanitaireDto> getById(@PathVariable String id) {
         return medecinStructureSanitaireService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -46,21 +46,21 @@ public class MedecinStructureSanitaireController {
 
     @Operation(summary = "Mettre à jour une liaison existante")
     @PutMapping("/{id}")
-    public ResponseEntity<MedecinStructureSanitaireDto> update(@PathVariable Long id, @RequestBody MedecinStructureSanitaireDto dto) {
+    public ResponseEntity<MedecinStructureSanitaireDto> update(@PathVariable String id, @RequestBody MedecinStructureSanitaireDto dto) {
         dto.setId(id);
         return ResponseEntity.ok(medecinStructureSanitaireService.save(dto));
     }
 
     @Operation(summary = "Supprimer une liaison par ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         medecinStructureSanitaireService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Obtenir la structure active d’un médecin")
     @GetMapping("/{medecinId}/structure-active")
-    public StructureSanitaire getStructureActifByMedecin(@PathVariable Long medecinId) {
+    public StructureSanitaire getStructureActifByMedecin(@PathVariable String medecinId) {
         Medecin medecin = medecinService.getById(medecinId);
         return medecinStructureSanitaireService.getStructureSanitaireActifByMedecin(medecin);
     }

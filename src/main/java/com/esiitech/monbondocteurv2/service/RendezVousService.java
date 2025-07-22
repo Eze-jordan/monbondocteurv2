@@ -89,6 +89,9 @@ public class RendezVousService {
         // Lier l'utilisateur connecté si existant
         String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
         utilisateurRepository.findByEmail(emailConnecte).ifPresent(rendezVous::setUtilisateur);
+        if (rendezVous.getId() == null) {
+            rendezVous.setId(generateUserId());
+        }
 
         RendezVous saved = rendezVousRepository.save(rendezVous);
      //✅ Notifications
@@ -98,6 +101,9 @@ public class RendezVousService {
         return rendezVousMapper.toDTO(saved);
     }
 
+    private String generateUserId() {
+        return "RendezVous-" + java.util.UUID.randomUUID();
+    }
 
     public List<RendezVousDTO> listerTous() {
         return rendezVousRepository.findAll()
@@ -106,7 +112,7 @@ public class RendezVousService {
                 .toList();
     }
 
-    public Optional<RendezVousDTO> trouverParId(Long id) {
+    public Optional<RendezVousDTO> trouverParId(String id) {
         return rendezVousRepository.findById(id)
                 .map(rendezVousMapper::toDTO);
     }
@@ -141,7 +147,7 @@ public class RendezVousService {
     }
 
 
-    public void supprimer(Long id) {
+    public void supprimer(String id) {
         rendezVousRepository.deleteById(id);
     }
 }

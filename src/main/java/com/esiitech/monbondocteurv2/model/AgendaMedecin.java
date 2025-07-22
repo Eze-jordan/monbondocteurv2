@@ -9,8 +9,8 @@ import java.time.LocalTime;
 @Table(name = "agenda_medecin")
 public class AgendaMedecin {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", nullable = false,length = 100,updatable = false)
+    private String  id;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Medecin medecin;
     private LocalDate date;
@@ -22,11 +22,26 @@ public class AgendaMedecin {
     @Column(nullable = false)
     private boolean actif = false;
 
-    public Long getId() {
+    @ManyToOne
+    @JoinColumn(name = "structure_sanitaire_id")
+    private StructureSanitaire structureSanitaire;
+
+    // Getter
+    public StructureSanitaire getStructureSanitaire() {
+        return structureSanitaire;
+    }
+
+    // Setter
+    public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
+        this.structureSanitaire = structureSanitaire;
+    }
+
+
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

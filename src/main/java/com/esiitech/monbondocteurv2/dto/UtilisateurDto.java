@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 
 public class UtilisateurDto  {
 
-    private Long id;
+    private String id;
     private String nom;
     private String prenom;
     @NotBlank(message = "L'email est obligatoire")
@@ -23,12 +23,6 @@ public class UtilisateurDto  {
     )
     private String motDePasse;
     private Sexe sexe;
-    @NotBlank(message = "Le mot de passe est obligatoire")
-    @Size(min = 12, message = "Le mot de passe doit contenir au moins 8 caractères")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
-            message = "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
-    )
     private String photoPath;
     private Role role;
     private boolean actif;
@@ -42,11 +36,11 @@ public class UtilisateurDto  {
         }
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

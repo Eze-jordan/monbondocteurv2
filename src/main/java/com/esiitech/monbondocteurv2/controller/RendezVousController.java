@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/rendezvous")
+@RequestMapping("/api/V2/rendezvous")
 @Tag(name = "Rendez-vous", description = "Gestion des rendez-vous médicaux")
 public class RendezVousController {
 
@@ -47,7 +47,7 @@ public class RendezVousController {
 
     @Operation(summary = "Obtenir un rendez-vous par son ID")
     @GetMapping("/{id}")
-    public ResponseEntity<RendezVousDTO> trouverRendezVousParId(@PathVariable Long id) {
+    public ResponseEntity<RendezVousDTO> trouverRendezVousParId(@PathVariable String id) {
         return rendezVousService.trouverParId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -55,14 +55,14 @@ public class RendezVousController {
 
     @Operation(summary = "Supprimer un rendez-vous par ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> supprimerRendezVous(@PathVariable Long id) {
+    public ResponseEntity<Void> supprimerRendezVous(@PathVariable String id) {
         rendezVousService.supprimer(id);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Lister les rendez-vous d'une structure sanitaire par son ID")
     @GetMapping("/structure/{id}")
-    public ResponseEntity<List<RendezVousDTO>> getByStructure(@PathVariable Long id) {
+    public ResponseEntity<List<RendezVousDTO>> getByStructure(@PathVariable String id) {
         StructureSanitaire structure = new StructureSanitaire();
         structure.setId(id);
         return ResponseEntity.ok(rendezVousService.trouverParStructureSanitaire(structure));
@@ -70,7 +70,7 @@ public class RendezVousController {
 
     @Operation(summary = "Lister les rendez-vous d'un médecin par son ID")
     @GetMapping("/medecin/{id}")
-    public ResponseEntity<List<RendezVousDTO>> getByMedecin(@PathVariable Long id) {
+    public ResponseEntity<List<RendezVousDTO>> getByMedecin(@PathVariable String id) {
         Medecin medecin = new Medecin();
         medecin.setId(id);
         return ResponseEntity.ok(rendezVousService.trouverParMedecin(medecin));

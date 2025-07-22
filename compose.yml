@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_monbondocteurv2db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456789
+      POSTGRES_DB: monbondocteurv2db
+    ports:
+      - "5438:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - monbondocteurv2-net
+
+  app:
+    build:
+      context: src/main/java/com/esiitech/monbondocteurv2/config
+      dockerfile: src/main/java/com/esiitech/monbondocteurv2/config/Dockerfile
+    container_name: monbondocteurv2_app
+    depends_on:
+      - db
+    ports:
+      - "9088:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/monbondocteurv2db
+    networks:
+      - monbondocteurv2-net
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  db-data:
+
+networks:
+  monbondocteurv2-net:

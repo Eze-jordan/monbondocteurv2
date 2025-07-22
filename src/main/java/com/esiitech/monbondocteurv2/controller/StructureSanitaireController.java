@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api/structuresanitaires")
+@RequestMapping("/api/V2/structuresanitaires")
 @Tag(name = "Structure Sanitaire", description = "Endpoints pour la gestion des structures sanitaires")
 public class StructureSanitaireController {
 
@@ -102,7 +102,7 @@ public class StructureSanitaireController {
     @PutMapping("/update/{id}")
     @Operation(summary = "Mettre à jour une structure sanitaire")
     public ResponseEntity<StructureSanitaireDto> updateStructureSanitaire(
-            @Parameter(description = "ID de la structure") @PathVariable Long id,
+            @Parameter(description = "ID de la structure") @PathVariable String id,
             @Parameter(description = "Nouvelle photo (optionnelle)") @RequestParam(value = "photo", required = false) MultipartFile photo,
             @Parameter(description = "Nouvelles données de la structure au format JSON") @RequestParam("structureSanitaire") String structureSanitaireJson) throws IOException {
 
@@ -115,14 +115,14 @@ public class StructureSanitaireController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Récupérer une structure sanitaire par ID")
-    public ResponseEntity<StructureSanitaireDto> getStructureSanitaire(@PathVariable Long id) {
+    public ResponseEntity<StructureSanitaireDto> getStructureSanitaire(@PathVariable String id) {
         StructureSanitaireDto structureSanitaireDto = structureSanitaireService.findById(id);
         return new ResponseEntity<>(structureSanitaireDto, HttpStatus.OK);
     }
 
     @DeleteMapping("/delete/{id}")
     @Operation(summary = "Supprimer une structure sanitaire par ID")
-    public ResponseEntity<Void> deleteStructureSanitaire(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteStructureSanitaire(@PathVariable String id) {
         structureSanitaireService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
@@ -148,7 +148,7 @@ public class StructureSanitaireController {
 
     @GetMapping("/{id}/specialites")
     @Operation(summary = "Lister les spécialités d'une structure sanitaire")
-    public ResponseEntity<Set<RefSpecialite>> getSpecialites(@PathVariable Long id) {
+    public ResponseEntity<Set<RefSpecialite>> getSpecialites(@PathVariable String id) {
         return ResponseEntity.ok(structureSanitaireService.getSpecialitesStructure(id));
     }
 

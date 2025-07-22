@@ -1,13 +1,14 @@
 package com.esiitech.monbondocteurv2.dto;
 
+import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class AgendaMedecinDto {
-    private Long id;
-    private Long medecinId;
+    private String id;
+    private String medecinId;
     private LocalDate date;
     private Double nombrePatient;
     private Double rdvPris;
@@ -15,6 +16,8 @@ public class AgendaMedecinDto {
 
     private LocalTime heureFin;
     private boolean actif;
+
+    private String structureSanitaireId;
 
     // ✅ Champ calculé dynamiquement
     @JsonProperty("rdvRestant")
@@ -26,6 +29,14 @@ public class AgendaMedecinDto {
     }
     public LocalDate getDate() {
         return date;
+    }
+
+    public String getStructureSanitaireId() {
+        return structureSanitaireId;
+    }
+
+    public void setStructureSanitaireId(String structureSanitaireId) {
+        this.structureSanitaireId = structureSanitaireId;
     }
 
     public void setDate(LocalDate date) {
@@ -64,19 +75,19 @@ public class AgendaMedecinDto {
         this.heureFin = heureFin;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Long getMedecinId() {
+    public String getMedecinId() {
         return medecinId;
     }
 
-    public void setMedecinId(Long medecinId) {
+    public void setMedecinId(String medecinId) {
         this.medecinId = medecinId;
     }
 

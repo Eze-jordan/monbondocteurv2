@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 @Table(name = "medecin_structure_sanitaire")
 public class MedecinStructureSanitaire {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", nullable = false,length = 100,updatable = false)
+    private String  id;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private StructureSanitaire structureSanitaire;
     @ManyToOne(cascade = CascadeType.PERSIST)
@@ -39,11 +39,11 @@ public class MedecinStructureSanitaire {
         this.structureSanitaire = structureSanitaire;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 }

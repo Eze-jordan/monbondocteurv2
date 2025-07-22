@@ -11,8 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -21,8 +19,8 @@ import java.util.stream.Collectors;
 @Entity
 public class Utilisateur  implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", nullable = false,length = 100,updatable = false)
+    private String  id;
     private String nom;
     private String prenom;
     @Column(unique = true, nullable = false)
@@ -92,11 +90,11 @@ public class Utilisateur  implements UserDetails {
         this.sexe = sexe;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

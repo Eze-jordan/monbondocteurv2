@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 @Entity
 public class Medecin  implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 6)
+    private String id;
     private String nomMedecin;
     private String prenomMedecin;
     @Enumerated(EnumType.STRING)
@@ -36,11 +36,11 @@ public class Medecin  implements UserDetails {
     @Column(nullable = false)
     private boolean actif = false;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

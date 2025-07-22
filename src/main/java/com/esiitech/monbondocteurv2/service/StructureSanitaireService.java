@@ -69,6 +69,10 @@ public class StructureSanitaireService implements UserDetailsService {
         // ✅ Encodage correct du mot de passe
         structureSanitaire.setMotDePasse(passwordEncoder.encode(structureSanitaire.getMotDePasse()));
 
+        if (structureSanitaire.getId() == null) {
+            structureSanitaire.setId(generateCustomId());
+        }
+
         // Sauvegarder dans la base de données
         structureSanitaire = repository.save(structureSanitaire);
         this.validationService.enregisterStructure(structureSanitaire);
@@ -77,6 +81,13 @@ public class StructureSanitaireService implements UserDetailsService {
 
         // Retourner le DTO de la structure sanitaire sauvegardée avec l'URL de la photo
         return mapper.toDto(structureSanitaire);
+    }
+
+    private static long lastId = 500000;  // Commence à 500000
+
+    private synchronized String generateCustomId() {
+        lastId++;
+        return String.format("%06d", lastId);
     }
 
     public void activation(Map<String, String> activation) {
@@ -101,7 +112,7 @@ public class StructureSanitaireService implements UserDetailsService {
         ));
     }
 
-    public Set<RefSpecialite> getSpecialitesStructure(Long id) {
+    public Set<RefSpecialite> getSpecialitesStructure(String id) {
         StructureSanitaire structure = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
         return structure.getRefSpecialites();
@@ -163,7 +174,7 @@ public class StructureSanitaireService implements UserDetailsService {
     /**
      * Récupérer une structure sanitaire par son ID.
      */
-    public StructureSanitaireDto findById(Long id) {
+    public StructureSanitaireDto findById(String id) {
         StructureSanitaire structureSanitaire = repository.findById(id).orElseThrow(() -> new RuntimeException("Structure sanitaire non trouvée"));
         return mapper.toDto(structureSanitaire);
     }
@@ -171,7 +182,7 @@ public class StructureSanitaireService implements UserDetailsService {
     /**
      * Mettre à jour les informations d'une structure sanitaire.
      */
-    public StructureSanitaireDto update(Long id, StructureSanitaireDto dto, MultipartFile photo) throws IOException {
+    public StructureSanitaireDto update(String id, StructureSanitaireDto dto, MultipartFile photo) throws IOException {
         StructureSanitaire structureSanitaire = repository.findById(id).orElseThrow(() -> new RuntimeException("Structure sanitaire non trouvée"));
 
         // Mettre à jour les informations de la structure sanitaire
@@ -196,7 +207,7 @@ public class StructureSanitaireService implements UserDetailsService {
     /**
      * Supprimer une structure sanitaire par son ID.
      */
-    public void deleteById(Long id) {
+    public void deleteById(String id) {
         repository.deleteById(id);
     }
 

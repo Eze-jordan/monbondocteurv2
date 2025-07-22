@@ -8,8 +8,8 @@
     @Entity
     public class RendezVous {
         @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
+        @Column(name = "id", nullable = false,length = 100,updatable = false)
+        private String  id;
         @ManyToOne(cascade = CascadeType.PERSIST)
         private AgendaMedecin agendaMedecin;
         @ManyToOne(cascade = CascadeType.PERSIST)
@@ -69,11 +69,11 @@
         public void setAgendaMedecin(AgendaMedecin agendaMedecin) {
             this.agendaMedecin = agendaMedecin;
         }
-        public Long getId() {
+        public String getId() {
             return id;
         }
 
-        public void setId(Long id) {
+        public void setId(String id) {
             this.id = id;
         }
 

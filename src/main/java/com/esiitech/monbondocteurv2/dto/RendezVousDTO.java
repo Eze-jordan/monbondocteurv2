@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 
 public class RendezVousDTO {
 
-    private Long id;
+    private String id;
     private String nom;
     private String prenom;
     @NotBlank(message = "L'email est obligatoire")
@@ -21,19 +21,19 @@ public class RendezVousDTO {
     private int age;
     private String motif;
 
-    private Long agendaId;
-    public Long getAgendaId() {
+    private String agendaId;
+    public String getAgendaId() {
         return agendaId;
     }
-    public void setAgendaId(Long agendaId) {
+    public void setAgendaId(String agendaId) {
         this.agendaId = agendaId;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ValidationRipository extends JpaRepository<Validation, Long> {
+public interface ValidationRipository extends JpaRepository<Validation, String> {
 
     Optional<Validation> findByCode(String code);
     Optional<Validation> findByUtilisateur(Utilisateur utilisateur);

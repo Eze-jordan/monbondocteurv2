@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface MedecinStructureSanitaireRepository extends JpaRepository<MedecinStructureSanitaire, Long> {
+public interface MedecinStructureSanitaireRepository extends JpaRepository<MedecinStructureSanitaire, String> {
     @Query("SELECT mss.medecin FROM MedecinStructureSanitaire mss " +
             "WHERE mss.structureSanitaire.id = :structureId " +
             "AND mss.medecin.refSpecialite = :specialite")

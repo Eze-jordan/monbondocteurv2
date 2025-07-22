@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/medecins")
+@RequestMapping("/api/V2/medecins")
 @Tag(name = "Médecins", description = "Endpoints liés à la gestion des médecins")
 public class MedecinController {
 
@@ -61,7 +61,7 @@ public class MedecinController {
 
     @Operation(summary = "Mettre à jour un médecin")
     @PutMapping("/update/{id}")
-    public ResponseEntity<MedecinDto> updateMedecin(@PathVariable Long id,
+    public ResponseEntity<MedecinDto> updateMedecin(@PathVariable String id,
                                                     @RequestBody MedecinDto medecinDto,
                                                     @RequestPart(value = "photo", required = false) MultipartFile photo) throws IOException {
         MedecinDto updatedMedecin = medecinService.update(id, medecinDto, photo);
@@ -118,14 +118,14 @@ public class MedecinController {
 
     @Operation(summary = "Supprimer un médecin par ID")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteMedecin(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMedecin(@PathVariable String id) {
         medecinService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @Operation(summary = "Changer le statut actif d’un médecin")
     @PutMapping("/update-status/{id}")
-    public ResponseEntity<MedecinDto> updateStatus(@PathVariable Long id, @RequestParam boolean actif) {
+    public ResponseEntity<MedecinDto> updateStatus(@PathVariable String id, @RequestParam boolean actif) {
         MedecinDto updatedMedecin = medecinService.updateStatus(id, actif);
         return new ResponseEntity<>(updatedMedecin, HttpStatus.OK);
     }
@@ -152,7 +152,7 @@ public class MedecinController {
 
     @Operation(summary = "Obtenir la photo du médecin")
     @GetMapping("/{id}/photo")
-    public ResponseEntity<byte[]> getPhoto(@PathVariable Long id) throws IOException {
+    public ResponseEntity<byte[]> getPhoto(@PathVariable String id) throws IOException {
         byte[] image = medecinService.getPhoto(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)

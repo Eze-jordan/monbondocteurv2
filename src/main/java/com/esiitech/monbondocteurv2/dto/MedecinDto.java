@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class MedecinDto {
-    private Long id;
+    private String id;
     private String nomMedecin;
     private String prenomMedecin;
     private RefGrade refGrade;
@@ -39,11 +39,11 @@ public class MedecinDto {
         this.role = role;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

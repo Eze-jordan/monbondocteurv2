@@ -18,7 +18,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/V2/auth")
 @Tag(name = "Authentification", description = "Endpoints pour la connexion et la déconnexion")
 public class AuthController {
 

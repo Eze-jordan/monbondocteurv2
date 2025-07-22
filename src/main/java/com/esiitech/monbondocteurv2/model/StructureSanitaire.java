@@ -10,8 +10,8 @@ import java.util.*;
 @Entity
 public class StructureSanitaire implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 6)
+    private String id;
     @Enumerated(EnumType.STRING)
     private Ville ville;
     private String nomStructureSanitaire;
@@ -47,11 +47,11 @@ public class StructureSanitaire implements UserDetails {
         return String.format("%04d", this.id);
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

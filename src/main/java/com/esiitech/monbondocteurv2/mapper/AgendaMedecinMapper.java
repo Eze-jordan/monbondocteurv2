@@ -12,7 +12,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class AgendaMedecinMapper {
 
-    @Autowired private MedecinRepository medecinRepository;
+    @Autowired
+    private MedecinRepository medecinRepository;
+
+    @Autowired
+    private StructureSanitaireRepository structureSanitaireRepository;
 
     public AgendaMedecinDto toDto(AgendaMedecin entity) {
         AgendaMedecinDto dto = new AgendaMedecinDto();
@@ -24,6 +28,7 @@ public class AgendaMedecinMapper {
         dto.setNombrePatient(entity.getNombrePatient());
         dto.setRdvPris(entity.getRdvPris());
         dto.setActif(entity.isActif());
+        dto.setStructureSanitaireId(entity.getStructureSanitaire().getId()); // ✅ On retourne seulement l'ID
         return dto;
     }
 
@@ -31,8 +36,15 @@ public class AgendaMedecinMapper {
         AgendaMedecin entity = new AgendaMedecin();
         entity.setId(dto.getId());
         entity.setActif(dto.isActif());
-        Medecin medecin = medecinRepository.findById(dto.getMedecinId()).orElseThrow();
+
+        Medecin medecin = medecinRepository.findById(dto.getMedecinId())
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'ID " + dto.getMedecinId()));
         entity.setMedecin(medecin);
+
+        StructureSanitaire structure = structureSanitaireRepository.findById(dto.getStructureSanitaireId())
+                .orElseThrow(() -> new RuntimeException("Structure introuvable avec l'ID " + dto.getStructureSanitaireId()));
+        entity.setStructureSanitaire(structure);
+
         entity.setDate(dto.getDate());
         entity.setHeureDebut(dto.getHeureDebut());
         entity.setHeureFin(dto.getHeureFin());

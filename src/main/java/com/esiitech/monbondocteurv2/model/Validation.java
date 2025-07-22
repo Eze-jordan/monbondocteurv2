@@ -9,8 +9,8 @@ import java.time.Instant;
 @Table (name = "validation")
 public class Validation {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", nullable = false,length = 100,updatable = false)
+    private String  id;
     private Instant creation;
     private Instant expiration;
     private Instant activation;
@@ -26,11 +26,11 @@ public class Validation {
 
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -90,7 +90,7 @@ public class Validation {
         this.medecin = medecin;
     }
 
-    public Validation(Long id, Instant creation, Instant expiration, Instant activation, String code, Utilisateur utilisateur, Medecin medecin, StructureSanitaire structureSanitaire) {
+    public Validation(String id, Instant creation, Instant expiration, Instant activation, String code, Utilisateur utilisateur, Medecin medecin, StructureSanitaire structureSanitaire) {
         this.id = id;
         this.creation = creation;
         this.expiration = expiration;

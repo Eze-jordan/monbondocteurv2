@@ -71,6 +71,10 @@ public class UtilisateurService  implements UserDetailsService {
             utilisateur.setPhotoPath(DEFAULT_PHOTO_PATH);
         }
 
+        if (utilisateur.getId() == null) {
+            utilisateur.setId(generateUserId());
+        }
+
         // Sauvegarder dans la base de données
         utilisateur = this.repository.save(utilisateur);
         this.validationService.enregister(utilisateur);
@@ -81,6 +85,10 @@ public class UtilisateurService  implements UserDetailsService {
         return mapper.toDto(utilisateur);
 
 
+    }
+
+    private String generateUserId() {
+        return "user-" + java.util.UUID.randomUUID();
     }
 
     /**
@@ -127,7 +135,7 @@ public class UtilisateurService  implements UserDetailsService {
     /**
      * Récupérer un utilisateur par son ID.
      */
-    public UtilisateurDto findById(Long id) {
+    public UtilisateurDto findById(String id) {
         Utilisateur utilisateur = repository.findById(id).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
         return mapper.toDto(utilisateur);
     }
@@ -135,7 +143,7 @@ public class UtilisateurService  implements UserDetailsService {
     /**
      * Mettre à jour le profil d'un utilisateur.
      */
-    public UtilisateurDto update(Long id, UtilisateurDto dto) {
+    public UtilisateurDto update(String id, UtilisateurDto dto) {
         Utilisateur utilisateur = repository.findById(id).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         // Mettre à jour les informations de l'utilisateur

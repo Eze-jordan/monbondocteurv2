@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/V2/users")
 @Tag(name = "Utilisateur", description = "Gestion des utilisateurs (inscription, connexion, activation, suppression, etc.)")
 public class UtilisateurController {
 
@@ -116,7 +116,7 @@ public class UtilisateurController {
 
     @Operation(summary = "Récupérer un utilisateur", description = "Récupère les informations d’un utilisateur par son ID")
     @GetMapping("/{id}")
-    public ResponseEntity<UtilisateurDto> getUtilisateur(@PathVariable Long id) {
+    public ResponseEntity<UtilisateurDto> getUtilisateur(@PathVariable String id) {
         UtilisateurDto utilisateurDto = utilisateurService.findById(id);
 
         if (utilisateurDto == null) {
@@ -128,7 +128,7 @@ public class UtilisateurController {
 
     @Operation(summary = "Mettre à jour un utilisateur", description = "Met à jour les informations d’un utilisateur")
     @PutMapping("/update/{id}")
-    public ResponseEntity<UtilisateurDto> updateUtilisateur(@PathVariable Long id, @RequestBody UtilisateurDto dto) {
+    public ResponseEntity<UtilisateurDto> updateUtilisateur(@PathVariable String id, @RequestBody UtilisateurDto dto) {
         UtilisateurDto updatedUtilisateur = utilisateurService.update(id, dto);
         return new ResponseEntity<>(updatedUtilisateur, HttpStatus.OK);
     }

@@ -70,13 +70,22 @@ public class MedecinService implements UserDetailsService {
 
         // Encoder le mot de passe
         entity.setMotDePasse(passwordEncoder.encode(dto.getMotDePasse()));
-
+        if (entity.getId() == null) {
+            entity.setId(generateCustomId());
+        }
         // Sauvegarder dans la base de données
         Medecin savedMedecin = repository.save(entity);
         this.validationService.enregisterMedecin(savedMedecin);
 
         // Convertir l'entité sauvegardée en DTO et retourner le DTO
         return mapper.toDto(savedMedecin);
+    }
+
+    private static long lastId = 100000;  // Commence à 500000
+
+    private synchronized String generateCustomId() {
+        lastId++;
+        return String.format("%06d", lastId);
     }
 
 
@@ -142,7 +151,7 @@ public class MedecinService implements UserDetailsService {
     /**
      * Mettre à jour un médecin.
      */
-    public MedecinDto update(Long id, MedecinDto dto, MultipartFile photo) throws IOException {
+    public MedecinDto update(String id, MedecinDto dto, MultipartFile photo) throws IOException {
         Medecin entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
 
         // Mettre à jour les informations
@@ -168,7 +177,7 @@ public class MedecinService implements UserDetailsService {
     /**
      * Supprimer un médecin par son ID.
      */
-    public void deleteById(Long id) {
+    public void deleteById(String id) {
         repository.deleteById(id);
     }
 
@@ -193,7 +202,7 @@ public class MedecinService implements UserDetailsService {
 
 
     // 3. Méthode updateStatus()
-    public MedecinDto updateStatus(Long id, boolean actif) {
+    public MedecinDto updateStatus(String id, boolean actif) {
         Medecin entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
         entity.setActif(actif);
@@ -215,7 +224,7 @@ public class MedecinService implements UserDetailsService {
     }
 
     // 6. Méthode getPhoto()
-    public byte[] getPhoto(Long id) throws IOException {
+    public byte[] getPhoto(String id) throws IOException {
         Medecin entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
         String photoPath = entity.getPhotoPath();
@@ -242,7 +251,7 @@ public class MedecinService implements UserDetailsService {
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
     }
-    public Medecin getById(Long id) {
+    public Medecin getById(String id) {
         return medecinRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
     }
