@@ -15,8 +15,8 @@ services:
 
   app:
     build:
-      context: src/main/java/com/esiitech/monbondocteurv2/config
-      dockerfile: src/main/java/com/esiitech/monbondocteurv2/config/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: monbondocteurv2_app
     depends_on:
       - db
