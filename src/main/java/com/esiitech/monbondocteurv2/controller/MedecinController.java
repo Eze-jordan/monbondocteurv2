@@ -1,9 +1,6 @@
 package com.esiitech.monbondocteurv2.controller;
 
-import com.esiitech.monbondocteurv2.dto.AuthentificationDTO;
-import com.esiitech.monbondocteurv2.dto.LoginRequest;
-import com.esiitech.monbondocteurv2.dto.MedecinDto;
-import com.esiitech.monbondocteurv2.dto.UtilisateurDto;
+import com.esiitech.monbondocteurv2.dto.*;
 import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.repository.MedecinRepository;
 import com.esiitech.monbondocteurv2.securite.CustomUserDetails;
@@ -169,5 +166,12 @@ public class MedecinController {
     @GetMapping("/actifs")
     public ResponseEntity<List<MedecinDto>> getActiveMedecins() {
         return ResponseEntity.ok(medecinService.getActiveMedecins());
+    }
+
+    @PostMapping("/medecin/motdepasse/reset")
+    @Operation(summary = "Modification du mot de passe")
+    public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
+        medecinService.updatePasswordByEmail(dto);
+        return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
     }
 }

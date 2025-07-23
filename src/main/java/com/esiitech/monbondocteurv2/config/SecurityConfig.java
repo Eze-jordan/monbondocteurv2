@@ -41,18 +41,18 @@ public class SecurityConfig {
                         .csrf(AbstractHttpConfigurer::disable)
                         .authorizeHttpRequests(authorize ->
                                 authorize
-                                        .requestMatchers("/api/users/create",
-                                                "/api/users/activation",
+                                        .requestMatchers("/api/V2/users/create",
+                                                "/api/V2/users/activation",
                                                 "/swagger-ui/**",
                                                 "/v3/api-docs/**",
-                                                "/api/users/resend-otp",
-                                                "/api/medecins/create",
-                                                "/api/medecins/activation",
-                                                "/api/medecins/resend-otp",
-                                                "/api/structuresanitaires/create",
-                                                "/api/structuresanitaires/activation",
-                                                "/api/structuresanitaires/resend-otp",
-                                                "/api/auth/**"
+                                                "/api/V2/users/resend-otp",
+                                                "/api/V2/medecins/create",
+                                                "/api/V2/medecins/activation",
+                                                "/api/V2/medecins/resend-otp",
+                                                "/api/V2/structuresanitaires/create",
+                                                "/api/V2/structuresanitaires/activation",
+                                                "/api/V2/structuresanitaires/resend-otp",
+                                                "/api/V2/auth/**"
                                         ).permitAll()
                                         .anyRequest().authenticated()
 

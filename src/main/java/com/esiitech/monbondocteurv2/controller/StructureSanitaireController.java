@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.controller;
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.LoginRequest;
 import com.esiitech.monbondocteurv2.dto.StructureSanitaireDto;
 import com.esiitech.monbondocteurv2.model.RefSpecialite;
@@ -150,6 +151,13 @@ public class StructureSanitaireController {
     @Operation(summary = "Lister les spécialités d'une structure sanitaire")
     public ResponseEntity<Set<RefSpecialite>> getSpecialites(@PathVariable String id) {
         return ResponseEntity.ok(structureSanitaireService.getSpecialitesStructure(id));
+    }
+
+    @PostMapping("/structureSanitaireService/motdepasse/reset")
+    @Operation(summary = "Modification du mot de passe")
+    public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
+        structureSanitaireService.updatePasswordByEmail(dto);
+        return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
     }
 
 }

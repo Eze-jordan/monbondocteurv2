@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.service;
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
 import com.esiitech.monbondocteurv2.model.Medecin;
@@ -254,6 +255,18 @@ public class MedecinService implements UserDetailsService {
     public Medecin getById(String id) {
         return medecinRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
+    }
+
+    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
+        if (!dto.getNouveauMotDePasse().equals(dto.getConfirmerMotDePasse())) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        }
+
+        Medecin medecin = medecinRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+
+        medecin.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
+        medecinRepository.save(medecin);
     }
 
 }

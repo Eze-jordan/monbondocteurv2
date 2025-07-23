@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.service;
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.StructureSanitaireDto;
 import com.esiitech.monbondocteurv2.mapper.StructureSanitaireMapper;
 import com.esiitech.monbondocteurv2.model.*;
@@ -219,5 +220,17 @@ public class StructureSanitaireService implements UserDetailsService {
                 .stream()
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
+        if (!dto.getNouveauMotDePasse().equals(dto.getConfirmerMotDePasse())) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        }
+
+        StructureSanitaire structureSanitaire = repository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+
+        structureSanitaire.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
+        repository.save(structureSanitaire);
     }
 }

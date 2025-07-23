@@ -1,6 +1,7 @@
 package com.esiitech.monbondocteurv2.controller;
 
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.LoginRequest;
 import com.esiitech.monbondocteurv2.dto.UtilisateurDto;
 import com.esiitech.monbondocteurv2.exception.ResourceNotFoundException;
@@ -146,4 +147,12 @@ public class UtilisateurController {
         Iterable<UtilisateurDto> utilisateurs = utilisateurService.getAllUsers();
         return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
     }
+
+    @PostMapping("/utilisateurs/motdepasse/reset")
+    @Operation(summary = "Modification du mot de passe")
+    public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
+        utilisateurService.updatePasswordByEmail(dto);
+        return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
+    }
+
 }

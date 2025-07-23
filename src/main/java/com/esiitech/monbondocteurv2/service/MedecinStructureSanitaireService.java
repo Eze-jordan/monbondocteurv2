@@ -59,4 +59,6 @@ public class MedecinStructureSanitaireService {
         return medecinRepository.findByEmail(email);
     }
 
+
+
 }

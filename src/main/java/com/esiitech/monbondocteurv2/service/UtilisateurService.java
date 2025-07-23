@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.service;
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.UtilisateurDto;
 import com.esiitech.monbondocteurv2.mapper.UtilisateurMapper;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
@@ -200,4 +201,17 @@ public class UtilisateurService  implements UserDetailsService {
                 "Aucun utilisateur ne conrespond à cet identifiant"
         ));
     }
+
+    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
+        if (!dto.getNouveauMotDePasse().equals(dto.getConfirmerMotDePasse())) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        }
+
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+
+        utilisateur.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
+        utilisateurRepository.save(utilisateur);
+    }
+
 }
