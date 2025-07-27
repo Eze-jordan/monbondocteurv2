@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-
+/*
     // Exception personnalisée pour les erreurs de validation
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)  // Erreur 400 - Bad Request
@@ -54,6 +54,6 @@ public class GlobalExceptionHandler {
     }
 
 
-
+*/
 
 }

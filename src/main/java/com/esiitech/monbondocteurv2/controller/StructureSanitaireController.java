@@ -26,10 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/V2/structuresanitaires")
@@ -135,25 +132,44 @@ public class StructureSanitaireController {
         return new ResponseEntity<>(structureSanitaireDtos, HttpStatus.OK);
     }
 
-    @GetMapping("/specialites")
-    @Operation(summary = "Lister toutes les spécialités utilisées")
-    public ResponseEntity<Set<RefSpecialite>> getToutesLesSpecialitesUtilisees() {
-        return ResponseEntity.ok(structureSanitaireService.getToutesLesSpecialitesUtilisees());
+
+
+    /**
+     * Récupère toutes les structures d'une ville donnée.
+     */
+    @GetMapping("/ville/{ville}")
+    public ResponseEntity<List<StructureSanitaireDto>> getByVille(@PathVariable String ville) {
+        return ResponseEntity.ok(structureSanitaireService.findByVille(ville));
     }
 
-    @GetMapping("/par-ville/{ville}")
-    @Operation(summary = "Lister les structures sanitaires par ville")
-    public ResponseEntity<List<StructureSanitaire>> getStructuresParVille(@PathVariable Ville ville) {
-        return ResponseEntity.ok(structureSanitaireService.getStructuresParVille(ville));
+
+    @GetMapping("/specialite/{specialite}")
+    public ResponseEntity<List<StructureSanitaireDto>> getBySpecialite(@PathVariable String specialite) {
+        return ResponseEntity.ok(structureSanitaireService.findBySpecialite(specialite));
     }
+
+
+
 
     @GetMapping("/{id}/specialites")
-    @Operation(summary = "Lister les spécialités d'une structure sanitaire")
-    public ResponseEntity<Set<RefSpecialite>> getSpecialites(@PathVariable String id) {
-        return ResponseEntity.ok(structureSanitaireService.getSpecialitesStructure(id));
+    public ResponseEntity<String> getSpecialites(@PathVariable String id) {
+        String specialites = structureSanitaireService.getSpecialitesStructure(id);
+        return ResponseEntity.ok(specialites);
     }
 
-    @PostMapping("/structureSanitaireService/motdepasse/reset")
+
+
+    /**
+     * Endpoint pour récupérer toutes les spécialités utilisées dans les structures sanitaires.
+     * @return Set de noms de spécialités (sans doublons).
+     */
+    @GetMapping("/specialites")
+    public ResponseEntity<Set<String>> getToutesLesSpecialitesUtilisees() {
+        Set<String> specialites = structureSanitaireService.getToutesLesSpecialitesUtilisees();
+        return ResponseEntity.ok(specialites);
+    }
+
+    @PostMapping("/structureSanitaire/motdepasse/reset")
     @Operation(summary = "Modification du mot de passe")
     public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
         structureSanitaireService.updatePasswordByEmail(dto);

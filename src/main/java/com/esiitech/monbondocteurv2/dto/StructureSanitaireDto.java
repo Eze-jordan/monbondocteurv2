@@ -27,11 +27,11 @@ public class StructureSanitaireDto {
     private String motDePasse;
     private String numeroTelephone;
     private String photoPath;
-    private Ville ville;
-    private RefType refType;
+    private String ville;
+    private String refType;
     private Float gpsLongitude;
     private Float gpsLatitude;
-    private Set<RefSpecialite> refSpecialites;
+    private String refSpecialites;
     private boolean actif;
 
 
@@ -101,20 +101,28 @@ public class StructureSanitaireDto {
         this.photoPath = photoPath;
     }
 
-    public Ville getVille() {
+    public String getVille() {
         return ville;
     }
 
-    public void setVille(Ville ville) {
+    public void setVille(String ville) {
         this.ville = ville;
     }
 
-    public RefType getRefType() {
+    public String getRefType() {
         return refType;
     }
 
-    public void setRefType(RefType refType) {
+    public void setRefType(String refType) {
         this.refType = refType;
+    }
+
+    public String getRefSpecialites() {
+        return refSpecialites;
+    }
+
+    public void setRefSpecialites(String refSpecialites) {
+        this.refSpecialites = refSpecialites;
     }
 
     public Float getGpsLongitude() {
@@ -131,13 +139,5 @@ public class StructureSanitaireDto {
 
     public void setGpsLatitude(Float gpsLatitude) {
         this.gpsLatitude = gpsLatitude;
-    }
-
-    public Set<RefSpecialite> getRefSpecialites() {
-        return refSpecialites;
-    }
-
-    public void setRefSpecialites(Set<RefSpecialite> refSpecialites) {
-        this.refSpecialites = refSpecialites;
     }
 }

@@ -21,9 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 @Service
 public class StructureSanitaireService implements UserDetailsService {
@@ -113,23 +111,34 @@ public class StructureSanitaireService implements UserDetailsService {
         ));
     }
 
-    public Set<RefSpecialite> getSpecialitesStructure(String id) {
+    public String getSpecialitesStructure(String id) {
         StructureSanitaire structure = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
         return structure.getRefSpecialites();
     }
 
-    public Set<RefSpecialite> getToutesLesSpecialitesUtilisees() {
-        List<StructureSanitaire> structures = repository.findAll();
 
-        // On regroupe toutes les spécialités dans un Set pour éliminer les doublons
-        return structures.stream()
-                .flatMap(structure -> structure.getRefSpecialites().stream())
-                .collect(Collectors.toSet());
+
+    public Set<String> getToutesLesSpecialitesUtilisees() {
+        return repository.findAll().stream()
+                .map(StructureSanitaire::getRefSpecialites)        // récupère la chaîne "Cardiologie, Pédiatrie"
+                .filter(Objects::nonNull)                          // ignore les valeurs null
+                .flatMap(specialites -> Arrays.stream(specialites.split(","))) // découpe chaque chaîne
+                .map(String::trim)                                 // supprime les espaces autour
+                .filter(s -> !s.isEmpty())                         // ignore les vides
+                .collect(Collectors.toSet());                      // regroupe sans doublons
     }
 
-    public List<StructureSanitaire> getStructuresParVille(Ville ville) {
-        return repository.findByVille(ville);
+    public List<StructureSanitaireDto> findBySpecialite(String specialite) {
+        List<StructureSanitaire> list = repository.findBySpecialiteContainingIgnoreCase(specialite);
+        return list.stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    public List<StructureSanitaireDto> findByVille(String ville) {
+        List<StructureSanitaire> structures = repository.findByVilleIgnoreCase(ville);
+        return structures.stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
     }
 
 
@@ -234,3 +243,4 @@ public class StructureSanitaireService implements UserDetailsService {
         repository.save(structureSanitaire);
     }
 }
+
