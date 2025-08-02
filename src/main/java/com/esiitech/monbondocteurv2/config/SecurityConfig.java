@@ -52,7 +52,6 @@ public class SecurityConfig {
                                                 "/api/V2/medecins/resend-otp",
                                                 "/api/V2/structuresanitaires/create",
                                                 "/api/V2/structuresanitaires/all",
-                                                "/api/V2/structuresanitaires//delete/{id}",
                                                 "/api/V2/structuresanitaires/activation",
                                                 "/api/V2/structuresanitaires/resend-otp",
                                                 "/api/V2/auth/**"
