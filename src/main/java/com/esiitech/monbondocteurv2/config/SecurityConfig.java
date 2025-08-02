@@ -41,7 +41,8 @@ public class SecurityConfig {
                         .csrf(AbstractHttpConfigurer::disable)
                         .authorizeHttpRequests(authorize ->
                                 authorize
-                                        .requestMatchers("/api/V2/users/create",
+                                        .requestMatchers(
+                                                "/api/V2/users/create",
                                                 "/api/V2/users/activation",
                                                 "/swagger-ui/**",
                                                 "/v3/api-docs/**",
@@ -50,9 +51,13 @@ public class SecurityConfig {
                                                 "/api/V2/medecins/activation",
                                                 "/api/V2/medecins/resend-otp",
                                                 "/api/V2/structuresanitaires/create",
+                                                "/api/V2/structuresanitaires/all",
+                                                "/api/V2/structuresanitaires//delete/{id}",
                                                 "/api/V2/structuresanitaires/activation",
                                                 "/api/V2/structuresanitaires/resend-otp",
-                                                "/api/V2/auth/**"
+                                                "/api/V2/auth/**",
+                                                "/api/validations",
+                                                "/api/validations/{id}"
                                         ).permitAll()
                                         .anyRequest().authenticated()
 
