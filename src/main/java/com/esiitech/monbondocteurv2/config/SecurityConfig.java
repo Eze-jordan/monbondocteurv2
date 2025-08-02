@@ -55,9 +55,7 @@ public class SecurityConfig {
                                                 "/api/V2/structuresanitaires//delete/{id}",
                                                 "/api/V2/structuresanitaires/activation",
                                                 "/api/V2/structuresanitaires/resend-otp",
-                                                "/api/V2/auth/**",
-                                                "/api/validations",
-                                                "/api/validations/{id}"
+                                                "/api/V2/auth/**"
                                         ).permitAll()
                                         .anyRequest().authenticated()
 
