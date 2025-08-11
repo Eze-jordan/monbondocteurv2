@@ -14,5 +14,8 @@ public interface ValidationRipository extends JpaRepository<Validation, String> 
     Optional<Validation> findByUtilisateur(Utilisateur utilisateur);
     Optional<Validation> findByMedecin(Medecin medecin);
     Optional<Validation> findByStructureSanitaire(StructureSanitaire structureSanitaire);
+    Optional<Validation> findByUtilisateur_Id(String utilisateurId);
+    Optional<Validation> findByMedecin_Id(String medecinId);
+    Optional<Validation> findByStructureSanitaire_Id(String structureId);
 }
 

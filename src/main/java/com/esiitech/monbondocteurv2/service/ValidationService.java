@@ -191,4 +191,23 @@ public class ValidationService {
         return validationRipository.findAll();
     }
 
+    public void supprimerParUtilisateurId(String utilisateurId) {
+        Validation v = validationRipository.findByUtilisateur_Id(utilisateurId)
+                .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour cet utilisateur"));
+        validationRipository.delete(v);
+    }
+
+    public void supprimerParMedecinId(String medecinId) {
+        Validation v = validationRipository.findByMedecin_Id(medecinId)
+                .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour ce médecin"));
+        validationRipository.delete(v);
+    }
+
+    public void supprimerParStructureId(String structureId) {
+        Validation v = validationRipository.findByStructureSanitaire_Id(structureId)
+                .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour cette structure"));
+        validationRipository.delete(v);
+    }
+
+
 }

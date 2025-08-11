@@ -5,7 +5,9 @@ import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
 import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.service.ValidationService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,6 +50,26 @@ public class ValidationController {
     @GetMapping
     public List<Validation> getAllValidations() {
         return validationService.getAllValidations();
+    }
+    @Operation(tags = "Validations", summary = "Supprimer une validation par ID utilisateur")
+    @DeleteMapping("/utilisateur/{id}")
+    public ResponseEntity<Void> supprimerParUtilisateur(@PathVariable String id) {
+        validationService.supprimerParUtilisateurId(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(tags = "Validations", summary = "Supprimer une validation par ID médecin")
+    @DeleteMapping("/medecin/{id}")
+    public ResponseEntity<Void> supprimerParMedecin(@PathVariable String id) {
+        validationService.supprimerParMedecinId(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(tags = "Validations", summary = "Supprimer une validation par ID structure")
+    @DeleteMapping("/structure/{id}")
+    public ResponseEntity<Void> supprimerParStructure(@PathVariable String id) {
+        validationService.supprimerParStructureId(id);
+        return ResponseEntity.noContent().build();
     }
 
 }
