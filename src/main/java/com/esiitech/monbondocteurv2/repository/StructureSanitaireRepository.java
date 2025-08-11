@@ -11,12 +11,28 @@ import java.util.Optional;
 
 public interface StructureSanitaireRepository extends JpaRepository<StructureSanitaire, String> {
     Optional<StructureSanitaire> findByEmail(String email);
-    List<StructureSanitaire> findByVilleIgnoreCase(String ville);
 
     // Dans StructureSanitaireRepository
     Optional<StructureSanitaire> findByNomStructureSanitaireIgnoreCase(String nomStructureSanitaire);
     @Query("SELECT s FROM StructureSanitaire s WHERE LOWER(s.refSpecialites) LIKE LOWER(CONCAT('%', :specialite, '%'))")
     List<StructureSanitaire> findBySpecialiteContainingIgnoreCase(@Param("specialite") String specialite);
 
+    // spécialité exacte (insensible à la casse)
+    @Query("""
+           select s from StructureSanitaire s
+           join s.refSpecialites sp
+           where lower(sp) = lower(:specialite)
+           """)
+    List<StructureSanitaire> findBySpecialite(@Param("specialite") String specialite);
+
+    // "contient" (partiel), via LIKE
+    @Query("""
+           select distinct s from StructureSanitaire s
+           join s.refSpecialites sp
+           where lower(sp) like lower(concat('%', :fragment, '%'))
+           """)
+    List<StructureSanitaire> searchBySpecialiteContains(@Param("fragment") String fragment);
+
+    List<StructureSanitaire> findByVilleIgnoreCase(String ville);
 
 }

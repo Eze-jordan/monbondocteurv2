@@ -3,9 +3,7 @@ package com.esiitech.monbondocteurv2.controller;
 import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.LoginRequest;
 import com.esiitech.monbondocteurv2.dto.StructureSanitaireDto;
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
 import com.esiitech.monbondocteurv2.model.StructureSanitaire;
-import com.esiitech.monbondocteurv2.model.Ville;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import com.esiitech.monbondocteurv2.securite.CustomUserDetails;
 import com.esiitech.monbondocteurv2.securite.JwtService;
@@ -17,6 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,21 +43,27 @@ public class StructureSanitaireController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    @PostMapping("/create")
-    @Operation(summary = "Créer une structure sanitaire", description = "Créer une structure avec ses informations et une photo en multipart")
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Créer une structure sanitaire",
+            description = "Créer une structure avec ses informations (JSON) et une photo (multipart/form-data)."
+    )
     public ResponseEntity<StructureSanitaireDto> createStructureSanitaire(
             @Parameter(description = "Photo de la structure") @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @Parameter(description = "Données de la structure au format JSON") @RequestParam("structureSanitaire") String structureSanitaireJson) throws IOException {
+            @Parameter(description = "Données de la structure au format JSON") @RequestParam("structureSanitaire") String structureSanitaireJson
+    ) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         StructureSanitaireDto dto = objectMapper.readValue(structureSanitaireJson, StructureSanitaireDto.class);
         StructureSanitaireDto savedStructureSanitaire = structureSanitaireService.save(dto, photo);
-
         return new ResponseEntity<>(savedStructureSanitaire, HttpStatus.CREATED);
     }
 
     @PostMapping("/activation")
-    @Operation(summary = "Activer un compte", description = "Permet d'activer le compte avec un code OTP")
+    @Operation(
+            summary = "Activer un compte",
+            description = "Active le compte d'une structure sanitaire via un code OTP."
+    )
     public ResponseEntity<String> activation(@RequestBody Map<String, String> activation) {
         try {
             this.structureSanitaireService.activation(activation);
@@ -69,7 +74,10 @@ public class StructureSanitaireController {
     }
 
     @PostMapping("/resend-otp")
-    @Operation(summary = "Renvoyer un code OTP", description = "Renvoie un nouveau code si l'ancien a expiré")
+    @Operation(
+            summary = "Renvoyer un code OTP",
+            description = "Renvoie un nouveau code OTP si l'ancien a expiré."
+    )
     public ResponseEntity<?> resendOtp(@RequestBody StructureSanitaireDto dto) {
         StructureSanitaire structureSanitaire = sanitaireRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
@@ -79,7 +87,10 @@ public class StructureSanitaireController {
     }
 
     @PostMapping("/connexion")
-    @Operation(summary = "Connexion", description = "Authentifie un utilisateur et retourne un JWT")
+    @Operation(
+            summary = "Connexion",
+            description = "Authentifie une structure sanitaire et retourne un JWT."
+    )
     public ResponseEntity<?> connexion(@RequestBody LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -87,7 +98,9 @@ public class StructureSanitaireController {
             );
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String token = jwtService.generateToken(userDetails, userDetails.getNom(), userDetails.getUsername(), userDetails.getRole());
+            String token = jwtService.generateToken(
+                    userDetails, userDetails.getNom(), userDetails.getUsername(), userDetails.getRole()
+            );
 
             return ResponseEntity.ok(Collections.singletonMap("token", token));
 
@@ -97,83 +110,113 @@ public class StructureSanitaireController {
         }
     }
 
-    @PutMapping("/update/{id}")
-    @Operation(summary = "Mettre à jour une structure sanitaire")
+    @PutMapping(value = "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Mettre à jour une structure sanitaire",
+            description = "Met à jour les informations d'une structure sanitaire et, éventuellement, sa photo."
+    )
     public ResponseEntity<StructureSanitaireDto> updateStructureSanitaire(
             @Parameter(description = "ID de la structure") @PathVariable String id,
             @Parameter(description = "Nouvelle photo (optionnelle)") @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @Parameter(description = "Nouvelles données de la structure au format JSON") @RequestParam("structureSanitaire") String structureSanitaireJson) throws IOException {
+            @Parameter(description = "Nouvelles données de la structure au format JSON") @RequestParam("structureSanitaire") String structureSanitaireJson
+    ) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         StructureSanitaireDto dto = objectMapper.readValue(structureSanitaireJson, StructureSanitaireDto.class);
         StructureSanitaireDto updatedStructureSanitaire = structureSanitaireService.update(id, dto, photo);
-
         return new ResponseEntity<>(updatedStructureSanitaire, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Récupérer une structure sanitaire par ID")
-    public ResponseEntity<StructureSanitaireDto> getStructureSanitaire(@PathVariable String id) {
+    @Operation(
+            summary = "Récupérer une structure sanitaire par ID",
+            description = "Retourne les informations d'une structure sanitaire à partir de son ID."
+    )
+    public ResponseEntity<StructureSanitaireDto> getStructureSanitaire(
+            @Parameter(description = "ID de la structure") @PathVariable String id
+    ) {
         StructureSanitaireDto structureSanitaireDto = structureSanitaireService.findById(id);
         return new ResponseEntity<>(structureSanitaireDto, HttpStatus.OK);
     }
 
     @DeleteMapping("/delete/{id}")
-    @Operation(summary = "Supprimer une structure sanitaire par ID")
-    public ResponseEntity<Void> deleteStructureSanitaire(@PathVariable String id) {
+    @Operation(
+            summary = "Supprimer une structure sanitaire",
+            description = "Supprime une structure sanitaire à partir de son ID."
+    )
+    public ResponseEntity<Void> deleteStructureSanitaire(
+            @Parameter(description = "ID de la structure") @PathVariable String id
+    ) {
         structureSanitaireService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/all")
-    @Operation(summary = "Lister toutes les structures sanitaires")
+    @Operation(
+            summary = "Lister toutes les structures sanitaires",
+            description = "Retourne la liste de toutes les structures sanitaires."
+    )
     public ResponseEntity<List<StructureSanitaireDto>> getAllStructureSanitaire() {
         List<StructureSanitaireDto> structureSanitaireDtos = structureSanitaireService.findAll();
         return new ResponseEntity<>(structureSanitaireDtos, HttpStatus.OK);
     }
 
-
-
     /**
      * Récupère toutes les structures d'une ville donnée.
      */
     @GetMapping("/ville/{ville}")
-    public ResponseEntity<List<StructureSanitaireDto>> getByVille(@PathVariable String ville) {
+    @Operation(
+            summary = "Lister par ville",
+            description = "Retourne les structures sanitaires localisées dans une ville donnée."
+    )
+    public ResponseEntity<List<StructureSanitaireDto>> getByVille(
+            @Parameter(description = "Nom de la ville (ex: Libreville)") @PathVariable String ville
+    ) {
         return ResponseEntity.ok(structureSanitaireService.findByVille(ville));
     }
 
-
     @GetMapping("/specialite/{specialite}")
-    public ResponseEntity<List<StructureSanitaireDto>> getBySpecialite(@PathVariable String specialite) {
+    @Operation(
+            summary = "Lister par spécialité",
+            description = "Retourne les structures sanitaires correspondant à une spécialité (recherche insensible à la casse, partielle possible selon l'implémentation)."
+    )
+    public ResponseEntity<List<StructureSanitaireDto>> getBySpecialite(
+            @Parameter(description = "Nom de la spécialité (ex: Cardiologie)") @PathVariable String specialite
+    ) {
         return ResponseEntity.ok(structureSanitaireService.findBySpecialite(specialite));
     }
 
-
-
-
-    @GetMapping("/{id}/specialites")
-    public ResponseEntity<String> getSpecialites(@PathVariable String id) {
-        String specialites = structureSanitaireService.getSpecialitesStructure(id);
-        return ResponseEntity.ok(specialites);
+    @GetMapping(value = "/{id}/specialites", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Spécialités d'une structure",
+            description = "Retourne la liste (sans doublons) des spécialités d'une structure sanitaire."
+    )
+    public ResponseEntity<Set<String>> getSpecialites(
+            @Parameter(description = "ID de la structure") @PathVariable String id
+    ) {
+        return ResponseEntity.ok(structureSanitaireService.getSpecialitesStructure(id));
     }
-
-
 
     /**
      * Endpoint pour récupérer toutes les spécialités utilisées dans les structures sanitaires.
-     * @return Set de noms de spécialités (sans doublons).
      */
     @GetMapping("/specialites")
+    @Operation(
+            summary = "Toutes les spécialités utilisées",
+            description = "Retourne l'ensemble des spécialités présentes au moins une fois dans les structures enregistrées (sans doublons)."
+    )
     public ResponseEntity<Set<String>> getToutesLesSpecialitesUtilisees() {
         Set<String> specialites = structureSanitaireService.getToutesLesSpecialitesUtilisees();
         return ResponseEntity.ok(specialites);
     }
 
     @PostMapping("/structureSanitaire/motdepasse/reset")
-    @Operation(summary = "Modification du mot de passe")
+    @Operation(
+            summary = "Modification du mot de passe",
+            description = "Modifie le mot de passe d'une structure sanitaire, après validation (email existant et confirmation de mot de passe)."
+    )
     public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
         structureSanitaireService.updatePasswordByEmail(dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
     }
-
 }

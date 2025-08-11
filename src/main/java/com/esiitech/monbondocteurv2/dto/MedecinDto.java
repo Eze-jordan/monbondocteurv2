@@ -12,8 +12,8 @@ public class MedecinDto {
     private String id;
     private String nomMedecin;
     private String prenomMedecin;
-    private RefGrade refGrade;
-    private RefSpecialite refSpecialite;
+    private String refGrade;
+    private String refSpecialite;
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Email invalide")
     private String email;
@@ -63,19 +63,19 @@ public class MedecinDto {
         this.prenomMedecin = prenomMedecin;
     }
 
-    public RefGrade getRefGrade() {
+    public String getRefGrade() {
         return refGrade;
     }
 
-    public void setRefGrade(RefGrade refGrade) {
+    public void setRefGrade(String refGrade) {
         this.refGrade = refGrade;
     }
 
-    public RefSpecialite getRefSpecialite() {
+    public String getRefSpecialite() {
         return refSpecialite;
     }
 
-    public void setRefSpecialite(RefSpecialite refSpecialite) {
+    public void setRefSpecialite(String refSpecialite) {
         this.refSpecialite = refSpecialite;
     }
 

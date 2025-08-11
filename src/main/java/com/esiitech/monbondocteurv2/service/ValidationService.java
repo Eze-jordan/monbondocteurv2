@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -164,4 +165,30 @@ public class ValidationService {
         this.validationRipository = validationRipository;
         this.notificationService = notificationService;
     }
+
+    public void supprimerParId(String id) {
+        if (!validationRipository.existsById(id)) {
+            throw new RuntimeException("Aucune validation trouvée avec cet ID : " + id);
+        }
+        validationRipository.deleteById(id);
+    }
+    public void supprimerParUtilisateur(Utilisateur utilisateur) {
+        Validation validation = validationRipository.findByUtilisateur(utilisateur)
+                .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour cet utilisateur"));
+        validationRipository.delete(validation);
+    }
+    public void supprimerParMedecin(Medecin medecin) {
+        Validation validation = validationRipository.findByMedecin(medecin)
+                .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour ce médecin"));
+        validationRipository.delete(validation);
+    }
+    public void supprimerParStructure(StructureSanitaire structureSanitaire) {
+        Validation validation = validationRipository.findByStructureSanitaire(structureSanitaire)
+                .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour cette structure"));
+        validationRipository.delete(validation);
+    }
+    public List<Validation> getAllValidations() {
+        return validationRipository.findAll();
+    }
+
 }

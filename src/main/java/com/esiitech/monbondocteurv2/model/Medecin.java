@@ -18,11 +18,10 @@ public class Medecin  implements UserDetails {
     private String id;
     private String nomMedecin;
     private String prenomMedecin;
-    @Enumerated(EnumType.STRING)
-    private RefGrade refGrade;
-    @Enumerated(EnumType.STRING)
 
-    private  RefSpecialite refSpecialite;
+    private String refGrade;
+
+    private  String refSpecialite;
     @Column(unique = true, nullable = false)
     private String email;
     @Column(nullable = false)
@@ -60,19 +59,19 @@ public class Medecin  implements UserDetails {
         this.prenomMedecin = prenomMedecin;
     }
 
-    public RefGrade getRefGrade() {
+    public String getRefGrade() {
         return refGrade;
     }
 
-    public void setRefGrade(RefGrade refGrade) {
+    public void setRefGrade(String refGrade) {
         this.refGrade = refGrade;
     }
 
-    public RefSpecialite getRefSpecialite() {
+    public String getRefSpecialite() {
         return refSpecialite;
     }
 
-    public void setRefSpecialite(RefSpecialite refSpecialite) {
+    public void setRefSpecialite(String refSpecialite) {
         this.refSpecialite = refSpecialite;
     }
 

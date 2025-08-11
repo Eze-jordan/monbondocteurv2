@@ -10,6 +10,7 @@ import com.esiitech.monbondocteurv2.service.MedecinService;
 import com.esiitech.monbondocteurv2.service.ValidationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,26 +47,42 @@ public class MedecinController {
         this.customUserDetailsService = customUserDetailsService;
     }
 
-    @Operation(summary = "Créer un médecin", description = "Enregistre un médecin avec photo (multipart) et données JSON")
-    @PostMapping("/create")
-    public ResponseEntity<MedecinDto> saveMedecin(@RequestParam("photo") MultipartFile photo,
-                                                  @RequestParam("medecin") String medecinJson) throws IOException {
+    @Operation(
+            tags = "Médecins",
+            summary = "Créer un médecin",
+            description = "Enregistre un médecin avec photo (multipart) et données JSON."
+    )
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MedecinDto> saveMedecin(
+            @Parameter(description = "Photo du médecin") @RequestParam("photo") MultipartFile photo,
+            @Parameter(description = "Données du médecin au format JSON") @RequestParam("medecin") String medecinJson
+    ) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         MedecinDto dto = objectMapper.readValue(medecinJson, MedecinDto.class);
         MedecinDto savedMedecin = medecinService.save(dto, photo);
         return new ResponseEntity<>(savedMedecin, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Mettre à jour un médecin")
-    @PutMapping("/update/{id}")
-    public ResponseEntity<MedecinDto> updateMedecin(@PathVariable String id,
-                                                    @RequestBody MedecinDto medecinDto,
-                                                    @RequestPart(value = "photo", required = false) MultipartFile photo) throws IOException {
+    @Operation(
+            tags = "Médecins",
+            summary = "Mettre à jour un médecin",
+            description = "Met à jour les informations d’un médecin (JSON) et éventuellement sa photo."
+    )
+    @PutMapping(value = "/update/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MedecinDto> updateMedecin(
+            @Parameter(description = "ID du médecin") @PathVariable String id,
+            @RequestBody MedecinDto medecinDto,
+            @Parameter(description = "Nouvelle photo (optionnelle)") @RequestPart(value = "photo", required = false) MultipartFile photo
+    ) throws IOException {
         MedecinDto updatedMedecin = medecinService.update(id, medecinDto, photo);
         return new ResponseEntity<>(updatedMedecin, HttpStatus.OK);
     }
 
-    @Operation(summary = "Activer un médecin via un code OTP")
+    @Operation(
+            tags = "Médecins",
+            summary = "Activer un médecin via un code OTP",
+            description = "Active le compte d’un médecin grâce à un code OTP."
+    )
     @PostMapping("/activation")
     public ResponseEntity<String> activation(@RequestBody Map<String, String> activation) {
         try {
@@ -76,7 +93,11 @@ public class MedecinController {
         }
     }
 
-    @Operation(summary = "Renvoyer un OTP expiré")
+    @Operation(
+            tags = "Médecins",
+            summary = "Renvoyer un OTP expiré",
+            description = "Renvoie un nouveau code OTP au médecin si l’ancien a expiré."
+    )
     @PostMapping("/resend-otp")
     public ResponseEntity<?> resendOtp(@RequestBody UtilisateurDto dto) {
         Medecin medecin = medecinRepository.findByEmail(dto.getEmail())
@@ -85,8 +106,12 @@ public class MedecinController {
         return ResponseEntity.ok("Nouveau code envoyé");
     }
 
-    @Operation(summary = "Connexion d'un médecin", description = "Retourne un token JWT si les identifiants sont valides")
-    @PostMapping("/connexion")
+    @Operation(
+            tags = "Médecins",
+            summary = "Connexion d'un médecin",
+            description = "Authentifie un médecin et retourne un token JWT si les identifiants sont valides."
+    )
+    @PostMapping(value = "/connexion", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> connexion(@RequestBody LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -106,70 +131,113 @@ public class MedecinController {
         }
     }
 
-    @Operation(summary = "Lister tous les médecins")
-    @GetMapping("/all")
+    @Operation(
+            tags = "Médecins",
+            summary = "Lister tous les médecins",
+            description = "Retourne la liste de tous les médecins."
+    )
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<MedecinDto>> getAllMedecins() {
         List<MedecinDto> medecins = medecinService.findAll();
         return new ResponseEntity<>(medecins, HttpStatus.OK);
     }
 
-    @Operation(summary = "Supprimer un médecin par ID")
+    @Operation(
+            tags = "Médecins",
+            summary = "Supprimer un médecin par ID",
+            description = "Supprime un médecin par son identifiant."
+    )
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteMedecin(@PathVariable String id) {
+    public ResponseEntity<Void> deleteMedecin(@Parameter(description = "ID du médecin") @PathVariable String id) {
         medecinService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @Operation(summary = "Changer le statut actif d’un médecin")
-    @PutMapping("/update-status/{id}")
-    public ResponseEntity<MedecinDto> updateStatus(@PathVariable String id, @RequestParam boolean actif) {
+    @Operation(
+            tags = "Médecins",
+            summary = "Changer le statut actif d’un médecin",
+            description = "Active/Désactive un médecin (champ actif)."
+    )
+    @PutMapping(value = "/update-status/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MedecinDto> updateStatus(
+            @Parameter(description = "ID du médecin") @PathVariable String id,
+            @Parameter(description = "Nouveau statut actif") @RequestParam boolean actif
+    ) {
         MedecinDto updatedMedecin = medecinService.updateStatus(id, actif);
         return new ResponseEntity<>(updatedMedecin, HttpStatus.OK);
     }
 
-    @Operation(summary = "Compter le nombre total de médecins")
-    @GetMapping("/count")
+    @Operation(
+            tags = "Médecins",
+            summary = "Compter le nombre total de médecins",
+            description = "Retourne le nombre total d’enregistrements de médecins."
+    )
+    @GetMapping(value = "/count", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Long> countAllMedecins() {
         long count = medecinService.countAll();
         return new ResponseEntity<>(count, HttpStatus.OK);
     }
 
-    @Operation(summary = "Rechercher un médecin par email")
-    @GetMapping("/email/{email}")
-    public ResponseEntity<MedecinDto> getByEmail(@PathVariable String email) {
+    @Operation(
+            tags = "Médecins",
+            summary = "Rechercher un médecin par email",
+            description = "Retourne les informations d’un médecin à partir de son email."
+    )
+    @GetMapping(value = "/email/{email}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MedecinDto> getByEmail(@Parameter(description = "Email du médecin") @PathVariable String email) {
         return ResponseEntity.ok(medecinService.findByEmail(email));
     }
 
-    @Operation(summary = "Supprimer un médecin par email")
+    @Operation(
+            tags = "Médecins",
+            summary = "Supprimer un médecin par email",
+            description = "Supprime un médecin à partir de son email."
+    )
     @DeleteMapping("/email/{email}")
-    public ResponseEntity<Void> deleteByEmail(@PathVariable String email) {
+    public ResponseEntity<Void> deleteByEmail(@Parameter(description = "Email du médecin") @PathVariable String email) {
         medecinService.deleteByEmail(email);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Obtenir la photo du médecin")
-    @GetMapping("/{id}/photo")
-    public ResponseEntity<byte[]> getPhoto(@PathVariable String id) throws IOException {
+    @Operation(
+            tags = "Médecins",
+            summary = "Obtenir la photo du médecin",
+            description = "Retourne l’image de profil du médecin."
+    )
+    @GetMapping(value = "/{id}/photo", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> getPhoto(@Parameter(description = "ID du médecin") @PathVariable String id) throws IOException {
         byte[] image = medecinService.getPhoto(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(image);
     }
 
-    @Operation(summary = "Rechercher les médecins par spécialité")
-    @GetMapping("/specialite/{specialite}")
-    public ResponseEntity<List<MedecinDto>> getBySpecialite(@PathVariable String specialite) {
+    @Operation(
+            tags = "Médecins",
+            summary = "Rechercher les médecins par spécialité",
+            description = "Recherche insensible à la casse; peut être partielle selon l’implémentation."
+    )
+    @GetMapping(value = "/specialite/{specialite}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<MedecinDto>> getBySpecialite(@Parameter(description = "Nom de la spécialité") @PathVariable String specialite) {
         return ResponseEntity.ok(medecinService.searchBySpeciality(specialite));
     }
 
-    @Operation(summary = "Liste des médecins actifs")
-    @GetMapping("/actifs")
+    @Operation(
+            tags = "Médecins",
+            summary = "Liste des médecins actifs",
+            description = "Retourne uniquement les médecins dont le compte est actif."
+    )
+    @GetMapping(value = "/actifs", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<MedecinDto>> getActiveMedecins() {
         return ResponseEntity.ok(medecinService.getActiveMedecins());
     }
 
-    @PostMapping("/medecin/motdepasse/reset")
-    @Operation(summary = "Modification du mot de passe")
+    @Operation(
+            tags = "Médecins",
+            summary = "Modification du mot de passe",
+            description = "Modifie le mot de passe d’un médecin après vérification des informations."
+    )
+    @PostMapping(value = "/medecin/motdepasse/reset", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
         medecinService.updatePasswordByEmail(dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès.");

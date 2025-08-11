@@ -1,6 +1,5 @@
 package com.esiitech.monbondocteurv2.controller;
 
-
 import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.LoginRequest;
 import com.esiitech.monbondocteurv2.dto.UtilisateurDto;
@@ -14,9 +13,11 @@ import com.esiitech.monbondocteurv2.service.UtilisateurService;
 import com.esiitech.monbondocteurv2.service.ValidationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -53,11 +54,15 @@ public class UtilisateurController {
         this.customUserDetailsService = customUserDetailsService;
     }
 
-    @Operation(summary = "Créer un utilisateur", description = "Permet de créer un nouvel utilisateur avec une photo optionnelle (upload multipart)")
-    @PostMapping("/create")
+    @Operation(
+            summary = "Créer un utilisateur",
+            description = "Permet de créer un nouvel utilisateur avec une photo optionnelle (upload multipart/form-data)."
+    )
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UtilisateurDto> createUtilisateur(
-            @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @RequestParam("utilisateur") String utilisateurJson) throws IOException {
+            @Parameter(description = "Photo de l'utilisateur (optionnelle)") @RequestParam(value = "photo", required = false) MultipartFile photo,
+            @Parameter(description = "Données utilisateur au format JSON") @RequestParam("utilisateur") String utilisateurJson
+    ) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         UtilisateurDto dto = objectMapper.readValue(utilisateurJson, UtilisateurDto.class);
@@ -70,7 +75,10 @@ public class UtilisateurController {
         return new ResponseEntity<>(savedUtilisateur, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Renvoyer un OTP", description = "Renvoie un nouveau code OTP si l'ancien est expiré")
+    @Operation(
+            summary = "Renvoyer un OTP",
+            description = "Renvoie un nouveau code OTP si l'ancien est expiré."
+    )
     @PostMapping("/resend-otp")
     public ResponseEntity<?> resendOtp(@RequestBody UtilisateurDto dto) {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(dto.getEmail())
@@ -80,7 +88,10 @@ public class UtilisateurController {
         return ResponseEntity.ok("Nouveau code envoyé");
     }
 
-    @Operation(summary = "Activer un compte", description = "Valide le code reçu par mail pour activer le compte")
+    @Operation(
+            summary = "Activer un compte",
+            description = "Valide le code reçu par mail pour activer le compte."
+    )
     @PostMapping("/activation")
     public ResponseEntity<String> activation(@RequestBody Map<String, String> activation) {
         try {
@@ -91,7 +102,10 @@ public class UtilisateurController {
         }
     }
 
-    @Operation(summary = "Connexion", description = "Permet de se connecter avec email et mot de passe")
+    @Operation(
+            summary = "Connexion",
+            description = "Permet de se connecter avec email et mot de passe. Retourne un JWT en cas de succès."
+    )
     @PostMapping("/connexion")
     public ResponseEntity<?> connexion(@RequestBody LoginRequest request) {
         try {
@@ -115,9 +129,14 @@ public class UtilisateurController {
         }
     }
 
-    @Operation(summary = "Récupérer un utilisateur", description = "Récupère les informations d’un utilisateur par son ID")
-    @GetMapping("/{id}")
-    public ResponseEntity<UtilisateurDto> getUtilisateur(@PathVariable String id) {
+    @Operation(
+            summary = "Récupérer un utilisateur",
+            description = "Récupère les informations d’un utilisateur par son ID."
+    )
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UtilisateurDto> getUtilisateur(
+            @Parameter(description = "ID de l'utilisateur") @PathVariable String id
+    ) {
         UtilisateurDto utilisateurDto = utilisateurService.findById(id);
 
         if (utilisateurDto == null) {
@@ -127,32 +146,48 @@ public class UtilisateurController {
         return new ResponseEntity<>(utilisateurDto, HttpStatus.OK);
     }
 
-    @Operation(summary = "Mettre à jour un utilisateur", description = "Met à jour les informations d’un utilisateur")
-    @PutMapping("/update/{id}")
-    public ResponseEntity<UtilisateurDto> updateUtilisateur(@PathVariable String id, @RequestBody UtilisateurDto dto) {
+    @Operation(
+            summary = "Mettre à jour un utilisateur",
+            description = "Met à jour les informations d’un utilisateur."
+    )
+    @PutMapping(value = "/update/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UtilisateurDto> updateUtilisateur(
+            @Parameter(description = "ID de l'utilisateur") @PathVariable String id,
+            @RequestBody UtilisateurDto dto
+    ) {
         UtilisateurDto updatedUtilisateur = utilisateurService.update(id, dto);
         return new ResponseEntity<>(updatedUtilisateur, HttpStatus.OK);
     }
 
-    @Operation(summary = "Supprimer un utilisateur", description = "Supprime un utilisateur par son email")
+    @Operation(
+            summary = "Supprimer un utilisateur",
+            description = "Supprime un utilisateur par son email."
+    )
     @DeleteMapping("/delete/{email}")
-    public ResponseEntity<Void> deleteUtilisateur(@PathVariable String email) {
+    public ResponseEntity<Void> deleteUtilisateur(
+            @Parameter(description = "Email de l'utilisateur") @PathVariable String email
+    ) {
         utilisateurService.deleteByEmail(email);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @Operation(summary = "Lister tous les utilisateurs", description = "Retourne la liste de tous les utilisateurs enregistrés")
-    @GetMapping("/all")
+    @Operation(
+            summary = "Lister tous les utilisateurs",
+            description = "Retourne la liste de tous les utilisateurs enregistrés."
+    )
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Iterable<UtilisateurDto>> getAllUtilisateurs() {
         Iterable<UtilisateurDto> utilisateurs = utilisateurService.getAllUsers();
         return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
     }
 
-    @PostMapping("/utilisateurs/motdepasse/reset")
-    @Operation(summary = "Modification du mot de passe")
+    @Operation(
+            summary = "Modification du mot de passe",
+            description = "Modifie le mot de passe d’un utilisateur en vérifiant l’email et la confirmation du nouveau mot de passe."
+    )
+    @PostMapping(value = "/utilisateurs/motdepasse/reset", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> resetMotDePasse(@RequestBody ChangementMotDePasseDto dto) {
         utilisateurService.updatePasswordByEmail(dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
     }
-
 }

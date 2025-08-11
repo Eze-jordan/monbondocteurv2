@@ -17,11 +17,11 @@
         @ManyToOne
         @JoinColumn(name = "structure_sanitaire_id")
         private StructureSanitaire structureSanitaire;
-        @ElementCollection(targetClass = RefSpecialite.class)
-        @Enumerated(EnumType.STRING)
-        @CollectionTable(name = "utilisateur_specialite", joinColumns = @JoinColumn(name = "utilisateur_id"))
-        @Column(name = "specialite")
-        private Set<RefSpecialite> refSpecialites = new HashSet<>();
+        @ElementCollection
+        @CollectionTable(name = "rendezvous_specialite", joinColumns = @JoinColumn(name = "rendezvous_id"))
+        @Column(name = "specialite", nullable = false, length = 100)
+        private Set<String> refSpecialites = new HashSet<>();
+
         @Column(nullable = false)
         private String nom;
         @Column(nullable = false)
@@ -43,13 +43,14 @@
         @JoinColumn(name = "utilisateur_id", referencedColumnName = "id")
         private Utilisateur utilisateur;
 
-        public Set<RefSpecialite> getRefSpecialites() {
+        public Set<String> getRefSpecialites() {
             return refSpecialites;
         }
 
-        public void setRefSpecialites(Set<RefSpecialite> refSpecialites) {
+        public void setRefSpecialites(Set<String> refSpecialites) {
             this.refSpecialites = refSpecialites;
         }
+
         public StructureSanitaire getStructureSanitaire() {
             return structureSanitaire;
         }

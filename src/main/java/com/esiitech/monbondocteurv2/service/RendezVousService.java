@@ -81,10 +81,15 @@ public class RendezVousService {
         rendezVous.setMedecin(agenda.getMedecin());
         Medecin medecin = agenda.getMedecin();
         rendezVous.setStructureSanitaire(medecinStructureSanitaireService.getStructureSanitaireActifByMedecin(medecin));
-        Set<RefSpecialite> specialites = new HashSet<>();
-        specialites.add(medecin.getRefSpecialite());// si le médecin a une spécialité unique
-        rendezVous.setRefSpecialites(specialites);// ou une autre collection
+        Set<String> specialites = new HashSet<>();
 
+// ton modèle Medecin expose visiblement UNE seule spécialité sous forme de String
+        String sp = medecin.getRefSpecialite(); // <- String
+        if (sp != null && !sp.isBlank()) {
+            specialites.add(sp.trim());
+        }
+
+        rendezVous.setRefSpecialites(specialites);
 
         // Lier l'utilisateur connecté si existant
         String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();

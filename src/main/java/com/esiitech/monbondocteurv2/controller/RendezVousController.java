@@ -9,8 +9,9 @@ import com.esiitech.monbondocteurv2.repository.RendezVousRepository;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import com.esiitech.monbondocteurv2.service.RendezVousService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,59 +33,98 @@ public class RendezVousController {
         this.rendezVousService = rendezVousService;
     }
 
-    @Operation(summary = "Créer un nouveau rendez-vous")
-    @PostMapping
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Créer un nouveau rendez-vous",
+            description = "Crée un rendez-vous à partir des informations fournies."
+    )
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<RendezVousDTO> creerRendezVous(@RequestBody RendezVousDTO dto) {
         RendezVousDTO nouveauRdv = rendezVousService.creerRendezVous(dto);
         return ResponseEntity.ok(nouveauRdv);
     }
 
-    @Operation(summary = "Lister tous les rendez-vous")
-    @GetMapping
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Lister tous les rendez-vous",
+            description = "Retourne la liste complète des rendez-vous."
+    )
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<RendezVousDTO>> listerTousLesRendezVous() {
         return ResponseEntity.ok(rendezVousService.listerTous());
     }
 
-    @Operation(summary = "Obtenir un rendez-vous par son ID")
-    @GetMapping("/{id}")
-    public ResponseEntity<RendezVousDTO> trouverRendezVousParId(@PathVariable String id) {
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Obtenir un rendez-vous par son ID",
+            description = "Retourne un rendez-vous correspondant à l'identifiant fourni."
+    )
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<RendezVousDTO> trouverRendezVousParId(
+            @Parameter(description = "ID du rendez-vous") @PathVariable String id) {
         return rendezVousService.trouverParId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Supprimer un rendez-vous par ID")
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Supprimer un rendez-vous par ID",
+            description = "Supprime un rendez-vous à partir de son identifiant."
+    )
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> supprimerRendezVous(@PathVariable String id) {
+    public ResponseEntity<Void> supprimerRendezVous(
+            @Parameter(description = "ID du rendez-vous") @PathVariable String id) {
         rendezVousService.supprimer(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Lister les rendez-vous d'une structure sanitaire par son ID")
-    @GetMapping("/structure/{id}")
-    public ResponseEntity<List<RendezVousDTO>> getByStructure(@PathVariable String id) {
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Lister les rendez-vous d'une structure sanitaire par son ID",
+            description = "Retourne les rendez-vous rattachés à une structure donnée."
+    )
+    @GetMapping(value = "/structure/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<RendezVousDTO>> getByStructure(
+            @Parameter(description = "ID de la structure sanitaire") @PathVariable String id) {
         StructureSanitaire structure = new StructureSanitaire();
         structure.setId(id);
         return ResponseEntity.ok(rendezVousService.trouverParStructureSanitaire(structure));
     }
 
-    @Operation(summary = "Lister les rendez-vous d'un médecin par son ID")
-    @GetMapping("/medecin/{id}")
-    public ResponseEntity<List<RendezVousDTO>> getByMedecin(@PathVariable String id) {
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Lister les rendez-vous d'un médecin par son ID",
+            description = "Retourne les rendez-vous rattachés à un médecin donné."
+    )
+    @GetMapping(value = "/medecin/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<RendezVousDTO>> getByMedecin(
+            @Parameter(description = "ID du médecin") @PathVariable String id) {
         Medecin medecin = new Medecin();
         medecin.setId(id);
         return ResponseEntity.ok(rendezVousService.trouverParMedecin(medecin));
     }
 
-    @Operation(summary = "Rechercher les rendez-vous par nom de structure sanitaire")
-    @GetMapping("/structure")
-    public ResponseEntity<List<RendezVousDTO>> getByNomStructure(@RequestParam String nom) {
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Rechercher les rendez-vous par nom de structure sanitaire",
+            description = "Recherche par nom (insensible à la casse selon l'implémentation)."
+    )
+    @GetMapping(value = "/structure", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<RendezVousDTO>> getByNomStructure(
+            @Parameter(description = "Nom de la structure sanitaire") @RequestParam String nom) {
         return ResponseEntity.ok(rendezVousService.trouverParNomStructure(nom));
     }
 
-    @Operation(summary = "Rechercher les rendez-vous par nom de médecin")
-    @GetMapping("/medecin")
-    public ResponseEntity<List<RendezVousDTO>> getByNomMedecin(@RequestParam String nom) {
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Rechercher les rendez-vous par nom de médecin",
+            description = "Recherche par nom (insensible à la casse selon l'implémentation)."
+    )
+    @GetMapping(value = "/medecin", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<RendezVousDTO>> getByNomMedecin(
+            @Parameter(description = "Nom du médecin") @RequestParam String nom) {
         return ResponseEntity.ok(rendezVousService.trouverParNomMedecin(nom));
     }
 }
+

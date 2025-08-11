@@ -111,27 +111,27 @@ public class StructureSanitaireService implements UserDetailsService {
         ));
     }
 
-    public String getSpecialitesStructure(String id) {
+    public Set<String> getSpecialitesStructure(String id) {
         StructureSanitaire structure = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
         return structure.getRefSpecialites();
     }
 
 
-
     public Set<String> getToutesLesSpecialitesUtilisees() {
         return repository.findAll().stream()
-                .map(StructureSanitaire::getRefSpecialites)        // récupère la chaîne "Cardiologie, Pédiatrie"
-                .filter(Objects::nonNull)                          // ignore les valeurs null
-                .flatMap(specialites -> Arrays.stream(specialites.split(","))) // découpe chaque chaîne
-                .map(String::trim)                                 // supprime les espaces autour
-                .filter(s -> !s.isEmpty())                         // ignore les vides
-                .collect(Collectors.toSet());                      // regroupe sans doublons
+                .map(StructureSanitaire::getRefSpecialites)
+                .filter(Objects::nonNull)
+                .flatMap(Set::stream)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
     }
 
     public List<StructureSanitaireDto> findBySpecialite(String specialite) {
-        List<StructureSanitaire> list = repository.findBySpecialiteContainingIgnoreCase(specialite);
-        return list.stream().map(mapper::toDto).collect(Collectors.toList());
+        return repository.findBySpecialite(specialite).stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
     }
 
     public List<StructureSanitaireDto> findByVille(String ville) {

@@ -31,7 +31,7 @@ public class StructureSanitaireDto {
     private String refType;
     private Float gpsLongitude;
     private Float gpsLatitude;
-    private String refSpecialites;
+    private Set<String> refSpecialites; // ou List<String>
     private boolean actif;
 
 
@@ -117,11 +117,11 @@ public class StructureSanitaireDto {
         this.refType = refType;
     }
 
-    public String getRefSpecialites() {
+    public Set<String> getRefSpecialites() {
         return refSpecialites;
     }
 
-    public void setRefSpecialites(String refSpecialites) {
+    public void setRefSpecialites(Set<String> refSpecialites) {
         this.refSpecialites = refSpecialites;
     }
 

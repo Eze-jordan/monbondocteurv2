@@ -29,7 +29,13 @@
         private Float GpsLongitude;
         @Column(name = "Latitude")
         private Float GpsLatitude;
-        private String refSpecialites;
+        @ElementCollection(fetch = FetchType.LAZY)
+        @CollectionTable(
+                name = "structure_specialite",
+                joinColumns = @JoinColumn(name = "structure_id")
+        )
+        @Column(name = "specialite", nullable = false, length = 100)
+        private Set<String> refSpecialites = new HashSet<>();
 
         @Column(nullable = false)
         private boolean actif = false;
@@ -145,11 +151,11 @@
             GpsLatitude = gpsLatitude;
         }
 
-        public String getRefSpecialites() {
+        public Set<String> getRefSpecialites() {
             return refSpecialites;
         }
 
-        public void setRefSpecialites(String refSpecialites) {
+        public void setRefSpecialites(Set<String> refSpecialites) {
             this.refSpecialites = refSpecialites;
         }
 
