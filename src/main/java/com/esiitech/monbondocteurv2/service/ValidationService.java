@@ -6,11 +6,13 @@ import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
 import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.repository.ValidationRipository;
+import org.springframework.transaction.annotation.Transactional; // <-- celui-ci
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
@@ -210,4 +212,35 @@ public class ValidationService {
     }
 
 
+    @Transactional(readOnly = true)
+    public List<Validation> getAllValidationsByType(String type) {
+        if (type == null || type.isBlank()) {
+            return validationRipository.findAll(); // ton existant
+        }
+        switch (type.trim().toLowerCase()) {
+            case "utilisateur":
+            case "users":
+            case "u":
+                return validationRipository.findAllByUtilisateurIsNotNullOrderByCreationDesc();
+            case "medecin":
+            case "médecin":
+            case "m":
+                return validationRipository.findAllByMedecinIsNotNullOrderByCreationDesc();
+            case "structure":
+            case "structuresanitaire":
+            case "s":
+                return validationRipository.findAllByStructureSanitaireIsNotNullOrderByCreationDesc();
+            default:
+                throw new IllegalArgumentException("Type invalide. Attendu: utilisateur | medecin | structure");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, List<Validation>> getAllValidationsGrouped() {
+        return Map.of(
+                "utilisateurs", validationRipository.findAllByUtilisateurIsNotNullOrderByCreationDesc(),
+                "medecins", validationRipository.findAllByMedecinIsNotNullOrderByCreationDesc(),
+                "structures", validationRipository.findAllByStructureSanitaireIsNotNullOrderByCreationDesc()
+        );
+    }
 }

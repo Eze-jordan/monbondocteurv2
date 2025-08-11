@@ -7,10 +7,12 @@ import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.service.ValidationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/validations")
@@ -70,6 +72,23 @@ public class ValidationController {
     public ResponseEntity<Void> supprimerParStructure(@PathVariable String id) {
         validationService.supprimerParStructureId(id);
         return ResponseEntity.noContent().build();
+    }
+    @Operation(tags = "Validations",
+            summary = "Lister les validations",
+            description = "Sans paramètre : toutes les validations. Avec ?type=utilisateur|medecin|structure : filtre par type.")
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Validation>> getAllValidations(
+            @RequestParam(name = "type", required = false) String type) {
+        List<Validation> result = validationService.getAllValidationsByType(type);
+        return ResponseEntity.ok(result);
+    }
+
+    @Operation(tags = "Validations",
+            summary = "Lister les validations groupées par type",
+            description = "Retourne un objet avec trois listes: { utilisateurs:[], medecins:[], structures:[] }")
+    @GetMapping(value = "/grouped", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, List<Validation>>> getAllValidationsGrouped() {
+        return ResponseEntity.ok(validationService.getAllValidationsGrouped());
     }
 
 }

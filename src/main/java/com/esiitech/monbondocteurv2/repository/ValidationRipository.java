@@ -6,6 +6,7 @@ import com.esiitech.monbondocteurv2.model.Utilisateur;
 import com.esiitech.monbondocteurv2.model.Validation;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ValidationRipository extends JpaRepository<Validation, String> {
@@ -17,5 +18,9 @@ public interface ValidationRipository extends JpaRepository<Validation, String> 
     Optional<Validation> findByUtilisateur_Id(String utilisateurId);
     Optional<Validation> findByMedecin_Id(String medecinId);
     Optional<Validation> findByStructureSanitaire_Id(String structureId);
+    // 🔎 nouvelles : listes par type, triées par date de création décroissante
+    List<Validation> findAllByUtilisateurIsNotNullOrderByCreationDesc();
+    List<Validation> findAllByMedecinIsNotNullOrderByCreationDesc();
+    List<Validation> findAllByStructureSanitaireIsNotNullOrderByCreationDesc();
 }
 
