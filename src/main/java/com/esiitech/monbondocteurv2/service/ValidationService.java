@@ -189,9 +189,6 @@ public class ValidationService {
                 .orElseThrow(() -> new RuntimeException("Aucune validation trouvée pour cette structure"));
         validationRipository.delete(validation);
     }
-    public List<Validation> getAllValidations() {
-        return validationRipository.findAll();
-    }
 
     public void supprimerParUtilisateurId(String utilisateurId) {
         Validation v = validationRipository.findByUtilisateur_Id(utilisateurId)
@@ -242,5 +239,10 @@ public class ValidationService {
                 "medecins", validationRipository.findAllByMedecinIsNotNullOrderByCreationDesc(),
                 "structures", validationRipository.findAllByStructureSanitaireIsNotNullOrderByCreationDesc()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Validation> getAllValidations() {
+        return validationRipository.findAllByOrderByCreationDesc();
     }
 }

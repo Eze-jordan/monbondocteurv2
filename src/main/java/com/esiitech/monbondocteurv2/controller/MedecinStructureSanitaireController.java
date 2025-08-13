@@ -25,7 +25,7 @@ public class MedecinStructureSanitaireController {
     private MedecinService medecinService;
 
     @Operation(summary = "Lister toutes les liaisons")
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<MedecinStructureSanitaireDto>> getAll() {
         return ResponseEntity.ok(medecinStructureSanitaireService.findAll());
     }

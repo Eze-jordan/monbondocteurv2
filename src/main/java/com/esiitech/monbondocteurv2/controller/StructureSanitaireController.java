@@ -219,4 +219,38 @@ public class StructureSanitaireController {
         structureSanitaireService.updatePasswordByEmail(dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
     }
+
+    @GetMapping("/me")
+    @Operation(summary = "Mon profil (structure connectée)", description = "Retourne le profil de la structure actuellement connectée.")
+    public ResponseEntity<StructureSanitaireDto> getMyProfile() {
+        return ResponseEntity.ok(structureSanitaireService.getMyProfile());
+    }
+
+    // Version multipart (permet de changer la photo)
+    @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Mettre à jour mon profil (multipart)", description = "Met à jour les informations + photo de la structure connectée.")
+    public ResponseEntity<StructureSanitaireDto> updateMyProfileMultipart(
+            @RequestParam(value = "photo", required = false) MultipartFile photo,
+            @RequestParam("structureSanitaire") String structureSanitaireJson
+    ) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        StructureSanitaireDto dto = objectMapper.readValue(structureSanitaireJson, StructureSanitaireDto.class);
+        return ResponseEntity.ok(structureSanitaireService.updateMyProfile(dto, photo));
+    }
+
+    // Version JSON pur (pas de photo)
+    @PutMapping(value = "/me/json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Mettre à jour mon profil (JSON)", description = "Met à jour les informations de la structure connectée (sans photo).")
+    public ResponseEntity<StructureSanitaireDto> updateMyProfileJson(@RequestBody StructureSanitaireDto dto)
+            throws IOException {
+        return ResponseEntity.ok(structureSanitaireService.updateMyProfile(dto, null));
+    }
+
+    @Operation(tags = "Structure Sanitaire", summary = "Ajouter des spécialités (merge)")
+    @PostMapping("/{id}/specialites")
+    public ResponseEntity<Set<String>> addSpecialites(
+            @PathVariable String id,
+            @RequestBody Set<String> specialites) {
+        return ResponseEntity.ok(structureSanitaireService.addSpecialites(id, specialites));
+    }
 }

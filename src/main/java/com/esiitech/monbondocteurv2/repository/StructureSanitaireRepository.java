@@ -35,4 +35,9 @@ public interface StructureSanitaireRepository extends JpaRepository<StructureSan
 
     List<StructureSanitaire> findByVilleIgnoreCase(String ville);
 
+
+    boolean existsByEmailAndIdNot(String email, String id);
+    boolean existsByNumeroTelephoneAndIdNot(String numeroTelephone, String id);
+
+
 }

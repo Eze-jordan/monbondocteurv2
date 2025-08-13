@@ -4,6 +4,7 @@ import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
 import com.esiitech.monbondocteurv2.model.Validation;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -22,5 +23,9 @@ public interface ValidationRipository extends JpaRepository<Validation, String> 
     List<Validation> findAllByUtilisateurIsNotNullOrderByCreationDesc();
     List<Validation> findAllByMedecinIsNotNullOrderByCreationDesc();
     List<Validation> findAllByStructureSanitaireIsNotNullOrderByCreationDesc();
+    // charge aussi les liens pour éviter des N+1 (utilisateur, medecin, structureSanitaire)
+    @EntityGraph(attributePaths = {"utilisateur", "medecin", "structureSanitaire"})
+    List<Validation> findAllByOrderByCreationDesc();
+
 }
 

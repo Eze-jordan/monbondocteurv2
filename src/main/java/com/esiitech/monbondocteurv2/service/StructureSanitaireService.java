@@ -15,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -242,5 +244,76 @@ public class StructureSanitaireService implements UserDetailsService {
         structureSanitaire.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
         repository.save(structureSanitaire);
     }
+
+    /** Récupère le profil de la structure actuellement connectée (via JWT/SecurityContext). */
+    public StructureSanitaireDto getMyProfile() {
+        String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
+        StructureSanitaire me = repository.findByEmail(emailConnecte)
+                .orElseThrow(() -> new RuntimeException("Structure introuvable pour l'email connecté"));
+        return mapper.toDto(me);
+    }
+
+    /** Met à jour le profil de la structure connectée (nom, email, téléphone, adresse, ville, photo…).
+     * Remarque : si tu permets de changer l’email, le JWT en cours contient encore l’ancien email.
+     * Après update, fais re-login côté front pour régénérer un token propre. */
+    public StructureSanitaireDto updateMyProfile(StructureSanitaireDto dto, MultipartFile photo) throws IOException {
+        String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
+        StructureSanitaire me = repository.findByEmail(emailConnecte)
+                .orElseThrow(() -> new RuntimeException("Structure introuvable pour l'email connecté"));
+
+        // (Optionnel) contrôles d’unicité si changement d’email/téléphone
+        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(me.getEmail())) {
+            if (repository.existsByEmailAndIdNot(dto.getEmail(), me.getId())) {
+                throw new IllegalArgumentException("Cet email est déjà utilisé.");
+            }
+            me.setEmail(dto.getEmail());
+        }
+        if (dto.getNumeroTelephone() != null && !dto.getNumeroTelephone().equalsIgnoreCase(me.getNumeroTelephone())) {
+            if (repository.existsByNumeroTelephoneAndIdNot(dto.getNumeroTelephone(), me.getId())) {
+                throw new IllegalArgumentException("Ce numéro de téléphone est déjà utilisé.");
+            }
+            me.setNumeroTelephone(dto.getNumeroTelephone());
+        }
+
+        // Champs “profil” autorisés
+        if (dto.getNomStructureSanitaire() != null) me.setNomStructureSanitaire(dto.getNomStructureSanitaire());
+        if (dto.getAdresse() != null)               me.setAdresse(dto.getAdresse());
+        if (dto.getVille() != null)                 me.setVille(dto.getVille());
+        if (dto.getRefType() != null)               me.setRefType(dto.getRefType());
+        if (dto.getGpsLatitude() != null)           me.setGpsLatitude(dto.getGpsLatitude());
+        if (dto.getGpsLongitude() != null)          me.setGpsLongitude(dto.getGpsLongitude());
+        if (dto.getRefSpecialites() != null)        me.setRefSpecialites(dto.getRefSpecialites()); // Set<String>
+
+        // Photo (optionnelle)
+        if (photo != null && !photo.isEmpty()) {
+            String photoPath = savePhoto(photo);
+            me.setPhotoPath(photoPath);
+        }
+
+        // ⚠️ Ne PAS toucher à: id, role, motDePasse, actif ici
+        StructureSanitaire saved = repository.save(me);
+        return mapper.toDto(saved);
+    }
+
+
+    // Ajout (merge) d’une liste de spécialités
+    public Set<String> addSpecialites(String structureId, Set<String> toAdd) {
+        StructureSanitaire ss = repository.findById(structureId)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+
+        if (ss.getRefSpecialites() == null) ss.setRefSpecialites(new HashSet<>());
+
+        // normaliser (trim, éviter doublons, ignorer vides)
+        Set<String> normalized = toAdd.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        ss.getRefSpecialites().addAll(normalized);
+        repository.save(ss);
+        return ss.getRefSpecialites();
+    }
+
 }
 

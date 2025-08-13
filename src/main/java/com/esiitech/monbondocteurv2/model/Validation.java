@@ -15,12 +15,18 @@ public class Validation {
     private Instant expiration;
     private Instant activation;
     private String code;
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne
+    @JoinColumn(name = "utilisateur_id")
     private Utilisateur utilisateur;
-    @OneToOne(cascade = CascadeType.ALL)
+
+    @OneToOne
+    @JoinColumn(name = "medecin_id")
     private Medecin medecin;
-    @OneToOne(cascade = CascadeType.ALL)
+
+    @OneToOne
+    @JoinColumn(name = "structure_sanitaire_id")
     private StructureSanitaire structureSanitaire;
+
 
     public Validation() {
 

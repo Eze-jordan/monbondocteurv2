@@ -53,6 +53,7 @@ public class ValidationController {
     public List<Validation> getAllValidations() {
         return validationService.getAllValidations();
     }
+
     @Operation(tags = "Validations", summary = "Supprimer une validation par ID utilisateur")
     @DeleteMapping("/utilisateur/{id}")
     public ResponseEntity<Void> supprimerParUtilisateur(@PathVariable String id) {
