@@ -90,18 +90,17 @@ public class NotificationService {
             helper.setTo(validation.getStructureSanitaire().getEmail());
             helper.setSubject("Votre code d'activation");
 
-            // 1) ID unique pour l’image inline
-            String logoCid = "logo-" + java.util.UUID.randomUUID();
+            String logoSvgUrl = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.svg";
+            String logoPngUrl = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png"; // ← mets un PNG accessible ici
 
-            // 2) Chemin CLASSPATH (pas "src/main/resources/...")
-            helper.addInline(logoCid, new ClassPathResource("static/image/logo.png"), "image/png");
-
-            // 3) Utiliser le CID dans le HTML
             String htmlContent = """
         <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
           <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
             <div style="text-align:center;margin-bottom:16px">
-              <img src="cid:%s" alt="MonBonDocteur" style="height:48px"/>
+              <picture>
+                <source srcset="%s" type="image/svg+xml">
+                <img src="%s" alt="MonBonDocteur" style="height:48px"/>
+              </picture>
             </div>
             <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
             <p>Bonjour <strong>%s</strong>,</p>
@@ -116,7 +115,8 @@ public class NotificationService {
           </div>
         </div>
         """.formatted(
-                    logoCid,
+                    logoSvgUrl,
+                    logoPngUrl,
                     validation.getStructureSanitaire().getNomStructureSanitaire(),
                     validation.getCode()
             );
@@ -127,6 +127,8 @@ public class NotificationService {
             e.printStackTrace();
         }
     }
+
+
 
 
     public void envoyerAuPatient(String email, String nomPatient, String nomMedecin) {
@@ -242,7 +244,69 @@ public class NotificationService {
     }
 
 
-    public void envoyerBienvenueAuStructures(String email, String nomStructureSanitaire) {
+    public void envoyerAccuseEnregistrementStructure(String email,
+                                                    String nomStructureSanitaire) {
+        MimeMessage message = javaMailSender.createMimeMessage();
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("notify@eservices-gabon.com");
+            helper.setTo(email);
+            helper.setSubject("Demande d’enregistrement de la structure sanitaire « " + nomStructureSanitaire + " »");
+
+            // (Optionnel) logo hébergé en PNG – évitez SVG en email
+            String logoUrlPng = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png";
+
+            String html = """
+<div style="font-family: Arial, sans-serif; background:#fff; padding:20px;">
+  <div style="max-width:900px; margin:auto;">
+    <div style="text-align:left; margin-bottom:12px;">
+      <img src="%1$s" alt="MonBonDocteur" height="26" style="display:inline-block;border:0;outline:none;text-decoration:none;">
+    </div>
+
+    <h1 style="font-size:22px; font-weight:600; margin:0 0 24px; color:#111;">
+      Demande d’enregistrement de la structure sanitaire « %2$s »
+    </h1>
+
+    <p style="margin:0 0 18px; color:#111;">Bonjour Madame/Monsieur,</p>
+
+    <p style="margin:0 0 12px; color:#111; line-height:1.5;">
+      Nous accusons réception de votre demande de création de la structure sanitaire dénommée
+      <strong>« %2$s »</strong>. Avant de créer votre compte, nous allons d’abord procéder à la vérification
+      auprès du Ministère de la Santé des informations que vous nous avez communiquées.
+      <em>Ce processus prendra quelques jours.</em>
+    </p>
+
+    <p style="margin:18px 0 12px; color:#111; line-height:1.5;">
+      Si à l’issue de cette vérification tout va bien, nous allons vous communiquer à l’adresse
+      <a href="mailto:%3$s" style="color:#1a73e8; text-decoration:underline;">%3$s</a>
+      les informations vous permettant de vous connecter et d’exploiter notre plateforme.
+    </p>
+
+    <p style="margin:24px 0 0; color:#111;">
+      Support technique de
+      <a href="https://monbondocteur.com" style="color:#1a73e8; text-decoration:underline;">Monbondocteur</a>
+    </p>
+  </div>
+</div>
+""".formatted(
+                    logoUrlPng,              // %1$s
+                    nomStructureSanitaire,   // %2$s
+                    email                    // %3$s (utilisé 2 fois)
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void envoyerIdentifiantsStructure(String email,
+                                             String nomStructureSanitaire,
+                                             String idStructure,
+                                             String motDePassePlain) {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         try {
@@ -251,27 +315,52 @@ public class NotificationService {
             helper.setTo(email);
             helper.setSubject("Bienvenue sur Mon Bon Docteur");
 
-            String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">Bienvenue %s 🏥</h2>
-                    <p>Merci d’avoir rejoint MonBonDocteur en tant que structure sanitaire partenaire.</p>
-                    <p>Vous pouvez dès maintenant inscrire vos médecins et gérer les rendez-vous via votre tableau de bord.</p>
-                    <div style="text-align: center; margin-top: 30px;">
-                        <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
-                            Accéder au tableau de bord
-                        </a>
-                    </div>
-                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
-                </div>
-            </div>
-        """.formatted(nomStructureSanitaire);
+            String logoUrlPng = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png";
+            String loginUrl   = "https://monbondocteur.com/login";
 
-            helper.setText(htmlContent, true);
+            String html = """
+        <div style="font-family: Arial, sans-serif; background:#fff; padding:24px;">
+          <div style="max-width:900px; margin:auto; color:#111; line-height:1.55;">
+            
+            <div style="text-align:left; margin-bottom:12px;">
+              <img src="%1$s" alt="MonBonDocteur" height="26" style="display:inline-block;border:0;outline:none;text-decoration:none;">
+            </div>
+
+            <h1 style="font-size:24px; font-weight:700; margin:0 0 24px;">Bienvenue sur Mon Bon Docteur</h1>
+
+            <p style="margin:0 0 16px;">Bonjour Madame/Monsieur,</p>
+
+            <p style="margin:0 0 16px;">
+              Après vérification des informations fournies, nous avons le plaisir de vous informer que votre
+              structure sanitaire « <strong>%2$s</strong> » a été créée avec succès.
+            </p>
+
+            <p style="margin:16px 0 16px;">
+              <span style="display:block; margin:6px 0;">Votre ID est : <strong>%3$s</strong></span>
+              <span style="display:block; margin:6px 0;">Votre email de conextion : <strong>%6$s</strong></span>            
+              <span style="display:block; margin:6px 0;">Votre mot de passe conextion : <strong>%4$s</strong></span>
+            </p>
+
+            <p style="margin:0 0 24px;">
+              Avec ces informations, vous pouvez maintenant vous connecter à notre plateforme.
+            </p>
+
+            <div style="text-align:center; margin:28px 0 8px;">
+              <a href="%5$s"
+                 style="display:inline-block; padding:12px 28px; background:#3B82F6; color:#fff; text-decoration:none; border-radius:8px; font-weight:600;">
+                 Mon bon docteur
+              </a>
+            </div>
+          </div>
+        </div>
+        """.formatted(logoUrlPng, nomStructureSanitaire, idStructure, motDePassePlain, loginUrl, email);
+
+            helper.setText(html, true);
             javaMailSender.send(message);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 
 }

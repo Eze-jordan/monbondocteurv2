@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,21 +43,37 @@ public class StructureSanitaireController {
     private JwtService jwtService;
     @Autowired
     private AuthenticationManager authenticationManager;
+    @Autowired
+    private final ObjectMapper objectMapper; // <-- AJOUT
+
+    public StructureSanitaireController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "Créer une structure sanitaire",
-            description = "Créer une structure avec ses informations (JSON) et une photo (multipart/form-data)."
+            description = "Envoie un JSON (champ structureSanitaire) + fichiers optionnels (photo, document) en multipart/form-data."
     )
-    public ResponseEntity<StructureSanitaireDto> createStructureSanitaire(
-            @Parameter(description = "Photo de la structure") @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @Parameter(description = "Données de la structure au format JSON") @RequestParam("structureSanitaire") String structureSanitaireJson
+    public ResponseEntity<StructureSanitaireDto> create(
+            @Parameter(description = "Photo (PNG/JPEG) - optionnelle")
+            @RequestParam(value = "photo", required = false) MultipartFile photo,
+
+            @Parameter(description = "Document justificatif (PDF/JPG/PNG) - optionnel")
+            @RequestParam(value = "document", required = false) MultipartFile document,
+
+            @Parameter(description = "Données de la structure au format JSON (clé: structureSanitaire)")
+            @RequestParam("structureSanitaire") String structureSanitaireJson
     ) throws IOException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        // Parse le JSON string -> DTO
         StructureSanitaireDto dto = objectMapper.readValue(structureSanitaireJson, StructureSanitaireDto.class);
-        StructureSanitaireDto savedStructureSanitaire = structureSanitaireService.save(dto, photo);
-        return new ResponseEntity<>(savedStructureSanitaire, HttpStatus.CREATED);
+
+        // Appelle le service qui gère tout (unicité, upload fichier, encodage mdp, OTP…)
+        StructureSanitaireDto saved = structureSanitaireService.create(dto, photo, document);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PostMapping("/activation")
@@ -253,4 +270,24 @@ public class StructureSanitaireController {
             @RequestBody Set<String> specialites) {
         return ResponseEntity.ok(structureSanitaireService.addSpecialites(id, specialites));
     }
+
+
+    @Operation(
+            summary = "Activer une structure et régénérer son mot de passe (ADMIN)",
+            description = "Passe le statut à ACTIF, active le compte et envoie un nouveau mot de passe par email."
+    )
+    @PostMapping("/{id}/activer")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> activerStructure(
+            @PathVariable String id,
+            @RequestBody(required = false) Map<String, Boolean> body) {
+
+        boolean returnPassword = body != null && Boolean.TRUE.equals(body.get("returnPassword"));
+        String plain = structureSanitaireService.adminActiverEtReinitialiserMdp(id);
+
+        return returnPassword
+                ? ResponseEntity.ok(Map.of("message", "Structure activée, mot de passe envoyé par email."))
+                : ResponseEntity.ok("Structure activée, identifiants envoyés par email.");
+    }
+
 }

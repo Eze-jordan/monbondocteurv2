@@ -21,9 +21,9 @@
         private String email;
         @Column(unique = true, nullable = false)
         private String numeroTelephone;
-        @Column(nullable = false)
         private String motDePasse;
-
+        @Column(name = "Urldocument")
+        private  String Urldocument;
         private String refType;
         @Column(name = "Longitude")
         private Float GpsLongitude;
@@ -39,14 +39,17 @@
 
         @Column(nullable = false)
         private boolean actif = false;
+        @Column(name = "date_debut-abonnement")
+        private Date DateDebutAbonnement;
+        @Column(name = "date_fin_abonnement")
+        private Date DateFinAbonnement;
+        @Column(name = "abonne-expire")
+        private boolean abonneExpire = true;
+        @Enumerated(EnumType.STRING)
+        private Statut statut;
         @Enumerated(EnumType.STRING)
         private Role role;
 
-
-        // Méthode pour obtenir l'ID formaté sur 4 chiffres
-        public String getIdFormate() {
-            return String.format("%04d", this.id);
-        }
 
         @Override
         public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -173,5 +176,45 @@
 
         public void setRole(Role role) {
             this.role = role;
+        }
+
+        public String getUrldocument() {
+            return Urldocument;
+        }
+
+        public void setUrldocument(String urldocument) {
+            Urldocument = urldocument;
+        }
+
+        public Date getDateDebutAbonnement() {
+            return DateDebutAbonnement;
+        }
+
+        public void setDateDebutAbonnement(Date dateDebutAbonnement) {
+            DateDebutAbonnement = dateDebutAbonnement;
+        }
+
+        public Date getDateFinAbonnement() {
+            return DateFinAbonnement;
+        }
+
+        public void setDateFinAbonnement(Date dateFinAbonnement) {
+            DateFinAbonnement = dateFinAbonnement;
+        }
+
+        public boolean isAbonneExpire() {
+            return abonneExpire;
+        }
+
+        public void setAbonneExpire(boolean abonneExpire) {
+            this.abonneExpire = abonneExpire;
+        }
+
+        public Statut getStatut() {
+            return statut;
+        }
+
+        public void setStatut(Statut statut) {
+            this.statut = statut;
         }
     }

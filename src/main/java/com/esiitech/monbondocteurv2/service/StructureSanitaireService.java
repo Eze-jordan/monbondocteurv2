@@ -8,15 +8,22 @@ import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.security.SecureRandom;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,50 +45,80 @@ public class StructureSanitaireService implements UserDetailsService {
     private NotificationService notificationService;
     @Autowired
     private StructureSanitaireMapper mapper;
+    // ✅ deux propriétés distinctes
+    @Value("${app.upload.dir.structureSanitaire}")
+    private String uploadDirStructure;            // ex: /var/app/uploads/structuresanitaire
 
-    @Value("${app.upload.dir.structureSanitaire}")  // Le répertoire où les photos des structures sanitaires sont stockées
-    private String uploadDir;
+    @Value("${app.upload.dir.documentStructure}")
+    private String uploadDirDocs;                 // ex: /var/app/uploads/documentStructure
 
     private static final String DEFAULT_PHOTO_PATH = "/uploads/structuresanitaire/default.jpg"; // Photo par défaut
 
     /**
      * Enregistrer une structure sanitaire avec sa photo.
      */
-    public StructureSanitaireDto save(StructureSanitaireDto dto, MultipartFile photo) throws IOException {
-        // Valider les données du DTO
+    // ------- CREATE -------
+    @Transactional
+    public StructureSanitaireDto create(StructureSanitaireDto dto,
+                                        MultipartFile photo,
+                                        MultipartFile document) throws IOException {
+
         validateStructureSanitaireDto(dto);
 
-        // Créer l'entité StructureSanitaire
-        StructureSanitaire structureSanitaire = mapper.toEntity(dto);
+        String email = dto.getEmail().trim().toLowerCase();
+        String phone = dto.getNumeroTelephone().trim();
 
-        // Sauvegarder la photo si elle existe, sinon mettre la photo par défaut
+        if (repository.existsByEmail(email))  throw new IllegalArgumentException("Cet email est déjà utilisé.");
+        if (repository.existsByNumeroTelephone(phone)) throw new IllegalArgumentException("Ce numéro de téléphone est déjà utilisé.");
+
+        StructureSanitaire ss = mapper.toEntity(dto);
+
+        if (ss.getId() == null || ss.getId().isBlank()) ss.setId(generateCustomId());
+        ss.setEmail(email);
+        ss.setNumeroTelephone(phone);
+        ss.setMotDePasse(passwordEncoder.encode(dto.getMotDePasse()));
+
+        // PHOTO (optionnelle)
         if (photo != null && !photo.isEmpty()) {
-            String photoPath = savePhoto(photo);  // Sauvegarder la photo et obtenir son chemin
-            structureSanitaire.setPhotoPath(photoPath);  // Mettre à jour le chemin de la photo
-        } else {
-            // Si aucune photo n'est fournie, assigner une photo par défaut
-            structureSanitaire.setPhotoPath(DEFAULT_PHOTO_PATH);
+            ss.setPhotoPath(savePhoto(photo));
+        } else if (ss.getPhotoPath() == null || ss.getPhotoPath().isBlank()) {
+            ss.setPhotoPath(DEFAULT_PHOTO_PATH);
         }
 
-        // Vérification du rôle et assignation du rôle par défaut (USER) si nécessaire
-        if (structureSanitaire.getRole() == null) {
-            structureSanitaire.setRole(Role.STRUCTURESANITAIRE);  // Assigner le rôle USER par défaut
-        }
-        // ✅ Encodage correct du mot de passe
-        structureSanitaire.setMotDePasse(passwordEncoder.encode(structureSanitaire.getMotDePasse()));
-
-        if (structureSanitaire.getId() == null) {
-            structureSanitaire.setId(generateCustomId());
+        // DOCUMENT (optionnel) — soit upload, soit URL déjà fournie dans le DTO
+        if (document != null && !document.isEmpty()) {
+            ss.setUrldocument(saveDocument(document)); // on stocke et renvoie une URL relative
+        } else if (dto.getUrldocument() != null && !dto.getUrldocument().isBlank()) {
+            ss.setUrldocument(dto.getUrldocument().trim());
         }
 
-        // Sauvegarder dans la base de données
-        structureSanitaire = repository.save(structureSanitaire);
-        this.validationService.enregisterStructure(structureSanitaire);
+        ss.setRefSpecialites(normalizeSpecialites(dto.getRefSpecialites()));
+        ss.setRole(Role.STRUCTURESANITAIRE);
+        ss.setStatut(Statut.SUSPENDU);
+        ss.setActif(false);
 
+        StructureSanitaire saved = repository.save(ss);
 
+        // Envoi OTP
+        validationService.enregisterStructure(saved);
+        return mapper.toDto(saved);
+    }
 
-        // Retourner le DTO de la structure sanitaire sauvegardée avec l'URL de la photo
-        return mapper.toDto(structureSanitaire);
+    /** Sauvegarde le document (PDF/JPG/PNG) et renvoie une URL relative à exposer côté front. */
+
+    private String saveDocument(MultipartFile file) throws IOException {
+        String ct = file.getContentType();
+        if (ct == null || !(ct.equals("application/pdf") || ct.equals("image/jpeg") || ct.equals("image/png"))) {
+            throw new IllegalArgumentException("Le document doit être un PDF, JPEG ou PNG.");
+        }
+
+        String name = System.currentTimeMillis() + "_" + Objects.requireNonNull(file.getOriginalFilename());
+        Path dir = Paths.get(uploadDirDocs);          // ex: /var/.../uploads/documentStructure
+        Files.createDirectories(dir);
+        Files.write(dir.resolve(name), file.getBytes());
+
+        // ⚠️ ajout du slash manquant
+        return "/uploads/documentStructure/" + name;
     }
 
     private static long lastId = 500000;  // Commence à 500000
@@ -102,7 +139,7 @@ public class StructureSanitaireService implements UserDetailsService {
 
         StructureActiver.setActif(true);
         repository.save(StructureActiver);
-        notificationService.envoyerBienvenueAuStructures(StructureActiver.getEmail(), StructureActiver.getNomStructureSanitaire());
+        notificationService.envoyerAccuseEnregistrementStructure(StructureActiver.getEmail(), StructureActiver.getNomStructureSanitaire());
 
     }
 
@@ -162,26 +199,21 @@ public class StructureSanitaireService implements UserDetailsService {
      * Sauvegarder la photo de la structure sanitaire et retourner son chemin.
      * Cette méthode vérifie également que le fichier est un type d'image valide.
      */
-    private String savePhoto(MultipartFile photo) throws IOException {
-        // Vérifier si le fichier est une image (par exemple, JPEG ou PNG)
-        String contentType = photo.getContentType();
-        if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png"))) {
-            throw new IllegalArgumentException("Le fichier doit être une image JPEG ou PNG.");
+    private String savePhoto(MultipartFile file) throws IOException {
+        String ct = file.getContentType();
+        if (ct == null || !(ct.equals("image/jpeg") || ct.equals("image/png"))) {
+            throw new IllegalArgumentException("Le fichier photo doit être JPEG ou PNG.");
         }
 
-        // Créer un nom unique pour la photo
-        String photoName = System.currentTimeMillis() + "_" + photo.getOriginalFilename();
-        Path path = Paths.get(uploadDir, photoName);
+        String name = System.currentTimeMillis() + "_" + Objects.requireNonNull(file.getOriginalFilename());
+        Path dir = Paths.get(uploadDirStructure);     // ex: /var/.../uploads/structuresanitaire
+        Files.createDirectories(dir);
+        Files.write(dir.resolve(name), file.getBytes());
 
-        // Créer les répertoires si nécessaires
-        Files.createDirectories(path.getParent());
-
-        // Sauvegarder le fichier
-        Files.write(path, photo.getBytes());
-
-        // Retourner le chemin relatif pour afficher l'image
-        return "/uploads/structuresanitaire/" + photoName;
+        // URL publique pour le front
+        return "/uploads/structuresanitaire/" + name;
     }
+
 
     /**
      * Récupérer une structure sanitaire par son ID.
@@ -314,6 +346,75 @@ public class StructureSanitaireService implements UserDetailsService {
         repository.save(ss);
         return ss.getRefSpecialites();
     }
+
+    // Nettoie la liste des spécialités (trim, retire null/vides, supprime doublons)
+    private Set<String> normalizeSpecialites(Set<String> in) {
+        if (in == null) return new LinkedHashSet<>();
+        return in.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+    // StructureSanitaireService.java
+    @Transactional
+    public String adminActiverEtReinitialiserMdp(String id) {
+        StructureSanitaire ss = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+
+        // 1) Générer un nouveau mot de passe fort (en clair, pour l’email/retour)
+        String plain = generateStrongPassword(14); // ex: 14 caractères
+
+        // 2) Remplacer le mot de passe en base par le HASH du nouveau mot de passe
+        ss.setMotDePasse(passwordEncoder.encode(plain));
+
+        // 3) Activer le compte et le statut
+        ss.setActif(true);
+        ss.setStatut(Statut.ACTIF);
+
+        // 4) Persister
+        repository.save(ss);
+
+        // 5) Prévenir la structure (email)
+        notificationService.envoyerIdentifiantsStructure(
+                ss.getEmail(),
+                ss.getNomStructureSanitaire(),
+                ss.getId(),
+                plain // ⚠️ seulement pour communication à l’utilisateur
+        );
+
+        // 6) Optionnel: renvoyer le plain au controller si returnPassword=true (tests)
+        return plain;
+    }
+
+    private String generateStrongPassword(int len) {
+        String U = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String L = "abcdefghijklmnopqrstuvwxyz";
+        String D = "0123456789";
+        String S = "@$!%*?&";
+        String ALL = U + L + D + S;
+
+        java.security.SecureRandom r = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder(len);
+
+        // garantir au moins 1 de chaque catégorie
+        sb.append(U.charAt(r.nextInt(U.length())));
+        sb.append(L.charAt(r.nextInt(L.length())));
+        sb.append(D.charAt(r.nextInt(D.length())));
+        sb.append(S.charAt(r.nextInt(S.length())));
+
+        for (int i = 4; i < len; i++) {
+            sb.append(ALL.charAt(r.nextInt(ALL.length())));
+        }
+
+        // petit shuffle
+        return sb.chars()
+                .mapToObj(c -> (char) c)
+                .sorted((a,b) -> r.nextInt(3) - 1)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
 
 }
 

@@ -20,6 +20,10 @@ public class StructureSanitaireMapper {
         dto.setGpsLatitude(entity.getGpsLatitude());
         dto.setGpsLongitude(entity.getGpsLongitude());
         dto.setRefSpecialites(entity.getRefSpecialites());
+        dto.setUrldocument(entity.getUrldocument());
+        dto.setDateDebutAbonnement(entity.getDateDebutAbonnement());
+        dto.setDateFinAbonnement(entity.getDateFinAbonnement());
+        dto.setAbonneExpire(entity.isAbonneExpire());
         dto.setActif(entity.isActif());
         return dto;
     }
@@ -38,6 +42,10 @@ public class StructureSanitaireMapper {
         entity.setGpsLatitude(dto.getGpsLatitude());
         entity.setGpsLongitude(dto.getGpsLongitude());
         entity.setRefSpecialites(dto.getRefSpecialites());
+        entity.setUrldocument(dto.getUrldocument());
+        entity.setDateDebutAbonnement(dto.getDateDebutAbonnement());
+        entity.setDateFinAbonnement(dto.getDateFinAbonnement());
+        entity.setAbonneExpire(dto.isAbonneExpire());
         entity.setActif(dto.isActif());
         return entity;
     }
