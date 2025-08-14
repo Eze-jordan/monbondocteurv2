@@ -103,6 +103,9 @@ public class AuthController {
     }
 
     // OUVERT (pas d’auth) — consommer le lien
+    @Operation(summary = "nouveau mot de pass",
+            description = "Envoie un email avec un lien de réinitialisation et saisie du nouveau mot de passe")
+
     @PostMapping("/reset")
     public ResponseEntity<Void> resetPassword(
             @RequestParam("token") String token,
