@@ -290,4 +290,37 @@ public class StructureSanitaireController {
                 : ResponseEntity.ok("Structure activée, identifiants envoyés par email.");
     }
 
+
+    // Payload pour PATCH
+    static class GpsUpdateRequest {
+        private Float gpsLatitude;
+        private Float gpsLongitude;
+        public Float getGpsLatitude() { return gpsLatitude; }
+        public void setGpsLatitude(Float gpsLatitude) { this.gpsLatitude = gpsLatitude; }
+        public Float getGpsLongitude() { return gpsLongitude; }
+        public void setGpsLongitude(Float gpsLongitude) { this.gpsLongitude = gpsLongitude; }
+    }
+
+    @PatchMapping("/{id}/gps")
+    @PreAuthorize("hasRole('ADMIN')") // admin peut modifier n’importe quelle structure
+    @Operation(summary = "Mettre à jour la position GPS d’une structure (ADMIN)")
+    public ResponseEntity<StructureSanitaireDto> updateGpsById(
+            @PathVariable String id,
+            @RequestBody GpsUpdateRequest body
+    ) {
+        return ResponseEntity.ok(
+                structureSanitaireService.updateGpsById(id, body.getGpsLatitude(), body.getGpsLongitude())
+        );
+    }
+
+    @PatchMapping("/me/gps")
+    @PreAuthorize("hasRole('STRUCTURESANITAIRE')") // la structure met à jour sa propre position
+    @Operation(summary = "Mettre à jour MA position GPS (structure connectée)")
+    public ResponseEntity<StructureSanitaireDto> updateMyGps(@RequestBody GpsUpdateRequest body) {
+        return ResponseEntity.ok(
+                structureSanitaireService.updateMyGps(body.getGpsLatitude(), body.getGpsLongitude())
+        );
+
+    }
+
 }

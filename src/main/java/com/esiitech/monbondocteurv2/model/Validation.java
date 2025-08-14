@@ -2,7 +2,6 @@ package com.esiitech.monbondocteurv2.model;
 
 import jakarta.persistence.*;
 
-
 import java.time.Instant;
 
 @Entity

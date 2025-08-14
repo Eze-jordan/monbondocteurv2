@@ -1,13 +1,17 @@
 package com.esiitech.monbondocteurv2.controller;
 
+import com.esiitech.monbondocteurv2.dto.ForgotPasswordRequest;
 import com.esiitech.monbondocteurv2.dto.LoginRequest;
+import com.esiitech.monbondocteurv2.dto.ResetPasswordRequest;
 import com.esiitech.monbondocteurv2.securite.CustomUserDetails;
 import com.esiitech.monbondocteurv2.securite.JwtResponse;
 import com.esiitech.monbondocteurv2.securite.JwtService;
 import com.esiitech.monbondocteurv2.service.CustomUserDetailsService;
+import com.esiitech.monbondocteurv2.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +28,14 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final PasswordResetService passwordResetService;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtService jwtService,
-                          CustomUserDetailsService userDetailsService) {
+                          CustomUserDetailsService userDetailsService, PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.passwordResetService = passwordResetService;
     }
 
     @Operation(summary = "Connexion de l'utilisateur", description = "Permet à un utilisateur de se connecter et de recevoir un token JWT dans un cookie sécurisé")
@@ -84,4 +90,26 @@ public class AuthController {
         response.setHeader("Set-Cookie", cookie.toString());
         return ResponseEntity.ok("Déconnexion réussie");
     }
+
+    // OUVERT (pas d’auth) — demande de reset
+    @PostMapping("/password/forgot")
+    @Operation(summary = "Mot de passe oublié (sans OTP)",
+            description = "Envoie un email avec un lien de réinitialisation. Réponse 200 même si l'email n'existe pas.")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
+        // URL de ta page front qui recevra ?token=...
+        String frontendResetBaseUrl = "https://monbondocteur.com/reset";
+        passwordResetService.demandeResetParEmail(req.getEmail(), frontendResetBaseUrl);
+        return ResponseEntity.ok("Si un compte existe pour cet email, un message a été envoyé.");
+    }
+
+    // OUVERT (pas d’auth) — consommer le lien
+    @PostMapping("/reset")
+    public ResponseEntity<Void> resetPassword(
+            @RequestParam("token") String token,
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        passwordResetService.appliquerNouveauMotDePasse(token, request);
+        return ResponseEntity.noContent().build();
+    }
+
 }

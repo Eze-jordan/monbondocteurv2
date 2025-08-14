@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.Assert;
 
 import java.security.SecureRandom;
 import java.util.LinkedHashSet;
@@ -413,6 +414,56 @@ public class StructureSanitaireService implements UserDetailsService {
                 .sorted((a,b) -> r.nextInt(3) - 1)
                 .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
                 .toString();
+    }
+
+
+    @Transactional
+    public StructureSanitaireDto updateGpsById(String id, Float lat, Float lon) {
+        StructureSanitaire ss = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+
+        applyAndValidateGps(ss, lat, lon);
+        repository.save(ss);
+        return mapper.toDto(ss);
+    }
+
+    @Transactional
+    public StructureSanitaireDto updateMyGps(Float lat, Float lon) {
+        String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
+        StructureSanitaire me = repository.findByEmail(emailConnecte)
+                .orElseThrow(() -> new RuntimeException("Structure introuvable pour l'email connecté"));
+
+        applyAndValidateGps(me, lat, lon);
+        repository.save(me);
+        return mapper.toDto(me);
+    }
+
+
+    // --- helpers ---
+    private void applyAndValidateGps(StructureSanitaire ss, Float lat, Float lon) {
+        if (lat == null && lon == null) {
+            throw new IllegalArgumentException("gpsLatitude ou gpsLongitude doit être fourni.");
+        }
+        if (lat != null) {
+            validateLatitude(lat);
+            ss.setGpsLatitude(lat);
+        }
+        if (lon != null) {
+            validateLongitude(lon);
+            ss.setGpsLongitude(lon);
+        }
+    }
+
+    private void validateLatitude(float lat) {
+        if (lat < -90f || lat > 90f) {
+            throw new IllegalArgumentException("gpsLatitude doit être dans [-90, 90].");
+        }
+    }
+
+    private void validateLongitude(float lon) {
+        if (lon < -180f || lon > 180f) {
+            throw new IllegalArgumentException("gpsLongitude doit être dans [-180, 180].");
+        }
     }
 
 

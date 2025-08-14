@@ -362,5 +362,55 @@ public class NotificationService {
         }
     }
 
+    public void envoyerLienReinitMdpStructure(String email, String nomStructureSanitaire, String resetUrl) {
+        MimeMessage message = javaMailSender.createMimeMessage();
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("notify@eservices-gabon.com");
+            helper.setTo(email);
+            helper.setSubject("Réinitialisation de votre mot de passe");
+
+            String logoUrlPng = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png";
+            String html = """
+        <div style="font-family: Arial, sans-serif; background:#fff; padding:20px;">
+          <div style="max-width:900px; margin:auto;">
+            <div style="text-align:left; margin-bottom:12px;">
+              <img src="%1$s" alt="MonBonDocteur" height="40" style="display:inline-block;border:0;outline:none;text-decoration:none;">
+            </div>
+
+            <h1 style="font-size:22px; font-weight:600; margin:0 0 24px; color:#111;">
+              Réinitialisation de mot de passe — %2$s
+            </h1>
+
+            <p style="margin:0 0 12px; color:#111; line-height:1.5;">
+              Nous avons reçu une demande de réinitialisation du mot de passe pour votre compte.<br>
+              Si vous êtes à l’origine de cette demande, cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.<br>
+              <strong>Ce lien est valable pendant 60 minutes et utilisable une seule fois.</strong>
+            </p>
+
+            <p style="text-align:center; margin:24px 0;">
+              <a href="%3$s" style="background:#1e87f0; color:#fff; padding:14px 28px; font-size:16px; border-radius:6px; text-decoration:none;">
+                Réinitialiser mon mot de passe
+              </a>
+            </p>
+
+            <p style="margin:0; color:#555;">
+              Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :
+            </p>
+            <p style="word-break:break-all; color:#1a73e8; font-size:14px;">%3$s</p>
+
+            <p style="margin-top:24px; color:#111;">— L’équipe MonBonDocteur</p>
+          </div>
+        </div>
+        """.formatted(logoUrlPng, nomStructureSanitaire, resetUrl);
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }
