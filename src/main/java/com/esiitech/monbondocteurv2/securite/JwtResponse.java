@@ -4,6 +4,7 @@ public class JwtResponse {
     private String message;
     private String token;
 
+
     public JwtResponse(String message, String token) {
         this.message = message;
         this.token = token;

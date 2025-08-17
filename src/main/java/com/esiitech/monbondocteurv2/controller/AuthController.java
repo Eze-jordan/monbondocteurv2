@@ -3,6 +3,7 @@ package com.esiitech.monbondocteurv2.controller;
 import com.esiitech.monbondocteurv2.dto.ForgotPasswordRequest;
 import com.esiitech.monbondocteurv2.dto.LoginRequest;
 import com.esiitech.monbondocteurv2.dto.ResetPasswordRequest;
+import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import com.esiitech.monbondocteurv2.securite.CustomUserDetails;
 import com.esiitech.monbondocteurv2.securite.JwtResponse;
 import com.esiitech.monbondocteurv2.securite.JwtService;
@@ -20,6 +21,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/V2/auth")
@@ -52,7 +55,9 @@ public class AuthController {
                     userDetails,
                     userDetails.getNom(),
                     userDetails.getUsername(),
-                    userDetails.getRole()
+                    userDetails.getRole(),
+                    userDetails.getAbonneExpire() // ✅ ajouté
+
             );
 
             // ✅ Cookie sécurisé
@@ -97,22 +102,22 @@ public class AuthController {
             description = "Envoie un email avec un lien de réinitialisation. Réponse 200 même si l'email n'existe pas.")
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
         // URL de ta page front qui recevra ?token=...
-        String frontendResetBaseUrl = "https://monbondocteur.com/reset";
+        String frontendResetBaseUrl = "http://localhost:4200/api/V2/auth/reset";
         passwordResetService.demandeResetParEmail(req.getEmail(), frontendResetBaseUrl);
         return ResponseEntity.ok("Si un compte existe pour cet email, un message a été envoyé.");
     }
 
     // OUVERT (pas d’auth) — consommer le lien
+    @PostMapping(path = "/reset", consumes = "application/json", produces = "application/json")
     @Operation(summary = "nouveau mot de pass",
             description = "Envoie un email avec un lien de réinitialisation et saisie du nouveau mot de passe")
-
-    @PostMapping("/reset")
-    public ResponseEntity<Void> resetPassword(
+    public ResponseEntity<Map<String, String>> resetPassword(
             @RequestParam("token") String token,
             @Valid @RequestBody ResetPasswordRequest request
     ) {
         passwordResetService.appliquerNouveauMotDePasse(token, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès."));
     }
+
 
 }

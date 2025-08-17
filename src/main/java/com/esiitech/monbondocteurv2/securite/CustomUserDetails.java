@@ -13,15 +13,17 @@ public class CustomUserDetails implements UserDetails {
 
     private final String nom;
     private final String role;
+    private final Boolean abonneExpire;
 
     public CustomUserDetails(String email, String password,
                              Collection<? extends GrantedAuthority> authorities,
-                             String nom, String role) {
+                             String nom, String role, Boolean abonneExpire) {
         this.email = email;
         this.password = password;
         this.authorities = authorities;
         this.nom = nom;
         this.role = role;
+        this.abonneExpire = abonneExpire;
     }
 
     public String getNom() {
@@ -31,6 +33,9 @@ public class CustomUserDetails implements UserDetails {
     public String getRole() {
         return role;
     }
+
+    public Boolean getAbonneExpire() {
+        return abonneExpire;}
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -58,4 +63,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() { return true; }
+
+
 }

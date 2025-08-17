@@ -33,7 +33,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                     user.getMotDePasse(),
                     user.getAuthorities(),
                     user.getNom(),
-                    user.getRole().name()
+                    user.getRole().name(),
+                    false // ✅ pas d’abonnement pour Utilisateur
             );
         }
 
@@ -44,7 +45,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                     medecin.getMotDePasse(),
                     medecin.getAuthorities(),
                     medecin.getNomMedecin(),
-                    medecin.getRole().name()
+                    medecin.getRole().name(),
+                    false // ✅ pas d’abonnement pour Utilisateur
             );
         }
 
@@ -55,7 +57,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                     structureSanitaire.getMotDePasse(),
                     structureSanitaire.getAuthorities(),
                     structureSanitaire.getNomStructureSanitaire(),
-                    structureSanitaire.getRole().name()
+                    structureSanitaire.getRole().name(),
+                    structureSanitaire.isAbonneExpire() // ✅
+
             );
 
         }

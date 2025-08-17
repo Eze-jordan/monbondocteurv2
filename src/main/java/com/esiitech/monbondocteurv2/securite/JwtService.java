@@ -33,11 +33,12 @@ public class JwtService {
                 .getBody();
     }
 
-    public String generateToken(CustomUserDetails userDetails, String nom, String email, String role) {
+    public String generateToken(CustomUserDetails userDetails, String nom, String email, String role, boolean abonneExpire) {
         return Jwts.builder()
                 .setSubject(email) // sujet = email (identifiant principal)
                 .claim("nom", nom)
                 .claim("role", role)
+                .claim("abonneExpire", abonneExpire) // ✅ on embarque l'attribut
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // expire dans 10h
                 .signWith(secretKey, SignatureAlgorithm.HS256)

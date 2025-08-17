@@ -119,7 +119,9 @@ public class UtilisateurController {
                     userDetails,
                     userDetails.getNom(),
                     userDetails.getUsername(),
-                    userDetails.getRole()
+                    userDetails.getRole(),
+                    false // medecin ⇒ pas d’abonnement
+
             );
 
             return ResponseEntity.ok(Collections.singletonMap("token", token));
