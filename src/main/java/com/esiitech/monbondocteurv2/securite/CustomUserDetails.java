@@ -7,6 +7,7 @@ import java.util.Collection;
 
 public class CustomUserDetails implements UserDetails {
 
+    private final String id; // ✅ nouvel attribut
     private final String email;
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
@@ -15,9 +16,10 @@ public class CustomUserDetails implements UserDetails {
     private final String role;
     private final Boolean abonneExpire;
 
-    public CustomUserDetails(String email, String password,
+    public CustomUserDetails(String id, String email, String password,
                              Collection<? extends GrantedAuthority> authorities,
                              String nom, String role, Boolean abonneExpire) {
+        this.id = id;
         this.email = email;
         this.password = password;
         this.authorities = authorities;
@@ -25,7 +27,7 @@ public class CustomUserDetails implements UserDetails {
         this.role = role;
         this.abonneExpire = abonneExpire;
     }
-
+    public String getId() { return id; }   // ✅ getter pour l’id
     public String getNom() {
         return nom;
     }
@@ -64,5 +66,7 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-
+    public String getEmail() {
+        return email;
+    }
 }

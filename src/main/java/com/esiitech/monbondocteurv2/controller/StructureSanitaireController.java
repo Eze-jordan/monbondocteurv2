@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -115,9 +116,7 @@ public class StructureSanitaireController {
             );
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String token = jwtService.generateToken(
-                    userDetails, userDetails.getNom(), userDetails.getUsername(), userDetails.getRole(), userDetails.getAbonneExpire()
-            );
+            String token = jwtService.generateToken(userDetails);
 
             return ResponseEntity.ok(Collections.singletonMap("token", token));
 
@@ -242,6 +241,18 @@ public class StructureSanitaireController {
     public ResponseEntity<StructureSanitaireDto> getMyProfile() {
         return ResponseEntity.ok(structureSanitaireService.getMyProfile());
     }
+    @GetMapping("/me/id")
+    public ResponseEntity<String> getMyId(HttpServletRequest request) {
+        String jwt = Arrays.stream(request.getCookies())
+                .filter(c -> "jwt".equals(c.getName()))
+                .findFirst()
+                .map(jakarta.servlet.http.Cookie::getValue) // ✅ bon import
+                .orElseThrow(() -> new RuntimeException("Token introuvable"));
+
+        return ResponseEntity.ok(jwtService.extractId(jwt));
+    }
+
+
 
     // Version multipart (permet de changer la photo)
     @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

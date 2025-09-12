@@ -2,8 +2,10 @@
 package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.ResetPasswordRequest;
+import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.PasswordResetToken;
 import com.esiitech.monbondocteurv2.model.StructureSanitaire;
+import com.esiitech.monbondocteurv2.repository.MedecinRepository;
 import com.esiitech.monbondocteurv2.repository.PasswordResetTokenRepository;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,15 +26,17 @@ public class PasswordResetService {
 
     // Durée de validité du lien (ex: 60 min)
     private static final Duration TOKEN_TTL = Duration.ofMinutes(60);
+    private final MedecinRepository medecinRepository;
 
     public PasswordResetService(StructureSanitaireRepository structureRepo,
                                 PasswordResetTokenRepository tokenRepo,
                                 PasswordEncoder passwordEncoder,
-                                NotificationService notificationService) {
+                                NotificationService notificationService, MedecinRepository medecinRepository) {
         this.structureRepo = structureRepo;
         this.tokenRepo = tokenRepo;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
+        this.medecinRepository = medecinRepository;
     }
 
     /** Étape 1 : Demande -> créer un token et envoyer un lien par email (pas d’OTP). */

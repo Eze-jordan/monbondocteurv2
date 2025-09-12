@@ -50,15 +50,8 @@ public class AuthController {
             );
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String token = jwtService.generateToken(userDetails);
 
-            String token = jwtService.generateToken(
-                    userDetails,
-                    userDetails.getNom(),
-                    userDetails.getUsername(),
-                    userDetails.getRole(),
-                    userDetails.getAbonneExpire() // ✅ ajouté
-
-            );
 
             // ✅ Cookie sécurisé
             ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)

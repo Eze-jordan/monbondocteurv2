@@ -29,6 +29,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Utilisateur user = utilisateurRepository.findByEmail(email).orElse(null);
         if (user != null) {
             return new CustomUserDetails(
+                    user.getId(),
                     user.getEmail(),
                     user.getMotDePasse(),
                     user.getAuthorities(),
@@ -41,6 +42,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Medecin medecin = medecinRepository.findByEmail(email).orElse(null);
         if (medecin != null) {
             return new CustomUserDetails(
+                    medecin.getId(),
                     medecin.getEmail(),
                     medecin.getMotDePasse(),
                     medecin.getAuthorities(),
@@ -53,6 +55,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         StructureSanitaire structureSanitaire = structureSanitaireRepository.findByEmail(email).orElse(null);
         if (structureSanitaire != null) {
             return new CustomUserDetails(
+                    structureSanitaire.getId(),
                     structureSanitaire.getEmail(),
                     structureSanitaire.getMotDePasse(),
                     structureSanitaire.getAuthorities(),

@@ -115,14 +115,7 @@ public class UtilisateurController {
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-            String token = jwtService.generateToken(
-                    userDetails,
-                    userDetails.getNom(),
-                    userDetails.getUsername(),
-                    userDetails.getRole(),
-                    false // medecin ⇒ pas d’abonnement
-
-            );
+            String token =jwtService.generateToken(userDetails);
 
             return ResponseEntity.ok(Collections.singletonMap("token", token));
         } catch (AuthenticationException e) {

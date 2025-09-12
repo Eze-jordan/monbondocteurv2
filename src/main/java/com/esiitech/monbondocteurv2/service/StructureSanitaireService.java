@@ -13,7 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -286,6 +285,14 @@ public class StructureSanitaireService implements UserDetailsService {
         return mapper.toDto(me);
     }
 
+    /** Récupère le profil d'une structure sanitaire par son ID (réservé aux admins). */
+    public StructureSanitaireDto getProfileById(String id) {
+        StructureSanitaire structure = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Structure sanitaire non trouvée"));
+        return mapper.toDto(structure);
+    }
+
+
     /** Met à jour le profil de la structure connectée (nom, email, téléphone, adresse, ville, photo…).
      * Remarque : si tu permets de changer l’email, le JWT en cours contient encore l’ancien email.
      * Après update, fais re-login côté front pour régénérer un token propre. */
@@ -465,6 +472,8 @@ public class StructureSanitaireService implements UserDetailsService {
             throw new IllegalArgumentException("gpsLongitude doit être dans [-180, 180].");
         }
     }
+
+
 
 
 }

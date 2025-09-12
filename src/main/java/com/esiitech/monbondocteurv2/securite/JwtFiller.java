@@ -47,6 +47,7 @@ public class JwtFiller extends OncePerRequestFilter {
         if (jwt != null) {
             try {
                 userEmail = jwtService.extractUsername(jwt);
+                String userId = jwtService.extractId(jwt); // ✅ récupère l'id ici
 
                 if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);

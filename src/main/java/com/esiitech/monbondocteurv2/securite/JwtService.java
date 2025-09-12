@@ -33,14 +33,15 @@ public class JwtService {
                 .getBody();
     }
 
-    public String generateToken(CustomUserDetails userDetails, String nom, String email, String role, boolean abonneExpire) {
+    public String generateToken(CustomUserDetails userDetails) {
         return Jwts.builder()
-                .setSubject(email) // sujet = email (identifiant principal)
-                .claim("nom", nom)
-                .claim("role", role)
-                .claim("abonneExpire", abonneExpire) // ✅ on embarque l'attribut
+                .setSubject(userDetails.getUsername()) // email
+                .claim("id", userDetails.getId())       // ✅ on stocke l’id
+                .claim("nom", userDetails.getNom())
+                .claim("role", userDetails.getRole())
+                .claim("abonneExpire", userDetails.getAbonneExpire())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // expire dans 10h
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10h
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -62,5 +63,9 @@ public class JwtService {
     public String extractClaim(String token, String claimKey) {
         return extractAllClaims(token).get(claimKey, String.class);
     }
+    public String extractId(String token) {
+        return extractClaim(token, "id");
+    }
+
 
 }
