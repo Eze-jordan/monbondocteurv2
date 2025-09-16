@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: 123456789
       POSTGRES_DB: monbondocteurv2db
     ports:
-      - "5437:5432"
+      - "5439:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
