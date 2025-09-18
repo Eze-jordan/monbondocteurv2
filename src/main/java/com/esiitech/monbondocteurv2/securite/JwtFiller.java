@@ -34,20 +34,17 @@ public class JwtFiller extends OncePerRequestFilter {
         String jwt = null;
         String userEmail = null;
 
-        // 🔍 Chercher le cookie "jwt" dans la requête
-        if (request.getCookies() != null) {
-            for (var cookie : request.getCookies()) {
-                if ("jwt".equals(cookie.getName())) {
-                    jwt = cookie.getValue();
-                }
-            }
+        // 🔍 Chercher le header "Authorization: Bearer <token>"
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7); // on enlève "Bearer "
         }
 
         // 🔐 Vérifie que le JWT est bien trouvé
         if (jwt != null) {
             try {
                 userEmail = jwtService.extractUsername(jwt);
-                String userId = jwtService.extractId(jwt); // ✅ récupère l'id ici
+                String userId = jwtService.extractId(jwt); // ✅ récupère l'id si besoin
 
                 if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
