@@ -3,10 +3,10 @@ package com.esiitech.monbondocteurv2.service;
 import com.esiitech.monbondocteurv2.model.Validation;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
 @Service
 public class NotificationService {
     JavaMailSender javaMailSender;

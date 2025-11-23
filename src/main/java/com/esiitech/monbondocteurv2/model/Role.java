@@ -1,5 +1,5 @@
 package com.esiitech.monbondocteurv2.model;
 
 public enum Role {
-    ADMIN, USER,MEDECIN,STRUCTURESANITAIRE;
+    SUPER_ADMIN,ADMIN, USER,MEDECIN,STRUCTURESANITAIRE;
 }
