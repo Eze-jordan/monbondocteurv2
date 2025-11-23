@@ -10,7 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
 
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:D:/ProjetSpring/monbondocteurV2/uploads/");
+                .addResourceLocations("file:/app/uploads/");
     }
 }
 
