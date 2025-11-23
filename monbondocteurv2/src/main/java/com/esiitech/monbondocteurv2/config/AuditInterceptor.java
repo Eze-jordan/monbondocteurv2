@@ -1,6 +1,7 @@
 package com.esiitech.monbondocteurv2.config;
 
 
+import com.esiitech.monbondocteurv2.securite.CustomUserDetails;
 import com.esiitech.monbondocteurv2.service.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,15 +23,41 @@ public class AuditInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response,
                              Object handler) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        String userEmail = (auth != null && auth.getName() != null) ? auth.getName() : "ANONYMOUS";
-        String role = (auth != null && auth.getAuthorities() != null) ? auth.getAuthorities().toString() : "NONE";
+        String userEmail = "ANONYMOUS";
+        String userId = "UNKNOWN";
+        String role = "NONE";
+
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+
+            Object principal = auth.getPrincipal();
+
+            if (principal instanceof CustomUserDetails customUser) {
+                userEmail = customUser.getUsername();
+                userId = customUser.getId();
+                role = customUser.getAuthorities().toString();
+            } else {
+                userEmail = auth.getName();
+                role = auth.getAuthorities().toString();
+            }
+        }
+
+        String action = request.getMethod() + " " + request.getRequestURI();
+
+        String description = String.format(
+                "Requête %s effectuée par %s (ID=%s, rôle=%s)",
+                action,
+                userEmail,
+                userId,
+                role
+        );
 
         auditLogService.logAction(
-                request.getMethod() + " " + request.getRequestURI(),
-                "Appel API automatique",
-                null, // si tu veux pas gérer d’ID ici
+                action,
+                description,
+                userId,
                 userEmail,
                 role,
                 request.getRemoteAddr(),
@@ -39,5 +66,6 @@ public class AuditInterceptor implements HandlerInterceptor {
 
         return true;
     }
+
 }
 
