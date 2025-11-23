@@ -2,19 +2,26 @@ package com.esiitech.monbondocteurv2.model;
 
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
-public class Medecin  {
+public class Medecin  implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 6)
+    private String id;
     private String nomMedecin;
     private String prenomMedecin;
-    @Enumerated(EnumType.STRING)
-    private RefGrade refGrade;
-    @Enumerated(EnumType.STRING)
 
-    private  RefSpecialite refSpecialite;
+    private String refGrade;
+
+    private  String refSpecialite;
     @Column(unique = true, nullable = false)
     private String email;
     @Column(nullable = false)
@@ -22,14 +29,17 @@ public class Medecin  {
     @Column(name = "photo")
     private String photoPath;
 
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     @Column(nullable = false)
     private boolean actif = false;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -49,19 +59,19 @@ public class Medecin  {
         this.prenomMedecin = prenomMedecin;
     }
 
-    public RefGrade getRefGrade() {
+    public String getRefGrade() {
         return refGrade;
     }
 
-    public void setRefGrade(RefGrade refGrade) {
+    public void setRefGrade(String refGrade) {
         this.refGrade = refGrade;
     }
 
-    public RefSpecialite getRefSpecialite() {
+    public String getRefSpecialite() {
         return refSpecialite;
     }
 
-    public void setRefSpecialite(RefSpecialite refSpecialite) {
+    public void setRefSpecialite(String refSpecialite) {
         this.refSpecialite = refSpecialite;
     }
 
@@ -89,7 +99,13 @@ public class Medecin  {
         this.photoPath = photoPath;
     }
 
+    public Role getRole() {
+        return role;
+    }
 
+    public void setRole(Role role) {
+        this.role = role;
+    }
 
     public boolean isActif() {
         return actif;
@@ -97,5 +113,20 @@ public class Medecin  {
 
     public void setActif(boolean actif) {
         this.actif = actif;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role));
+    }
+
+    @Override
+    public String getPassword() {
+         return this.motDePasse;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
     }
 }

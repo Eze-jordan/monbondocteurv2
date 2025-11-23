@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MedecinMapper {
-
+    /**
+     * Convertir l'entité Medecin en DTO de réponse
+     */
     public MedecinDto toDto(Medecin entity) {
         MedecinDto dto = new MedecinDto();
         dto.setId(entity.getId());
@@ -15,12 +17,14 @@ public class MedecinMapper {
         dto.setRefGrade(entity.getRefGrade());
         dto.setRefSpecialite(entity.getRefSpecialite());
         dto.setEmail(entity.getEmail());
-        dto.setMotDePasse(entity.getMotDePasse());
+        dto.setRole(entity.getRole());
         dto.setPhotoPath(entity.getPhotoPath());
         dto.setActif(entity.isActif());
         return dto;
     }
-
+        /**
+         * Convertir le DTO de la demande medecin en entité Utilisateur
+         */
     public Medecin toEntity(MedecinDto dto) {
         Medecin entity = new Medecin();
         entity.setId(dto.getId());
@@ -31,6 +35,7 @@ public class MedecinMapper {
         entity.setEmail(dto.getEmail());
         entity.setMotDePasse(dto.getMotDePasse());
         entity.setPhotoPath(dto.getPhotoPath());
+        entity.setRole(dto.getRole());
         entity.setActif(dto.isActif());
         return entity;
     }

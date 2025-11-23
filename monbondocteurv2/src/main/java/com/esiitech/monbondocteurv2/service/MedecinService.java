@@ -1,11 +1,18 @@
 package com.esiitech.monbondocteurv2.service;
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
 import com.esiitech.monbondocteurv2.model.Medecin;
+import com.esiitech.monbondocteurv2.model.Role;
+import com.esiitech.monbondocteurv2.model.Utilisateur;
+import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.repository.MedecinRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,20 +21,29 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-public class MedecinService {
+public class MedecinService implements UserDetailsService {
 
     @Autowired
     private MedecinRepository repository;
 
     @Autowired
     private MedecinMapper mapper;
+    @Autowired
+    private  ValidationService validationService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+    @Autowired
+    private MedecinRepository medecinRepository;
+
+    @Autowired
+    private NotificationService notificationService;  // Inject NotificationService here
 
     @Value("${app.upload.dir.medecins}")  // Dossier où les photos des médecins sont stockées
     private String uploadDir;
@@ -38,6 +54,11 @@ public class MedecinService {
     public MedecinDto save(MedecinDto dto, MultipartFile photo) throws IOException {
         // Valider les données du DTO avant de les sauvegarder
         validateMedecinDto(dto);
+
+        // Affecter le rôle par défaut AVANT le mapping
+        if (dto.getRole() == null) {
+            dto.setRole(Role.MEDECIN);
+        }
 
         // Convertir le DTO en entité
         Medecin entity = mapper.toEntity(dto);
@@ -50,13 +71,47 @@ public class MedecinService {
 
         // Encoder le mot de passe
         entity.setMotDePasse(passwordEncoder.encode(dto.getMotDePasse()));
-
+        if (entity.getId() == null) {
+            entity.setId(generateCustomId());
+        }
         // Sauvegarder dans la base de données
         Medecin savedMedecin = repository.save(entity);
+        this.validationService.enregisterMedecin(savedMedecin);
 
         // Convertir l'entité sauvegardée en DTO et retourner le DTO
         return mapper.toDto(savedMedecin);
     }
+
+    private static long lastId = 100000;  // Commence à 500000
+
+    private synchronized String generateCustomId() {
+        lastId++;
+        return String.format("%06d", lastId);
+    }
+
+
+    public void activation(Map<String, String> activation) {
+        Validation validation = validationService.lireEnFonctionDuCode(activation.get("code"));
+        if (Instant.now().isAfter(validation.getExpiration())) {
+            throw new RuntimeException("Votre code a expiré");
+        }
+
+        Medecin MedecinActiver = repository.findById(validation.getMedecin().getId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu"));
+
+        MedecinActiver.setActif(true);
+        repository.save(MedecinActiver);
+        notificationService.envoyerBienvenueAuMedecin(MedecinActiver.getEmail(), MedecinActiver.getNomMedecin());
+
+    }
+
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return this.medecinRepository.findByEmail(username).orElseThrow (()
+                -> new UsernameNotFoundException(
+                "Aucun utilisateur ne conrespond à cet identifiant"
+        ));
+    }
+
 
     /**
      * Sauvegarder la photo et retourner son chemin
@@ -97,7 +152,7 @@ public class MedecinService {
     /**
      * Mettre à jour un médecin.
      */
-    public MedecinDto update(Long id, MedecinDto dto, MultipartFile photo) throws IOException {
+    public MedecinDto update(String id, MedecinDto dto, MultipartFile photo) throws IOException {
         Medecin entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
 
         // Mettre à jour les informations
@@ -120,12 +175,10 @@ public class MedecinService {
         return mapper.toDto(updatedMedecin);
     }
 
-
-
     /**
      * Supprimer un médecin par son ID.
      */
-    public void deleteById(Long id) {
+    public void deleteById(String id) {
         repository.deleteById(id);
     }
 
@@ -133,6 +186,11 @@ public class MedecinService {
      * Convertir le chemin de la photo en une URL complète.
      * Cela permet d'afficher la photo depuis le front-end via une URL publique.
      */
+
+    // 5. Méthode countAll()
+    public long countAll() {
+        return repository.count();
+    }
 
 
     // 1. Méthode findAll()
@@ -143,15 +201,9 @@ public class MedecinService {
                 .collect(Collectors.toList());
     }
 
-    // 2. Méthode findByEmail()
-    public MedecinDto findByEmail(String email) {
-        Medecin entity = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
-        return mapper.toDto(entity);
-    }
 
     // 3. Méthode updateStatus()
-    public MedecinDto updateStatus(Long id, boolean actif) {
+    public MedecinDto updateStatus(String id, boolean actif) {
         Medecin entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
         entity.setActif(actif);
@@ -159,6 +211,12 @@ public class MedecinService {
         return mapper.toDto(updatedMedecin);
     }
 
+    // 2. Méthode findByEmail()
+    public MedecinDto findByEmail(String email) {
+        Medecin entity = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
+        return mapper.toDto(entity);
+    }
     // 4. Méthode deleteByEmail()
     public void deleteByEmail(String email) {
         Medecin entity = repository.findByEmail(email)
@@ -166,13 +224,8 @@ public class MedecinService {
         repository.delete(entity);
     }
 
-    // 5. Méthode countAll()
-    public long countAll() {
-        return repository.count();
-    }
-
     // 6. Méthode getPhoto()
-    public byte[] getPhoto(Long id) throws IOException {
+    public byte[] getPhoto(String id) throws IOException {
         Medecin entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
         String photoPath = entity.getPhotoPath();
@@ -199,4 +252,21 @@ public class MedecinService {
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
     }
+    public Medecin getById(String id) {
+        return medecinRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
+    }
+
+    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
+        if (!dto.getNouveauMotDePasse().equals(dto.getConfirmerMotDePasse())) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        }
+
+        Medecin medecin = medecinRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+
+        medecin.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
+        medecinRepository.save(medecin);
+    }
+
 }

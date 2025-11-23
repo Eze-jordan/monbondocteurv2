@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.service;
 
+import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.UtilisateurDto;
 import com.esiitech.monbondocteurv2.mapper.UtilisateurMapper;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
@@ -8,6 +9,9 @@ import com.esiitech.monbondocteurv2.repository.UtilisateurRepository;
 import com.esiitech.monbondocteurv2.model.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,7 +26,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-public class UtilisateurService {
+public class UtilisateurService  implements UserDetailsService {
 
     @Autowired
     private UtilisateurRepository repository;
@@ -68,6 +72,10 @@ public class UtilisateurService {
             utilisateur.setPhotoPath(DEFAULT_PHOTO_PATH);
         }
 
+        if (utilisateur.getId() == null) {
+            utilisateur.setId(generateUserId());
+        }
+
         // Sauvegarder dans la base de données
         utilisateur = this.repository.save(utilisateur);
         this.validationService.enregister(utilisateur);
@@ -78,6 +86,10 @@ public class UtilisateurService {
         return mapper.toDto(utilisateur);
 
 
+    }
+
+    private String generateUserId() {
+        return "user-" + java.util.UUID.randomUUID();
     }
 
     /**
@@ -124,7 +136,7 @@ public class UtilisateurService {
     /**
      * Récupérer un utilisateur par son ID.
      */
-    public UtilisateurDto findById(Long id) {
+    public UtilisateurDto findById(String id) {
         Utilisateur utilisateur = repository.findById(id).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
         return mapper.toDto(utilisateur);
     }
@@ -132,7 +144,7 @@ public class UtilisateurService {
     /**
      * Mettre à jour le profil d'un utilisateur.
      */
-    public UtilisateurDto update(Long id, UtilisateurDto dto) {
+    public UtilisateurDto update(String id, UtilisateurDto dto) {
         Utilisateur utilisateur = repository.findById(id).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         // Mettre à jour les informations de l'utilisateur
@@ -181,4 +193,25 @@ public class UtilisateurService {
         utilisateurActiver.setActif(true);
         utilisateurRepository.save(utilisateurActiver);
     }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return this.utilisateurRepository.findByEmail(username).orElseThrow (()
+                -> new UsernameNotFoundException(
+                "Aucun utilisateur ne conrespond à cet identifiant"
+        ));
+    }
+
+    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
+        if (!dto.getNouveauMotDePasse().equals(dto.getConfirmerMotDePasse())) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        }
+
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+
+        utilisateur.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
+        utilisateurRepository.save(utilisateur);
+    }
+
 }

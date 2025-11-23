@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class UtilisateurMapper {
 
     /**
-     * Convertit un Utilisateur en UtilisateurDto
+     * Convertir l'entité Utilisateur en DTO de réponse
      */
     public UtilisateurDto toDto(Utilisateur utilisateur) {
         if (utilisateur == null) {
@@ -20,7 +20,6 @@ public class UtilisateurMapper {
         dto.setNom(utilisateur.getNom());
         dto.setPrenom(utilisateur.getPrenom());
         dto.setEmail(utilisateur.getEmail());
-        dto.setMotDePasse(utilisateur.getMotDePasse());  // Attention, ne jamais exposer le mot de passe dans un DTO ! (à hacher dans l'API)
         dto.setSexe(utilisateur.getSexe());
         dto.setPhotoPath(utilisateur.getPhotoPath());
         dto.setRole(utilisateur.getRole());
@@ -30,7 +29,7 @@ public class UtilisateurMapper {
     }
 
     /**
-     * Convertit un UtilisateurDto en Utilisateur
+     * Convertir le DTO de la demande utilisateur en entité Utilisateur
      */
     public Utilisateur toEntity(UtilisateurDto dto) {
         if (dto == null) {

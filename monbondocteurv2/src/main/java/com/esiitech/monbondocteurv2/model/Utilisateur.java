@@ -6,11 +6,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 @Getter
 @Setter
@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 @Entity
 public class Utilisateur  implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", nullable = false,length = 100,updatable = false)
+    private String  id;
     private String nom;
     private String prenom;
     @Column(unique = true, nullable = false)
@@ -38,12 +38,9 @@ public class Utilisateur  implements UserDetails {
     private boolean actif = false;
 
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(role).stream() // Retourne une liste contenant le rôle de l'utilisateur
-                .map(r -> (GrantedAuthority) () -> r.name()) // Utilise le nom du rôle comme une autorité
-                .collect(Collectors.toList());
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role));
     }
 
     @Override
@@ -93,11 +90,11 @@ public class Utilisateur  implements UserDetails {
         this.sexe = sexe;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

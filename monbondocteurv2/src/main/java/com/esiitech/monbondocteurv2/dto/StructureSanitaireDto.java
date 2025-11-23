@@ -2,31 +2,55 @@ package com.esiitech.monbondocteurv2.dto;
 
 import com.esiitech.monbondocteurv2.model.RefSpecialite;
 import com.esiitech.monbondocteurv2.model.RefType;
+import com.esiitech.monbondocteurv2.model.Statut;
 import com.esiitech.monbondocteurv2.model.Ville;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
+import java.util.Date;
 import java.util.Set;
 
 public class StructureSanitaireDto {
-    private Long id;
+    private String id;
     private String nomStructureSanitaire;
     private String adresse;
+    @NotBlank(message = "L'email est obligatoire")
+    @Email(message = "Email invalide")
     private String email;
+
+    @NotBlank(message = "Le mot de passe est obligatoire")
+    @Size(min = 12, message = "Le mot de passe doit contenir au moins 12 caractères")
+    @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
+            message = "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
+    )
     private String motDePasse;
     private String numeroTelephone;
-    private String logoPath;
-    private Ville ville;
-    private RefType refType;
+    private String photoPath;
+    private String ville;
+    private String refType;
     private Float gpsLongitude;
     private Float gpsLatitude;
-    private Set<RefSpecialite> refSpecialites;
+    private Set<String> refSpecialites; // ou List<String>
+    private String Urldocument;
+    private Date DateDebutAbonnement;
+    private Date DateFinAbonnement;
+    private boolean abonneExpire = true;
+    private boolean actif;
+
 
     // Getters et setters
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -36,6 +60,46 @@ public class StructureSanitaireDto {
 
     public void setNomStructureSanitaire(String nomStructureSanitaire) {
         this.nomStructureSanitaire = nomStructureSanitaire;
+    }
+
+    public String getUrldocument() {
+        return Urldocument;
+    }
+
+    public void setUrldocument(String urldocument) {
+        Urldocument = urldocument;
+    }
+
+    public Date getDateDebutAbonnement() {
+        return DateDebutAbonnement;
+    }
+
+    public void setDateDebutAbonnement(Date dateDebutAbonnement) {
+        DateDebutAbonnement = dateDebutAbonnement;
+    }
+
+    public Date getDateFinAbonnement() {
+        return DateFinAbonnement;
+    }
+
+    public void setDateFinAbonnement(Date dateFinAbonnement) {
+        DateFinAbonnement = dateFinAbonnement;
+    }
+
+    public boolean isAbonneExpire() {
+        return abonneExpire;
+    }
+
+    public void setAbonneExpire(boolean abonneExpire) {
+        this.abonneExpire = abonneExpire;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
     }
 
     public String getMotDePasse() {
@@ -70,28 +134,36 @@ public class StructureSanitaireDto {
         this.numeroTelephone = numeroTelephone;
     }
 
-    public String getLogoPath() {
-        return logoPath;
+    public String getPhotoPath() {
+        return photoPath;
     }
 
-    public void setLogoPath(String logoPath) {
-        this.logoPath = logoPath;
+    public void setPhotoPath(String photoPath) {
+        this.photoPath = photoPath;
     }
 
-    public Ville getVille() {
+    public String getVille() {
         return ville;
     }
 
-    public void setVille(Ville ville) {
+    public void setVille(String ville) {
         this.ville = ville;
     }
 
-    public RefType getRefType() {
+    public String getRefType() {
         return refType;
     }
 
-    public void setRefType(RefType refType) {
+    public void setRefType(String refType) {
         this.refType = refType;
+    }
+
+    public Set<String> getRefSpecialites() {
+        return refSpecialites;
+    }
+
+    public void setRefSpecialites(Set<String> refSpecialites) {
+        this.refSpecialites = refSpecialites;
     }
 
     public Float getGpsLongitude() {
@@ -108,13 +180,5 @@ public class StructureSanitaireDto {
 
     public void setGpsLatitude(Float gpsLatitude) {
         this.gpsLatitude = gpsLatitude;
-    }
-
-    public Set<RefSpecialite> getRefSpecialites() {
-        return refSpecialites;
-    }
-
-    public void setRefSpecialites(Set<RefSpecialite> refSpecialites) {
-        this.refSpecialites = refSpecialites;
     }
 }

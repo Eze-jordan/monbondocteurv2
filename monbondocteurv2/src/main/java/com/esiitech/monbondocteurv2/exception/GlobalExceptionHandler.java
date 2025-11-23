@@ -1,6 +1,6 @@
 package com.esiitech.monbondocteurv2.exception;
 
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
+import com.esiitech.monbondocteurv2.exception.FileUploadException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+/*
     // Exception personnalisée pour les erreurs de validation
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)  // Erreur 400 - Bad Request
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)  // Erreur 500 - Internal Server Error
     public ResponseEntity<ErrorDetails> handleGenericException(Exception ex) {
-        ErrorDetails errorDetails = new ErrorDetails(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Une erreur interne s'est produite.");
+        ErrorDetails errorDetails = new ErrorDetails(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Une erreur interne s'est produite lors du traitement de la demande. Veuillez réessayer plus tard. Si le problème persiste, contactez l'assistance technique.");
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -43,6 +44,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 
+
     // Exception pour les erreurs liées à des erreurs de validation de fichiers (ex: taille, type de fichier)
     @ExceptionHandler(FileUploadException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -50,5 +52,8 @@ public class GlobalExceptionHandler {
         ErrorDetails errorDetails = new ErrorDetails(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
+
+
+*/
 
 }

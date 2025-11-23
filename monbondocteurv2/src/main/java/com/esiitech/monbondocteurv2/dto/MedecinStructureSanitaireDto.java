@@ -1,34 +1,34 @@
 package com.esiitech.monbondocteurv2.dto;
 
 public class MedecinStructureSanitaireDto {
-    private Long id;
-    private Long medecinId;
-    private Long structureSanitaireId;
+    private String id;
+    private String medecinId;
+    private String structureSanitaireId;
     private boolean actif;
 
     // Getters et setters
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Long getMedecinId() {
+    public String getMedecinId() {
         return medecinId;
     }
 
-    public void setMedecinId(Long medecinId) {
+    public void setMedecinId(String medecinId) {
         this.medecinId = medecinId;
     }
 
-    public Long getStructureSanitaireId() {
+    public String getStructureSanitaireId() {
         return structureSanitaireId;
     }
 
-    public void setStructureSanitaireId(Long structureSanitaireId) {
+    public void setStructureSanitaireId(String structureSanitaireId) {
         this.structureSanitaireId = structureSanitaireId;
     }
 

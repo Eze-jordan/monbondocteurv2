@@ -1,0 +1,39 @@
+services:
+ # db:
+ #   image: postgres:15
+ #   container_name: postgres_monbondocteurv2db
+ #   environment:
+ #     POSTGRES_USER: postgres
+ #     POSTGRES_PASSWORD: 123456789
+ #     POSTGRES_DB: monbondocteurv2db
+ #   ports:
+ #     - "5439:5432"
+ #   volumes:
+ #     - db-data:/var/lib/postgresql/data
+ #   networks:
+ #     - monbondocteurv2-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monbondocteurv2_app
+    ports:
+      - "9087:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://86.105.252.192:5432/monbondocteurv2db
+      SPRING_DATASOURCE_USERNAME: springuser
+      SPRING_DATASOURCE_PASSWORD: 9bc62539da2fd028d4f558651ff2fa274b9605ba7faf8511c092bd78273970cd
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - monbondocteurv2-net
+
+volumes:
+  db-data:
+
+networks:
+  monbondocteurv2-net:

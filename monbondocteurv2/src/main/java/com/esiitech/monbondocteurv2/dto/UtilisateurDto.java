@@ -2,14 +2,25 @@ package com.esiitech.monbondocteurv2.dto;
 
 import com.esiitech.monbondocteurv2.model.Role;
 import com.esiitech.monbondocteurv2.model.Sexe;
-import com.esiitech.monbondocteurv2.model.Utilisateur;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class UtilisateurDto  {
 
-    private Long id;
+    private String id;
     private String nom;
     private String prenom;
+    @NotBlank(message = "L'email est obligatoire")
+    @Email(message = "Email invalide")
     private String email;
+    @NotBlank(message = "Le mot de passe est obligatoire")
+    @Size(min = 12, message = "Le mot de passe doit contenir au moins 12 caractères")
+    @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
+            message = "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
+    )
     private String motDePasse;
     private Sexe sexe;
     private String photoPath;
@@ -25,11 +36,11 @@ public class UtilisateurDto  {
         }
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
