@@ -211,7 +211,7 @@ public class NotificationService {
     }
 
 
-    public void envoyerBienvenueAuMedecin(String email, String nomMedecin) {
+    public void envoyerBienvenueAuMedecin(String email, String nomMedecin, Long idMedecin) {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         try {
@@ -221,20 +221,21 @@ public class NotificationService {
             helper.setSubject("Bienvenue sur Mon Bon Docteur");
 
             String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">Bienvenue Dr %s 👨‍⚕️</h2>
-                    <p>Merci d’avoir rejoint MonBonDocteur !</p>
-                    <p>Vous pouvez maintenant gérer vos disponibilités, rendez-vous, et interagir avec vos patients.</p>
-                    <div style="text-align: center; margin-top: 30px;">
-                        <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
-                            Accéder à mon espace
-                        </a>
-                    </div>
-                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
+        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+            <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                <h2 style="text-align: center; color: #2c3e50;">Bienvenue Dr %s 👨‍⚕️</h2>
+                <p>Votre identifiant professionnel est : <strong>%s</strong></p>
+                <p>Merci d’avoir rejoint MonBonDocteur !</p>
+                <p>Vous pouvez maintenant gérer vos disponibilités, rendez-vous, et interagir avec vos patients.</p>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
+                        Accéder à mon espace
+                    </a>
                 </div>
+                <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
             </div>
-        """.formatted(nomMedecin);
+        </div>
+        """.formatted(nomMedecin, idMedecin);
 
             helper.setText(htmlContent, true);
             javaMailSender.send(message);
@@ -242,6 +243,7 @@ public class NotificationService {
             e.printStackTrace();
         }
     }
+
 
 
     public void envoyerAccuseEnregistrementStructure(String email,
