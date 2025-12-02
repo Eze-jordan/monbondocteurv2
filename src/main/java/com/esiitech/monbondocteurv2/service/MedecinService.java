@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -90,20 +91,45 @@ public class MedecinService implements UserDetailsService {
     }
 
 
+    @Transactional
     public void activation(Map<String, String> activation) {
-        Validation validation = validationService.lireEnFonctionDuCode(activation.get("code"));
-        if (Instant.now().isAfter(validation.getExpiration())) {
-            throw new RuntimeException("Votre code a expiré");
+        String code = activation.get("code");
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("Code d'activation manquant.");
         }
 
-        Medecin MedecinActiver = repository.findById(validation.getMedecin().getId())
-                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu"));
+        Validation validation = validationService.lireEnFonctionDuCode(code);
+        if (validation == null) {
+            throw new RuntimeException("Code d'activation invalide.");
+        }
 
-        MedecinActiver.setActif(true);
-        repository.save(MedecinActiver);
-        notificationService.envoyerBienvenueAuMedecin(MedecinActiver.getEmail(), MedecinActiver.getNomMedecin());
+        if (Instant.now().isAfter(validation.getExpiration())) {
+            throw new RuntimeException("Votre code a expiré.");
+        }
 
+        String medecinIdStr = validation.getMedecin().getId();
+        Medecin medecinActiver = repository.findById(medecinIdStr)
+                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu."));
+
+        medecinActiver.setActif(true);
+        repository.save(medecinActiver);
+
+        // Convertir l'ID (String) en Long si possible, sinon lever une erreur claire
+        Long medecinIdLong;
+        try {
+            medecinIdLong = Long.parseLong(medecinIdStr);
+        } catch (NumberFormatException ex) {
+            throw new RuntimeException("L'ID du médecin n'est pas au format numérique attendu (Long): " + medecinIdStr, ex);
+        }
+
+        // Appel avec l'ID en Long (correspond à la signature requise)
+        notificationService.envoyerBienvenueAuMedecin(
+                medecinActiver.getEmail(),
+                medecinActiver.getNomMedecin(),
+                medecinIdLong
+        );
     }
+
 
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return this.medecinRepository.findByEmail(username).orElseThrow (()
