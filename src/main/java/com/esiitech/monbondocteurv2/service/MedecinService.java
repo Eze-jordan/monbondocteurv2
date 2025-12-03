@@ -294,5 +294,26 @@ public class MedecinService implements UserDetailsService {
         medecin.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
         medecinRepository.save(medecin);
     }
+    // Retourne un MedecinDto à partir de l'id (utile pour le front)
+    public MedecinDto findByIdDto(String id) {
+        Medecin medecin = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
+        return mapper.toDto(medecin);
+    }
 
+    // Recherche par id (retourne l'entité si tu as besoin de l'entité)
+    public Medecin findEntityById(String id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
+    }
+
+    // Recherche par nom ou prénom (partial, case-insensitive)
+    public List<MedecinDto> searchByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return findAll(); // ou Collections.emptyList(); selon ton choix
+        }
+        String query = name.trim();
+        List<Medecin> medecins = repository.findByNomMedecinIgnoreCaseContainingOrPrenomMedecinIgnoreCaseContaining(query, query);
+        return medecins.stream().map(mapper::toDto).collect(Collectors.toList());
+    }
 }
