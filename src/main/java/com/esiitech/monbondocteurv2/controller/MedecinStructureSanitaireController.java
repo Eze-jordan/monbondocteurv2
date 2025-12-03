@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.controller;
 
+import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import com.esiitech.monbondocteurv2.dto.MedecinStructureSanitaireDto;
 import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.StructureSanitaire;
@@ -8,6 +9,7 @@ import com.esiitech.monbondocteurv2.service.MedecinStructureSanitaireService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,4 +66,15 @@ public class MedecinStructureSanitaireController {
         Medecin medecin = medecinService.getById(medecinId);
         return medecinStructureSanitaireService.getStructureSanitaireActifByMedecin(medecin);
     }
+    @GetMapping(value = "/{structureId}/medecins", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(tags = "Structures", summary = "Liste des médecins d'une structure", description = "Renvoie tous les médecins rattachés à la structure (sans pagination).")
+    public ResponseEntity<List<MedecinDto>> getMedecinsByStructure(@PathVariable String structureId,
+                                                                   @RequestParam(required = false, defaultValue = "false") boolean onlyActive) {
+        List<MedecinDto> list = onlyActive ?
+                medecinStructureSanitaireService.getActiveMedecinsByStructure(structureId) :
+                medecinStructureSanitaireService.getAllMedecinsByStructure(structureId);
+        return ResponseEntity.ok(list);
+    }
+
+
 }

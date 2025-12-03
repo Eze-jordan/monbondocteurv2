@@ -2,6 +2,7 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
+import com.esiitech.monbondocteurv2.exception.MedecinNonTrouveException;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
 import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.Role;
@@ -294,12 +295,15 @@ public class MedecinService implements UserDetailsService {
         medecin.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
         medecinRepository.save(medecin);
     }
+
     // Retourne un MedecinDto à partir de l'id (utile pour le front)
     public MedecinDto findByIdDto(String id) {
         Medecin medecin = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
+                .orElseThrow(() -> new MedecinNonTrouveException("Médecin introuvable avec l'id " + id));
+
         return mapper.toDto(medecin);
     }
+
 
     // Recherche par id (retourne l'entité si tu as besoin de l'entité)
     public Medecin findEntityById(String id) {
