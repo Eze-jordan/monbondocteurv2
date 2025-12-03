@@ -3,6 +3,8 @@ package com.esiitech.monbondocteurv2.repository;
 import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.MedecinStructureSanitaire;
 import com.esiitech.monbondocteurv2.model.RefSpecialite;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +21,13 @@ public interface MedecinStructureSanitaireRepository extends JpaRepository<Medec
             @Param("specialite") RefSpecialite specialite);
 
     Optional<MedecinStructureSanitaire> findByMedecinAndActifTrue(Medecin medecin);
+
+
+    // Retourne les relations (association entity) pour une structure donnée
+    List<MedecinStructureSanitaire> findByStructureSanitaireId(String structureId);
+
+    // Variante : uniquement les affectations actives
+    List<MedecinStructureSanitaire> findByStructureSanitaireIdAndActifTrue(String structureId);
 
 
 }
