@@ -237,4 +237,27 @@ public class MedecinController {
         medecinService.updatePasswordByEmail(dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès.");
     }
+
+    // GET /api/V2/medecins/{id}
+    @Operation(
+            tags = "Médecins",
+            summary = "Récupérer un médecin par son ID",
+            description = "Recherche un médecin en fonction de son identifiant unique et retourne les informations associées."
+    )
+    @GetMapping("/{id}")
+    public ResponseEntity<MedecinDto> getById(@PathVariable String id) {
+        MedecinDto dto = medecinService.findByIdDto(id);
+        return ResponseEntity.ok(dto);
+    }
+
+    @Operation(
+            tags = "Médecins",
+            summary = "Rechercher des médecins par nom",
+            description = "Recherche un médecin par nom ou prénom (recherche partielle et insensible à la casse)."
+    )
+    @GetMapping("/search")
+    public ResponseEntity<List<MedecinDto>> searchByName(@RequestParam(required = false) String name) {
+        List<MedecinDto> results = medecinService.searchByName(name);
+        return ResponseEntity.ok(results);
+    }
 }
