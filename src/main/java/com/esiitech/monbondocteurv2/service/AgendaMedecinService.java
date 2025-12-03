@@ -1,6 +1,7 @@
 package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
+import com.esiitech.monbondocteurv2.exception.DisponibiliteConflitException;
 import com.esiitech.monbondocteurv2.mapper.AgendaMedecinMapper;
 import com.esiitech.monbondocteurv2.model.AgendaMedecin;
 import com.esiitech.monbondocteurv2.model.Medecin;
@@ -51,7 +52,7 @@ public class AgendaMedecinService {
         }
 
         if (existeAgendaExact(dto.getMedecinId(), dto.getDate(), dto.getHeureDebut(), dto.getHeureFin())) {
-            throw new RuntimeException("Un agenda existe déjà pour ce médecin à cette date et heure exacte.");
+            throw new DisponibiliteConflitException("Un agenda existe déjà pour ce médecin à cette date et heure exacte.");
         }
 
         // Vérification avant enregistrement
@@ -62,7 +63,7 @@ public class AgendaMedecinService {
                 dto.getHeureFin(),
                 dto.getStructureSanitaireId()
         )) {
-            throw new RuntimeException("Ce médecin a déjà une disponibilité sur ce créneau horaire dans une autre structure.");
+            throw new DisponibiliteConflitException("Ce médecin a déjà une disponibilité sur ce créneau horaire dans une autre structure.");
         }
 
 
@@ -80,15 +81,27 @@ public class AgendaMedecinService {
     }
 
     public boolean existeAgendaConcurrent(String medecinId, LocalDate date, LocalTime heureDebut, LocalTime heureFin, String structureId) {
+        // 1) récupère les IDs des structures auxquelles le médecin est activement rattaché
+        List<String> linkedStructureIds = medecinStructureSanitaireService.getStructureIdsForMedecin(medecinId);
+
+        if (linkedStructureIds == null || linkedStructureIds.isEmpty()) {
+            // s'il n'est lié à aucune structure active -> pas de concurrence à vérifier
+            return false;
+        }
+
+        // 2) récupère tous les agendas du médecin (optimisable via repo JPQL si nécessaire)
         return repository.findByMedecinId(medecinId).stream()
-                .filter(AgendaMedecin::isActif)
-                .filter(agenda -> !agenda.getStructureSanitaire().getId().equals(structureId))
-                .filter(agenda -> agenda.getDate().equals(date))
+                .filter(AgendaMedecin::isActif)                                  // seulement actifs
+                .filter(agenda -> agenda.getDate().equals(date))                 // même date
+                .filter(agenda -> linkedStructureIds.contains(agenda.getStructureSanitaire().getId())) // seulement structures liées
+                .filter(agenda -> !agenda.getStructureSanitaire().getId().equals(structureId)) // autre structure que celle en cours
                 .anyMatch(agenda ->
+                        // overlap check : startA < endB && endA > startB
                         agenda.getHeureDebut().isBefore(heureFin) &&
                                 agenda.getHeureFin().isAfter(heureDebut)
                 );
     }
+
 
     private void checkIfUserIsMedecin() {
         String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();

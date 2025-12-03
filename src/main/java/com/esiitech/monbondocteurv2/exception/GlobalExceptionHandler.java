@@ -84,4 +84,19 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(RelationDejaExistanteException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleRelationExists(RelationDejaExistanteException ex, HttpServletRequest request) {
+        ErrorDetails err = new ErrorDetails(HttpStatus.CONFLICT.value(), ex.getMessage(), request.getRequestURI());
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(DisponibiliteConflitException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleDisponibiliteConflit(DisponibiliteConflitException ex, HttpServletRequest request) {
+        ErrorDetails err = new ErrorDetails(HttpStatus.CONFLICT.value(), ex.getMessage(), request.getRequestURI());
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
+
 }
