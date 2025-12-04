@@ -20,7 +20,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(validation.getUtilisateur().getEmail());
             helper.setSubject("Votre code d'activation");
 
@@ -32,7 +32,7 @@ public class NotificationService {
                     <p>Merci de vous être inscrit sur MonBonDocteur.</p>
                     <p>Voici votre code d'activation :</p>
                     <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-                    <p>⏳ Ce code est valable pendant 60 minutes.</p>
+                    <p>⏳ Ce code est valable pendant 1 minutes.</p>
                     <p style="color: #888; font-size: 12px; text-align: center;">
                         Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
                     </p>
@@ -53,7 +53,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(validation.getMedecin().getEmail());
             helper.setSubject("Votre code d'activation");
 
@@ -65,7 +65,7 @@ public class NotificationService {
                     <p>Merci de vous être inscrit sur MonBonDocteur.</p>
                     <p>Voici votre code d'activation :</p>
                     <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-                    <p>⏳ Ce code est valable pendant 60 minutes.</p>
+                    <p>⏳ Ce code est valable pendant 1 minutes.</p>
                     <p style="color: #888; font-size: 12px; text-align: center;">
                         Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
                     </p>
@@ -86,7 +86,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(validation.getStructureSanitaire().getEmail());
             helper.setSubject("Votre code d'activation");
 
@@ -107,7 +107,7 @@ public class NotificationService {
             <p>Merci de vous être inscrit sur MonBonDocteur.</p>
             <p>Voici votre code d'activation :</p>
             <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-            <p>⏳ Ce code est valable pendant 60 minutes.</p>
+            <p>⏳ Ce code est valable pendant 1 minutes.</p>
             <p style="color: #888; font-size: 12px; text-align: center;">
               Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
             </p>
@@ -136,7 +136,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(email);
             helper.setSubject("Confirmation de votre rendez-vous");
 
@@ -182,7 +182,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(email);
             helper.setSubject("Nouveau rendez-vous programmé");
 
@@ -216,7 +216,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(email);
             helper.setSubject("Bienvenue sur Mon Bon Docteur");
 
@@ -252,7 +252,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(email);
             helper.setSubject("Demande d’enregistrement de la structure sanitaire « " + nomStructureSanitaire + " »");
 
@@ -313,7 +313,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(email);
             helper.setSubject("Bienvenue sur Mon Bon Docteur");
 
@@ -369,7 +369,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(email);
             helper.setSubject("Réinitialisation de votre mot de passe");
 
