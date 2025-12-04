@@ -98,5 +98,11 @@ public class GlobalExceptionHandler {
         ErrorDetails err = new ErrorDetails(HttpStatus.CONFLICT.value(), ex.getMessage(), request.getRequestURI());
         return new ResponseEntity<>(err, HttpStatus.CONFLICT);
     }
+    @ExceptionHandler(SpecialiteIncompatibleException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleSpecialiteIncompatible(SpecialiteIncompatibleException ex, HttpServletRequest request) {
+        ErrorDetails err = new ErrorDetails(HttpStatus.CONFLICT.value(), ex.getMessage(), request.getRequestURI());
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
 
 }

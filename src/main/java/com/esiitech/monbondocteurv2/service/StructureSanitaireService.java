@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.annotation.PostConstruct;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -73,7 +75,7 @@ public class StructureSanitaireService implements UserDetailsService {
 
         StructureSanitaire ss = mapper.toEntity(dto);
 
-        if (ss.getId() == null || ss.getId().isBlank()) ss.setId(generateCustomId());
+        if (ss.getId() == null || ss.getId().isBlank()) ss.setId(generateStructureId());
         ss.setEmail(email);
         ss.setNumeroTelephone(phone);
         ss.setMotDePasse(passwordEncoder.encode(dto.getMotDePasse()));
@@ -121,12 +123,47 @@ public class StructureSanitaireService implements UserDetailsService {
         return "/uploads/documentStructure/" + name;
     }
 
-    private static long lastId = 500000;  // Commence à 500000
+// ------------------- ID generator persistant (comme ClientService) -------------------
 
-    private synchronized String generateCustomId() {
-        lastId++;
-        return String.format("%06d", lastId);
+
+    private static final long START_AT = 500000L; // valeur de départ souhaitée
+    private static final AtomicLong LAST_STRUCTURE_ID = new AtomicLong(START_AT);
+
+    /**
+     * Initialise LAST_STRUCTURE_ID au démarrage en prenant le plus grand id existant en base.
+     * S'appuie sur le repository pour lister les ids existants et extraire la valeur numérique.
+     */
+    @PostConstruct
+    public void initStructureLastId() {
+        long max = START_AT;
+        for (var s : repository.findAll()) {
+            try {
+                String idStr = s.getId();
+                if (idStr != null && idStr.matches("\\d{6}")) {
+                    long v = Long.parseLong(idStr);
+                    if (v > max) max = v;
+                }
+            } catch (NumberFormatException ignored) {
+                // ignore les IDs qui ne sont pas numériques
+            }
+        }
+        LAST_STRUCTURE_ID.set(max);
     }
+
+    /**
+     * Génère un nouvel id unique formaté sur 6 chiffres.
+     * Utilise AtomicLong + vérifie l'unicité via repository.existsById(...)
+     */
+    private String generateStructureId() {
+        String id;
+        do {
+            long next = LAST_STRUCTURE_ID.incrementAndGet();
+            id = String.format("%06d", next);
+            // Tant que l'id existe déjà en base, on incrémente (protection en cas d'insert concurrent)
+        } while (repository.existsById(id));
+        return id;
+    }
+
 
     public void activation(Map<String, String> activation) {
         Validation validation = validationService.lireEnFonctionDuCode(activation.get("code"));
