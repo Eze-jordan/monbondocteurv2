@@ -46,7 +46,6 @@ public class ValidationService {
 
         Instant now = Instant.now();
         if (validation.getExpiration().isBefore(now)) {
-            // Créer un nouveau code
             int randomInteger = new Random().nextInt(999999);
             String newCode = String.format("%06d", randomInteger);
 
@@ -54,13 +53,14 @@ public class ValidationService {
             validation.setCreation(now);
             validation.setExpiration(now.plus(1, MINUTES));
 
-            validation.setId("validation-" + UUID.randomUUID());
+            // NE PAS modifier l'id
             validationRipository.save(validation);
             notificationService.envoyer(validation);
         } else {
             throw new RuntimeException("Le code actuel est encore valide");
         }
     }
+
     // Méthode pour enregistrer un code de validation pour un Médecin
     public void enregisterMedecin(Medecin savedMedecin) {
         Validation validation = new Validation();
@@ -85,21 +85,20 @@ public class ValidationService {
 
         Instant now = Instant.now();
         if (validation.getExpiration().isBefore(now)) {
-            // Créer un nouveau code
             int randomInteger = new Random().nextInt(999999);
             String newCode = String.format("%06d", randomInteger);
 
             validation.setCode(newCode);
             validation.setCreation(now);
             validation.setExpiration(now.plus(1, MINUTES));
-            validation.setId("validation-" + UUID.randomUUID());
+
+            // NE PAS modifier l'id
             validationRipository.save(validation);
             notificationService.envoyerMedecin(validation);
         } else {
             throw new RuntimeException("Le code actuel est encore valide");
         }
     }
-
     // Méthode pour enregistrer un code de validation pour un Médecin
     public void enregisterStructure(StructureSanitaire structureSanitaire) {
         Validation validation = new Validation();
@@ -125,7 +124,6 @@ public class ValidationService {
 
         Instant now = Instant.now();
         if (validation.getExpiration().isBefore(now)) {
-            // Créer un nouveau code
             int randomInteger = new Random().nextInt(999999);
             String newCode = String.format("%06d", randomInteger);
 
@@ -133,7 +131,7 @@ public class ValidationService {
             validation.setCreation(now);
             validation.setExpiration(now.plus(1, MINUTES));
 
-            validation.setId("validation-" + UUID.randomUUID());
+            // NE PAS modifier l'id
             validationRipository.save(validation);
             notificationService.envoyerStructure(validation);
         } else {
