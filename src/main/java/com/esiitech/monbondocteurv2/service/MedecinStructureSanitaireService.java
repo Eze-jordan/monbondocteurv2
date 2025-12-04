@@ -3,6 +3,7 @@ package com.esiitech.monbondocteurv2.service;
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
 import com.esiitech.monbondocteurv2.dto.MedecinStructureSanitaireDto;
 import com.esiitech.monbondocteurv2.exception.RelationDejaExistanteException;
+import com.esiitech.monbondocteurv2.exception.SpecialiteIncompatibleException;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
 import com.esiitech.monbondocteurv2.mapper.MedecinStructureSanitaireMapper;
 import com.esiitech.monbondocteurv2.model.Medecin;
@@ -50,6 +51,48 @@ public class MedecinStructureSanitaireService {
         String structureId = dto.getStructureSanitaireId();
         String medecinId = dto.getMedecinId();
 
+        // 0) Récupérer entités référencées (lève si introuvables)
+        Medecin medecin = medecinRepository.findById(medecinId)
+                .orElseThrow(() -> new IllegalArgumentException("Médecin introuvable: " + medecinId));
+
+        // NOTE: repository.findByStructureSanitaireId retourne des relations; ici il faut récupérer la structure.
+        // Si tu as un StructureSanitaireRepository injecte-le et utilise-le. Si non, on suppose que la relation contient l'objet structure
+        // mais pour être sûr, je suppose que MedecinStructureSanitaireRepository expose une méthode pour charger la structure,
+        // sinon injecte StructureSanitaireRepository et utilise findById(structureId).
+        // Exemple ci-dessous suppose que tu vas injecter StructureSanitaireRepository en champ (recommandé).
+        StructureSanitaire structure = /* inject & use repository */ null;
+        // => Pour l'instant je propose d'ajouter :
+        // @Autowired private StructureSanitaireRepository structureSanitaireRepository;
+        // et ensuite :
+        // StructureSanitaire structure = structureSanitaireRepository.findById(structureId)
+        //      .orElseThrow(() -> new IllegalArgumentException("Structure sanitaire introuvable: " + structureId));
+
+        // ---------- validation métier : spécialité du médecin doit appartenir à la structure ----------
+        String medecinSpec = medecin.getRefSpecialite(); // peut être null
+        if (medecinSpec == null || medecinSpec.isBlank()) {
+            throw new SpecialiteIncompatibleException("Le médecin n'a pas de spécialité définie.");
+        }
+        // normaliser (trim + case-insensitive)
+        String medSpecNorm = medecinSpec.trim().toLowerCase();
+
+        // récupère les spécialités de la structure
+        var structSpecs = structure.getRefSpecialites(); // Set<String>
+        if (structSpecs == null || structSpecs.isEmpty()) {
+            throw new SpecialiteIncompatibleException("La structure n'a pas de spécialités définies. Impossible d'attacher un médecin.");
+        }
+
+        boolean match = structSpecs.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .anyMatch(s -> s.equals(medSpecNorm));
+
+        if (!match) {
+            throw new SpecialiteIncompatibleException(
+                    "Incompatibilité de spécialité : le médecin (" + medecinSpec + ") ne figure pas dans les spécialités de la structure."
+            );
+        }
+
         // 1) check appli -> renvoie 409 si déjà lié
         if (repository.existsByStructureSanitaireIdAndMedecinId(structureId, medecinId)) {
             throw new RelationDejaExistanteException(
@@ -74,6 +117,7 @@ public class MedecinStructureSanitaireService {
             );
         }
     }
+
     private String generateMedecinStructureSanitaireId() {
         return " MedecinStructureSanitaire-" + java.util.UUID.randomUUID();
     }

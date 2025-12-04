@@ -18,7 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
+import jakarta.annotation.PostConstruct;
+import java.util.concurrent.atomic.AtomicLong;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,7 +75,7 @@ public class MedecinService implements UserDetailsService {
         // Encoder le mot de passe
         entity.setMotDePasse(passwordEncoder.encode(dto.getMotDePasse()));
         if (entity.getId() == null) {
-            entity.setId(generateCustomId());
+            entity.setId(generateMedecinId());
         }
         // Sauvegarder dans la base de données
         Medecin savedMedecin = repository.save(entity);
@@ -84,11 +85,45 @@ public class MedecinService implements UserDetailsService {
         return mapper.toDto(savedMedecin);
     }
 
-    private static long lastId = 100000;  // Commence à 500000
+    // ------------------- ID generator persistant (comme ClientService) -------------------
 
-    private synchronized String generateCustomId() {
-        lastId++;
-        return String.format("%06d", lastId);
+
+    private static final long START_AT = 100000L; // valeur de départ souhaitée
+    private static final AtomicLong LAST_MEDECIN_ID = new AtomicLong(START_AT);
+
+    /**
+     * Initialise LAST_STRUCTURE_ID au démarrage en prenant le plus grand id existant en base.
+     * S'appuie sur le repository pour lister les ids existants et extraire la valeur numérique.
+     */
+    @PostConstruct
+    public void initMedecinLastId() {
+        long max = START_AT;
+        for (var s : repository.findAll()) {
+            try {
+                String idStr = s.getId();
+                if (idStr != null && idStr.matches("\\d{6}")) {
+                    long v = Long.parseLong(idStr);
+                    if (v > max) max = v;
+                }
+            } catch (NumberFormatException ignored) {
+                // ignore les IDs qui ne sont pas numériques
+            }
+        }
+        LAST_MEDECIN_ID.set(max);
+    }
+
+    /**
+     * Génère un nouvel id unique formaté sur 6 chiffres.
+     * Utilise AtomicLong + vérifie l'unicité via repository.existsById(...)
+     */
+    private String generateMedecinId() {
+        String id;
+        do {
+            long next = LAST_MEDECIN_ID.incrementAndGet();
+            id = String.format("%06d", next);
+            // Tant que l'id existe déjà en base, on incrémente (protection en cas d'insert concurrent)
+        } while (repository.existsById(id));
+        return id;
     }
 
 
