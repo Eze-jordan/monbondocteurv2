@@ -7,8 +7,8 @@ import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.Collectors;
 import jakarta.annotation.PostConstruct;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -510,6 +510,100 @@ public class StructureSanitaireService implements UserDetailsService {
         }
     }
 
+    /**
+     * Archive des spécialités : déplace depuis refSpecialites -> archivedSpecialites.
+     * Retourne l'ensemble des spécialités archivées après modification.
+     */
+    @Transactional
+    public Set<String> archiveSpecialites(String structureId, Set<String> toArchive) {
+        if (structureId == null || structureId.isBlank()) throw new IllegalArgumentException("structureId requis");
+        if (toArchive == null || toArchive.isEmpty()) return Collections.emptySet();
+
+        StructureSanitaire ss = repository.findById(structureId)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+
+        if (ss.getRefSpecialites() == null) ss.setRefSpecialites(new HashSet<>());
+        if (ss.getArchivedSpecialites() == null) ss.setArchivedSpecialites(new HashSet<>());
+
+        // normalisation : trim + ignore vides
+        Set<String> normalized = toArchive.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        boolean modified = false;
+
+        for (String requested : normalized) {
+            // Cherche la spécialité existante en ignorant la casse (conserve la casse originale)
+            Optional<String> present = ss.getRefSpecialites().stream()
+                    .filter(s -> s != null && s.trim().equalsIgnoreCase(requested))
+                    .findFirst();
+
+            if (present.isPresent()) {
+                String original = present.get();
+                ss.getRefSpecialites().remove(original);
+                ss.getArchivedSpecialites().add(original);
+                modified = true;
+            } else {
+                // Optionnel : si elle n'existe pas dans refSpecialites, on peut quand même l'archiver
+                ss.getArchivedSpecialites().add(requested);
+                modified = true;
+            }
+        }
+
+        if (modified) repository.save(ss);
+        return ss.getArchivedSpecialites();
+    }
+
+    /**
+     * Restaure des spécialités archivées : archivedSpecialites -> refSpecialites.
+     * Retourne l'ensemble des spécialités actives après modification.
+     */
+    @Transactional
+    public Set<String> restoreSpecialites(String structureId, Set<String> toRestore) {
+        if (structureId == null || structureId.isBlank()) throw new IllegalArgumentException("structureId requis");
+        if (toRestore == null || toRestore.isEmpty()) return Collections.emptySet();
+
+        StructureSanitaire ss = repository.findById(structureId)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+
+        if (ss.getRefSpecialites() == null) ss.setRefSpecialites(new HashSet<>());
+        if (ss.getArchivedSpecialites() == null) ss.setArchivedSpecialites(new HashSet<>());
+
+        Set<String> normalized = toRestore.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        boolean modified = false;
+
+        for (String requested : normalized) {
+            Optional<String> present = ss.getArchivedSpecialites().stream()
+                    .filter(s -> s != null && s.trim().equalsIgnoreCase(requested))
+                    .findFirst();
+            if (present.isPresent()) {
+                String original = present.get();
+                ss.getArchivedSpecialites().remove(original);
+                ss.getRefSpecialites().add(original);
+                modified = true;
+            }
+        }
+
+        if (modified) repository.save(ss);
+        return ss.getRefSpecialites();
+    }
+
+    /**
+     * Récupère les spécialités archivées d'une structure.
+     */
+    @Transactional(readOnly = true)
+    public Set<String> getArchivedSpecialites(String structureId) {
+        StructureSanitaire ss = repository.findById(structureId)
+                .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
+        return ss.getArchivedSpecialites() == null ? Collections.emptySet() : ss.getArchivedSpecialites();
+    }
 
 
 
