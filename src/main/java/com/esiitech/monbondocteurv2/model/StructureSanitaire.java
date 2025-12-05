@@ -4,6 +4,10 @@
     import org.springframework.security.core.GrantedAuthority;
     import org.springframework.security.core.authority.SimpleGrantedAuthority;
     import org.springframework.security.core.userdetails.UserDetails;
+    import jakarta.persistence.ElementCollection;
+    import jakarta.persistence.CollectionTable;
+    import jakarta.persistence.JoinColumn;
+    import jakarta.persistence.Column;
 
     import java.util.*;
 
@@ -36,6 +40,19 @@
         )
         @Column(name = "specialite", nullable = false, length = 100)
         private Set<String> refSpecialites = new HashSet<>();
+
+        // --- nouveau : spécialités archivées (réversible) ---
+        @ElementCollection(fetch = FetchType.LAZY)
+        @CollectionTable(
+                name = "structure_archived_specialite",
+                joinColumns = @JoinColumn(name = "structure_id")
+        )
+        @Column(name = "archived_specialite", length = 100)
+        private Set<String> archivedSpecialites = new HashSet<>();
+
+        public Set<String> getArchivedSpecialites() {
+            return archivedSpecialites;
+        }
 
         @Column(nullable = false)
         private boolean actif = false;
@@ -216,5 +233,9 @@
 
         public void setStatut(Statut statut) {
             this.statut = statut;
+        }
+
+        public void setArchivedSpecialites(Set<String> archivedSpecialites) {
+            this.archivedSpecialites = archivedSpecialites;
         }
     }

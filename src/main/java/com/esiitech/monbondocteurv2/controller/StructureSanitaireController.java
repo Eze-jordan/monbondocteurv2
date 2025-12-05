@@ -333,5 +333,56 @@ public class StructureSanitaireController {
         );
 
     }
+    /**
+     * Archive des spécialités (déplace de refSpecialites -> archivedSpecialites).
+     * Body attendu : ["Cardiologie","Dermato", ...]
+     */
+    @PostMapping("/{id}/specialites/archive")
+    public ResponseEntity<Set<String>> archiveSpecialites(
+            @PathVariable("id") String structureId,
+            @RequestBody(required = false) Set<String> specialitesToArchive
+    ) {
+        if (structureId == null || structureId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (specialitesToArchive == null || specialitesToArchive.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptySet());
+        }
+
+        Set<String> archived = structureSanitaireService.archiveSpecialites(structureId, specialitesToArchive);
+        return ResponseEntity.ok(archived);
+    }
+
+    /**
+     * Restaure des spécialités (déplace archivedSpecialites -> refSpecialites).
+     * Body attendu : ["Cardiologie","Dermato", ...]
+     */
+    @PostMapping("/{id}/specialites/restore")
+    public ResponseEntity<Set<String>> restoreSpecialites(
+            @PathVariable("id") String structureId,
+            @RequestBody(required = false) Set<String> specialitesToRestore
+    ) {
+        if (structureId == null || structureId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (specialitesToRestore == null || specialitesToRestore.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptySet());
+        }
+
+        Set<String> active = structureSanitaireService.restoreSpecialites(structureId, specialitesToRestore);
+        return ResponseEntity.ok(active);
+    }
+
+    /**
+     * Récupère les spécialités archivées de la structure.
+     */
+    @GetMapping("/{id}/specialites/archived")
+    public ResponseEntity<Set<String>> getArchivedSpecialites(@PathVariable("id") String structureId) {
+        if (structureId == null || structureId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        Set<String> archived = structureSanitaireService.getArchivedSpecialites(structureId);
+        return ResponseEntity.ok(archived == null ? Collections.emptySet() : archived);
+    }
 
 }
