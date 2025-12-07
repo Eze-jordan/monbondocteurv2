@@ -28,7 +28,7 @@ public class ValidationService {
         validation.setUtilisateur(utilisateur);
         Instant creation = Instant.now();
         validation.setCreation(creation);
-        Instant expiration = creation.plus(1, MINUTES);
+        Instant expiration = creation.plus(10, MINUTES);
         validation.setExpiration(expiration);
 
         Random random = new Random();
@@ -51,7 +51,7 @@ public class ValidationService {
 
             validation.setCode(newCode);
             validation.setCreation(now);
-            validation.setExpiration(now.plus(1, MINUTES));
+            validation.setExpiration(now.plus(10, MINUTES));
 
             // NE PAS modifier l'id
             validationRipository.save(validation);
@@ -67,7 +67,7 @@ public class ValidationService {
         validation.setMedecin(savedMedecin);  // Associe un médecin à la validation
         Instant creation = Instant.now();
         validation.setCreation(creation);
-        Instant expiration = creation.plus(1, MINUTES);
+        Instant expiration = creation.plus(10, MINUTES);
         validation.setExpiration(expiration);
 
         Random random = new Random();
@@ -90,7 +90,7 @@ public class ValidationService {
 
             validation.setCode(newCode);
             validation.setCreation(now);
-            validation.setExpiration(now.plus(1, MINUTES));
+            validation.setExpiration(now.plus(10, MINUTES));
 
             // NE PAS modifier l'id
             validationRipository.save(validation);
@@ -105,7 +105,7 @@ public class ValidationService {
         validation.setStructureSanitaire(structureSanitaire);  // Associe un médecin à la validation
         Instant creation = Instant.now();
         validation.setCreation(creation);
-        Instant expiration = creation.plus(1, MINUTES);
+        Instant expiration = creation.plus(10, MINUTES);
         validation.setExpiration(expiration);
 
         Random random = new Random();
@@ -129,7 +129,7 @@ public class ValidationService {
 
             validation.setCode(newCode);
             validation.setCreation(now);
-            validation.setExpiration(now.plus(1, MINUTES));
+            validation.setExpiration(now.plus(10, MINUTES));
 
             // NE PAS modifier l'id
             validationRipository.save(validation);
