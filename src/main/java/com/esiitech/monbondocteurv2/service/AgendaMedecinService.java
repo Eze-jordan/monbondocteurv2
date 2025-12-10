@@ -44,11 +44,7 @@ public class AgendaMedecinService {
 
     public AgendaMedecinDto save(AgendaMedecinDto dto) {
 
-        checkIfUserIsMedecin();  // 🔒 Protection accès
-
-        if (dto.getStructureSanitaireId() == null) {
-            throw new RuntimeException("L'identifiant de la structure sanitaire est obligatoire.");
-        }
+        checkIfUserIsMedecin();
 
         if (dto.getStructureSanitaireId() == null) {
             throw new RuntimeException("L'identifiant de la structure sanitaire est obligatoire.");
@@ -58,26 +54,30 @@ public class AgendaMedecinService {
             throw new DisponibiliteConflitException("Un agenda existe déjà pour ce médecin à cette date et heure exacte.");
         }
 
-        // Vérification avant enregistrement
         if (existeAgendaConcurrent(
                 dto.getMedecinId(),
                 dto.getDate(),
                 dto.getHeureDebut(),
                 dto.getHeureFin(),
-                dto.getStructureSanitaireId()
-        )) {
+                dto.getStructureSanitaireId())) {
+
             throw new DisponibiliteConflitException("Ce médecin a déjà une disponibilité sur ce créneau horaire dans une autre structure.");
         }
 
-
-
-        AgendaMedecin entity = mapper.toEntity(dto);
-        if (dto.getId() == null) {
+        // 👉 corriger ici : générer l’ID AVANT le mapping
+        if (dto.getId() == null || dto.getId().isEmpty()) {
             dto.setId(generateAgendaId());
         }
-        return mapper.toDto(repository.save(entity));
 
+        // mapper après l'assignation de l'ID
+        AgendaMedecin entity = mapper.toEntity(dto);
+
+        // sauvegarder normalement
+        AgendaMedecin saved = repository.save(entity);
+
+        return mapper.toDto(saved);
     }
+
 
     private String generateAgendaId() {
         return "AgendaMedecin-" + java.util.UUID.randomUUID();
