@@ -8,7 +8,10 @@ import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.RefSpecialite;
 import com.esiitech.monbondocteurv2.repository.AgendaMedecinRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -151,5 +154,32 @@ public class AgendaMedecinService {
         }).orElse(false);
     }
 
+    @Transactional
+    public AgendaMedecinDto updateAgendaStatus(String agendaId, boolean actif) {
+        AgendaMedecin agenda = repository.findById(agendaId)
+                .orElseThrow(() -> new IllegalArgumentException("Agenda introuvable: " + agendaId));
 
+        // Récupère l'email de l'utilisateur connecté
+        String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // Récupère le médecin connecté (s'il existe)
+        Optional<Medecin> medecinOpt = medecinStructureSanitaireService.getMedecinByEmail(emailConnecte);
+
+        boolean estProprietaire = medecinOpt
+                .map(m -> m.getId() != null && m.getId().equals(agenda.getMedecin().getId()))
+                .orElse(false);
+
+        // Autorisation : soit le médecin propriétaire, soit un admin (vérification simple de rôle)
+        boolean estAdmin = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!estProprietaire && !estAdmin) {
+            throw new AccessDeniedException("Vous n'êtes pas autorisé à modifier le statut de cet agenda.");
+        }
+
+        // change le statut et sauvegarde
+        agenda.setActif(actif);
+        AgendaMedecin saved = repository.save(agenda);
+        return mapper.toDto(saved);
+    }
 }
