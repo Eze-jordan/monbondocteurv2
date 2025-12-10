@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -104,5 +106,33 @@ public class GlobalExceptionHandler {
         ErrorDetails err = new ErrorDetails(HttpStatus.CONFLICT.value(), ex.getMessage(), request.getRequestURI());
         return new ResponseEntity<>(err, HttpStatus.CONFLICT);
     }
+    /**
+     * 403 - Utilisateur authentifié mais sans permission suffisante
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorDetails> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.FORBIDDEN.value(),
+                "Accès refusé : vous n'avez pas les droits nécessaires.",
+                request.getRequestURI()
+        );
+        // logger.warn("Access denied: {}", ex.getMessage());
+        return new ResponseEntity<>(err, HttpStatus.FORBIDDEN);
+    }
 
+    /**
+     * 401 - Pas authentifié (jeton manquant / non valide)
+     */
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseEntity<ErrorDetails> handleAuthenticationMissing(AuthenticationCredentialsNotFoundException ex, HttpServletRequest request) {
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Non authentifié : veuillez vous connecter.",
+                request.getRequestURI()
+        );
+        // logger.info("Authentication required: {}", ex.getMessage());
+        return new ResponseEntity<>(err, HttpStatus.UNAUTHORIZED);
+    }
 }
