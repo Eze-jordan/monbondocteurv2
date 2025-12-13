@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -155,4 +156,18 @@ public class RendezVousService {
     public void supprimer(String id) {
         rendezVousRepository.deleteById(id);
     }
+
+    public List<RendezVousDTO> trouverParDate(LocalDate date) {
+        return rendezVousRepository.findByAgendaMedecin_Date(date)
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
+    }
+    public List<RendezVousDTO> trouverParMedecinId(String medecinId) {
+        return rendezVousRepository.findByMedecin_Id(medecinId)
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
+    }
+
 }
