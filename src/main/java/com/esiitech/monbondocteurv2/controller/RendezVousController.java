@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -126,5 +127,24 @@ public class RendezVousController {
             @Parameter(description = "Nom du médecin") @RequestParam String nom) {
         return ResponseEntity.ok(rendezVousService.trouverParNomMedecin(nom));
     }
+    @GetMapping("/date/{date}")
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Rechercher les rendez-vous par date",
+            description = "Recherche par nom (insensible à la casse selon l'implémentation)."
+    )
+    public List<RendezVousDTO> getRendezVousParDate(@PathVariable LocalDate date) {
+        return rendezVousService.trouverParDate(date);
+    }
+    @GetMapping("/medecin/{medecinId}")
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Rechercher les rendez-vous par Id du médecin ",
+            description = "Recherche par nom (insensible à la casse selon l'implémentation)."
+    )
+    public List<RendezVousDTO> getRendezVousParMedecin(@PathVariable String medecinId) {
+        return rendezVousService.trouverParMedecinId(medecinId);
+    }
+
 }
 

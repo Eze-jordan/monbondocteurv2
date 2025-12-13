@@ -6,6 +6,7 @@ import com.esiitech.monbondocteurv2.model.RendezVous;
 import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,8 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, String> 
     // 🔍 Par médecin
     List<RendezVous> findByMedecin(Medecin medecin);
 
+    List<RendezVous> findByAgendaMedecin_Date(LocalDate date);
+    List<RendezVous> findByMedecin_Id(String medecinId);
 
 
 }
