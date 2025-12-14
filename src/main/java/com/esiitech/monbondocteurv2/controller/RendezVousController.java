@@ -131,7 +131,7 @@ public class RendezVousController {
     @Operation(
             tags = "Rendez-vous",
             summary = "Rechercher les rendez-vous par date",
-            description = "Recherche par nom (insensible à la casse selon l'implémentation)."
+            description = "Recherche par date (insensible à la casse selon l'implémentation)."
     )
     public List<RendezVousDTO> getRendezVousParDate(@PathVariable LocalDate date) {
         return rendezVousService.trouverParDate(date);
@@ -140,11 +140,22 @@ public class RendezVousController {
     @Operation(
             tags = "Rendez-vous",
             summary = "Rechercher les rendez-vous par Id du médecin ",
-            description = "Recherche par nom (insensible à la casse selon l'implémentation)."
+            description = "Recherche par  Id du médecin (insensible à la casse selon l'implémentation)."
     )
     public List<RendezVousDTO> getRendezVousParMedecin(@PathVariable String medecinId) {
         return rendezVousService.trouverParMedecinId(medecinId);
     }
+
+    @GetMapping("/agenda/{agendaId}")
+    @Operation(
+            tags = "Rendez-vous",
+            summary = "Rechercher les rendez-vous par Id de l'agenda  ",
+            description = "Recherche par Id de l'agenda (insensible à la casse selon l'implémentation)."
+    )
+    public List<RendezVousDTO> getRendezVousParAgenda(@PathVariable String agendaId) {
+        return rendezVousService.trouverParAgendaId(agendaId);
+    }
+
 
 }
 

@@ -170,4 +170,16 @@ public class RendezVousService {
                 .toList();
     }
 
+    public List<RendezVousDTO> trouverParAgendaId(String agendaId) {
+
+        // (optionnel) vérifier que l’agenda existe
+        agendaMedecinRepository.findById(agendaId)
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable : " + agendaId));
+
+        return rendezVousRepository.findByAgendaMedecin_Id(agendaId)
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
+    }
+
 }
