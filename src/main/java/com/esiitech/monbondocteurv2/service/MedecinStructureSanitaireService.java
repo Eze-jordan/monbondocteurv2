@@ -123,11 +123,13 @@ public class MedecinStructureSanitaireService {
         return repository.findMedecinsByStructureAndSpecialite(structureId, specialite);
     }
 
-    public StructureSanitaire getStructureSanitaireActifByMedecin(Medecin medecin) {
-        return repository.findByMedecinAndActifTrue(medecin)
+    public List<StructureSanitaire> getStructuresSanitairesActivesByMedecin(Medecin medecin) {
+        return repository.findByMedecinAndActifTrue(medecin).stream()
                 .map(MedecinStructureSanitaire::getStructureSanitaire)
-                .orElse(null); // ou gérer avec exception si nécessaire
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
+
     public Optional<Medecin> getMedecinByEmail(String email) {
         return medecinRepository.findByEmail(email);
     }

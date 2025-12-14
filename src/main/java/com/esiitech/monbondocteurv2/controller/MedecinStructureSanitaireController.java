@@ -60,12 +60,17 @@ public class MedecinStructureSanitaireController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Obtenir la structure active d’un médecin")
-    @GetMapping("/{medecinId}/structure-active")
-    public StructureSanitaire getStructureActifByMedecin(@PathVariable String medecinId) {
+    @Operation(summary = "Obtenir les structures actives d’un médecin")
+    @GetMapping("/{medecinId}/structures-actives")
+    public List<StructureSanitaire> getStructuresActivesByMedecin(
+            @PathVariable String medecinId
+    ) {
         Medecin medecin = medecinService.getById(medecinId);
-        return medecinStructureSanitaireService.getStructureSanitaireActifByMedecin(medecin);
+        return medecinStructureSanitaireService
+                .getStructuresSanitairesActivesByMedecin(medecin);
     }
+
+
     @GetMapping(value = "/{structureId}/medecins", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(tags = "Structures", summary = "Liste des médecins d'une structure", description = "Renvoie tous les médecins rattachés à la structure (sans pagination).")
     public ResponseEntity<List<MedecinDto>> getMedecinsByStructure(@PathVariable String structureId,
