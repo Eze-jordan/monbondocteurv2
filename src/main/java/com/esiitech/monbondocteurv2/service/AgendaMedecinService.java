@@ -182,4 +182,11 @@ public class AgendaMedecinService {
         AgendaMedecin saved = repository.save(agenda);
         return mapper.toDto(saved);
     }
+
+    public List<AgendaMedecinDto> getAllAgendasByMedecinId(String medecinId) {
+        return repository.findByMedecinId(medecinId).stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
+    }
+
 }
