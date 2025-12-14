@@ -17,4 +17,5 @@ public interface AgendaMedecinRepository extends JpaRepository<AgendaMedecin, St
 
     List<AgendaMedecin> findByMedecinId(String medecinId);
 
+
 }

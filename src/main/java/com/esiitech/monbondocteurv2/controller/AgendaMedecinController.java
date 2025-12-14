@@ -111,4 +111,11 @@ public class AgendaMedecinController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Agenda introuvable.");
         }
     }
+
+    @Operation(summary = "Récupérer tous les agendas d’un médecin (actifs et inactifs)")
+    @GetMapping("/medecin/{medecinId}/agendas")
+    public List<AgendaMedecinDto> getAllAgendasByMedecin(@PathVariable String medecinId) {
+        return service.getAllAgendasByMedecinId(medecinId);
+    }
+
 }
