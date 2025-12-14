@@ -23,6 +23,7 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, String> 
 
     List<RendezVous> findByAgendaMedecin_Date(LocalDate date);
     List<RendezVous> findByMedecin_Id(String medecinId);
+    List<RendezVous> findByAgendaMedecin_Id(String agendaId);
 
 
 }
