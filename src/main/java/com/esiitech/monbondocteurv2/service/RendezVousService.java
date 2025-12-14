@@ -81,7 +81,7 @@ public class RendezVousService {
         rendezVous.setAgendaMedecin(agenda);
         rendezVous.setMedecin(agenda.getMedecin());
         Medecin medecin = agenda.getMedecin();
-        rendezVous.setStructureSanitaire(medecinStructureSanitaireService.getStructureSanitaireActifByMedecin(medecin));
+        rendezVous.setStructureSanitaire(medecinStructureSanitaireService.getUneStructureSanitaireActiveByMedecin(medecin));
         Set<String> specialites = new HashSet<>();
 
 // ton modèle Medecin expose visiblement UNE seule spécialité sous forme de String

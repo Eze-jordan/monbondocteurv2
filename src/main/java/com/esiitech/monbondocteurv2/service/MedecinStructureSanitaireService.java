@@ -130,6 +130,16 @@ public class MedecinStructureSanitaireService {
                 .collect(Collectors.toList());
     }
 
+    public StructureSanitaire getUneStructureSanitaireActiveByMedecin(Medecin medecin) {
+        return repository.findFirstByMedecinAndActifTrue(medecin).stream()
+                .map(MedecinStructureSanitaire::getStructureSanitaire)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseThrow(() ->
+                        new RuntimeException("Aucune structure active trouvée pour ce médecin")
+                );
+    }
+
     public Optional<Medecin> getMedecinByEmail(String email) {
         return medecinRepository.findByEmail(email);
     }
