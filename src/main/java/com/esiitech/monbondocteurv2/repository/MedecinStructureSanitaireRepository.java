@@ -20,6 +20,8 @@ public interface MedecinStructureSanitaireRepository extends JpaRepository<Medec
             @Param("structureId") Long structureId,
             @Param("specialite") RefSpecialite specialite);
 
+    Optional<MedecinStructureSanitaire> findFirstByMedecinAndActifTrue(Medecin medecin);
+
     List<MedecinStructureSanitaire> findByMedecinAndActifTrue(Medecin medecin);
 
 
