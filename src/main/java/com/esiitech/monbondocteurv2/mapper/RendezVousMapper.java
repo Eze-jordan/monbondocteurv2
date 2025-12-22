@@ -9,7 +9,6 @@ public class RendezVousMapper {
     public RendezVousDTO toDTO(RendezVous entity) {
         RendezVousDTO dto = new RendezVousDTO();
         dto.setId(entity.getId());
-
         dto.setNom(entity.getNom());
         dto.setPrenom(entity.getPrenom());
         dto.setEmail(entity.getEmail());
@@ -18,7 +17,14 @@ public class RendezVousMapper {
         dto.setSexe(entity.getSexe());
         dto.setAge(entity.getAge());
         dto.setMotif(entity.getMotif());
+        dto.setDate(entity.getDate());
+        dto.setRefSpecialites(entity.getRefSpecialites());
+        dto.setHeureDebut(entity.getHeureDebut());
+        dto.setActif(entity.isActif());
 
+        if (entity.getAgendaMedecin() != null) {
+            dto.setAgendaId(entity.getAgendaMedecin().getId());
+        }
         return dto;
     }
 
@@ -33,6 +39,11 @@ public class RendezVousMapper {
         entity.setSexe(dto.getSexe());
         entity.setAge(dto.getAge());
         entity.setMotif(dto.getMotif());
+        entity.setDate(dto.getDate());
+        entity.setAgendaId(dto.getAgendaId());
+        entity.setRefSpecialites(dto.getRefSpecialites());
+        entity.setHeureDebut(dto.getHeureDebut());
+        entity.setActif(dto.isActif());
 
 
         // Note : les relations avec les entités (medecin, date, horaire, etc.)

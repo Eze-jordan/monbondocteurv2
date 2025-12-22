@@ -4,38 +4,39 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Table(name = "agenda_medecin")
 public class AgendaMedecin {
     @Id
-    @Column(name = "id", nullable = false,length = 100,updatable = false)
+    @Column(name = "id", nullable = false, length = 100, updatable = false)
     private String  id;
     @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "medecin_id", nullable = false)
     private Medecin medecin;
-    private LocalDate date;
-    private Double nombrePatient;
-    private Double rdvPris;
-    private LocalTime heureDebut;
-
-    private LocalTime heureFin;
     @Column(nullable = false)
-    private boolean actif = false;
+    private JourSemaine jour;
+    private boolean autorise;
+
+    @OneToMany(
+            mappedBy = "agenda",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )    private List<PlageHoraire> plages;
 
     @ManyToOne
-    @JoinColumn(name = "structure_sanitaire_id")
+    @JoinColumn(name = "structure_sanitaire_id", nullable = false)
     private StructureSanitaire structureSanitaire;
 
-    // Getter
+
     public StructureSanitaire getStructureSanitaire() {
         return structureSanitaire;
     }
 
-    // Setter
     public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
         this.structureSanitaire = structureSanitaire;
     }
-
 
     public String getId() {
         return id;
@@ -43,46 +44,6 @@ public class AgendaMedecin {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public Double getNombrePatient() {
-        return nombrePatient;
-    }
-
-    public void setNombrePatient(Double nombrePatient) {
-        this.nombrePatient = nombrePatient;
-    }
-
-    public Double getRdvPris() {
-        return rdvPris;
-    }
-
-    public void setRdvPris(Double rdvPris) {
-        this.rdvPris = rdvPris;
-    }
-
-    public LocalTime getHeureDebut() {
-        return heureDebut;
-    }
-
-    public void setHeureDebut(LocalTime heureDebut) {
-        this.heureDebut = heureDebut;
-    }
-
-    public LocalTime getHeureFin() {
-        return heureFin;
-    }
-
-    public void setHeureFin(LocalTime heureFin) {
-        this.heureFin = heureFin;
     }
 
     public Medecin getMedecin() {
@@ -93,11 +54,27 @@ public class AgendaMedecin {
         this.medecin = medecin;
     }
 
-    public boolean isActif() {
-        return actif;
+    public JourSemaine getJour() {
+        return jour;
     }
 
-    public void setActif(boolean actif) {
-        this.actif = actif;
+    public void setJour(JourSemaine jour) {
+        this.jour = jour;
+    }
+
+    public boolean isAutorise() {
+        return autorise;
+    }
+
+    public void setAutorise(boolean autorise) {
+        this.autorise = autorise;
+    }
+
+    public List<PlageHoraire> getPlages() {
+        return plages;
+    }
+
+    public void setPlages(List<PlageHoraire> plages) {
+        this.plages = plages;
     }
 }

@@ -17,15 +17,19 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, String> 
 
     // 🔍 Par structure sanitaire
     List<RendezVous> findByStructureSanitaire(StructureSanitaire structureSanitaire);
+    int countByJourneeActivite_IdAndActifTrue(String journeeId);
 
     // 🔍 Par médecin
     List<RendezVous> findByMedecin(Medecin medecin);
 
-    List<RendezVous> findByAgendaMedecin_Date(LocalDate date);
     List<RendezVous> findByMedecin_Id(String medecinId);
     List<RendezVous> findByAgendaMedecin_Id(String agendaId);
 
+    int countByJourneeActivite_IdAndEmail(String journeeId, String email);
+    int countByJourneeActivite_Id(String journeeId);
 
+
+    List<RendezVous> findByJourneeActivite_Id(String journeeId);
 }
 
 

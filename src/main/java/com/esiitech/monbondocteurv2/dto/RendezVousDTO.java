@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Set;
 
 public class RendezVousDTO {
@@ -22,9 +24,26 @@ public class RendezVousDTO {
     private int age;
     private String motif;
     private Set<String> refSpecialites;
-
-
+    private LocalDate date;
+    private LocalTime heureDebut; // + getter/setter
     private String agendaId;
+    private boolean actif = true;
+
+    public LocalTime getHeureDebut() {
+        return heureDebut;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
+    }
+
+    public void setHeureDebut(LocalTime heureDebut) {
+        this.heureDebut = heureDebut;
+    }
     public String getAgendaId() {
         return agendaId;
     }
@@ -103,5 +122,21 @@ public class RendezVousDTO {
 
     public void setMotif(String motif) {
         this.motif = motif;
+    }
+
+    public Set<String> getRefSpecialites() {
+        return refSpecialites;
+    }
+
+    public void setRefSpecialites(Set<String> refSpecialites) {
+        this.refSpecialites = refSpecialites;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 }

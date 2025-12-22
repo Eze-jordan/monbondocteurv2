@@ -2,6 +2,8 @@
 
     import jakarta.persistence.*;
 
+    import java.time.LocalDate;
+    import java.time.LocalTime;
     import java.util.HashSet;
     import java.util.Set;
 
@@ -38,10 +40,70 @@
         private int age;
         @Column(nullable = false)
         private String motif;
+        @Column(nullable = false)
+        private boolean actif = true;
 
         @ManyToOne
         @JoinColumn(name = "utilisateur_id", referencedColumnName = "id")
         private Utilisateur utilisateur;
+        private LocalDate date;
+        private LocalTime heureDebut;
+        private PeriodeJournee periodeJournee;
+        @ManyToOne
+        @JoinColumn(name = "plage_id")
+        private PlageHoraire plageHoraire;
+        private String agendaId;
+
+
+// + getters/setters
+
+        public String getAgendaId() {
+            return agendaId;
+        }
+
+        public void setAgendaId(String agendaId) {
+            this.agendaId = agendaId;
+        }
+
+        public LocalDate getDate() {
+            return date;
+        }
+
+        public boolean isActif() {
+            return actif;
+        }
+
+        public void setActif(boolean actif) {
+            this.actif = actif;
+        }
+
+        public PlageHoraire getPlageHoraire() {
+            return plageHoraire;
+        }
+
+        public void setPlageHoraire(PlageHoraire plageHoraire) {
+            this.plageHoraire = plageHoraire;
+        }
+
+        public void setDate(LocalDate date) {
+            this.date = date;
+        }
+
+        public LocalTime getHeureDebut() {
+            return heureDebut;
+        }
+
+        public void setHeureDebut(LocalTime heureDebut) {
+            this.heureDebut = heureDebut;
+        }
+
+        public PeriodeJournee getPeriodeJournee() {
+            return periodeJournee;
+        }
+
+        public void setPeriodeJournee(PeriodeJournee periodeJournee) {
+            this.periodeJournee = periodeJournee;
+        }
 
         public Set<String> getRefSpecialites() {
             return refSpecialites;
@@ -72,6 +134,18 @@
         }
         public String getId() {
             return id;
+        }
+
+        @ManyToOne
+        @JoinColumn(name = "journee_activite_id", nullable = false)
+        private JourneeActivite journeeActivite;
+
+        public JourneeActivite getJourneeActivite() {
+            return journeeActivite;
+        }
+
+        public void setJourneeActivite(JourneeActivite journeeActivite) {
+            this.journeeActivite = journeeActivite;
         }
 
         public void setId(String id) {
@@ -150,4 +224,7 @@
         public Utilisateur getUtilisateur() {
             return utilisateur;
         }
+
+
+
     }

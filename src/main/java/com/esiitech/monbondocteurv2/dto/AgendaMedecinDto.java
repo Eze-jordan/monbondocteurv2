@@ -1,79 +1,19 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.StructureSanitaire;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.esiitech.monbondocteurv2.model.JourSemaine;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.List;
 
 public class AgendaMedecinDto {
+
     private String id;
     private String medecinId;
-    private LocalDate date;
-    private Double nombrePatient;
-    private Double rdvPris;
-    private LocalTime heureDebut;
-
-    private LocalTime heureFin;
-    private boolean actif;
-
+    private JourSemaine jour;
+    private boolean autorise;
     private String structureSanitaireId;
+    private List<PlageHoraireDto> plages;
 
-    // ✅ Champ calculé dynamiquement
-    @JsonProperty("rdvRestant")
-    public Double getRdvRestant() {
-        if (nombrePatient != null && rdvPris != null) {
-            return nombrePatient - rdvPris;
-        }
-        return null;
-    }
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public String getStructureSanitaireId() {
-        return structureSanitaireId;
-    }
-
-    public void setStructureSanitaireId(String structureSanitaireId) {
-        this.structureSanitaireId = structureSanitaireId;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public Double getNombrePatient() {
-        return nombrePatient;
-    }
-
-    public void setNombrePatient(Double nombrePatient) {
-        this.nombrePatient = nombrePatient;
-    }
-
-    public Double getRdvPris() {
-        return rdvPris;
-    }
-
-    public void setRdvPris(Double rdvPris) {
-        this.rdvPris = rdvPris;
-    }
-
-    public LocalTime getHeureDebut() {
-        return heureDebut;
-    }
-
-    public void setHeureDebut(LocalTime heureDebut) {
-        this.heureDebut = heureDebut;
-    }
-
-    public LocalTime getHeureFin() {
-        return heureFin;
-    }
-
-    public void setHeureFin(LocalTime heureFin) {
-        this.heureFin = heureFin;
-    }
+    // getters / setters
 
     public String getId() {
         return id;
@@ -91,12 +31,35 @@ public class AgendaMedecinDto {
         this.medecinId = medecinId;
     }
 
-
-    public boolean isActif() {
-        return actif;
+    public JourSemaine getJour() {
+        return jour;
     }
 
-    public void setActif(boolean actif) {
-        this.actif = actif;
+    public void setJour(JourSemaine jour) {
+        this.jour = jour;
+    }
+
+    public boolean isAutorise() {
+        return autorise;
+    }
+
+    public void setAutorise(boolean autorise) {
+        this.autorise = autorise;
+    }
+
+    public List<PlageHoraireDto> getPlages() {
+        return plages;
+    }
+
+    public void setPlages(List<PlageHoraireDto> plages) {
+        this.plages = plages;
+    }
+
+    public String getStructureSanitaireId() {
+        return structureSanitaireId;
+    }
+
+    public void setStructureSanitaireId(String structureSanitaireId) {
+        this.structureSanitaireId = structureSanitaireId;
     }
 }

@@ -4,111 +4,177 @@ import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
 import com.esiitech.monbondocteurv2.mapper.RendezVousMapper;
 import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class RendezVousService {
 
     private final RendezVousRepository rendezVousRepository;
     private final AgendaMedecinRepository agendaMedecinRepository;
-    private final RendezVousMapper rendezVousMapper;
-    private final NotificationService notificationService; // Ajout du service de notification
-    private final UtilisateurRepository utilisateurRepository;
-
+    private final StructureSanitaireRepository structureSanitaireRepository;
     private final MedecinRepository medecinRepository;
-    private  final StructureSanitaireRepository structureSanitaireRepository;
+    private final UtilisateurRepository utilisateurRepository;
+    private final JourneeActiviteService journeeActiviteService;
+    private final RendezVousMapper rendezVousMapper;
+    private final NotificationService notificationService;
 
-    private final MedecinStructureSanitaireService medecinStructureSanitaireService;
-
-    @Autowired
     public RendezVousService(
             RendezVousRepository rendezVousRepository,
-            StructureSanitaireRepository structureSanitaireRepository,
             AgendaMedecinRepository agendaMedecinRepository,
+            StructureSanitaireRepository structureSanitaireRepository,
+            MedecinRepository medecinRepository,
+            UtilisateurRepository utilisateurRepository,
+            JourneeActiviteService journeeActiviteService,
             RendezVousMapper rendezVousMapper,
-            NotificationService notificationService, UtilisateurRepository utilisateurRepository, MedecinRepository medecinRepository, MedecinRepository medecinRepository1, StructureSanitaireRepository structureSanitaireRepository1, // Injection du service NotificationService
-            MedecinStructureSanitaireService medecinStructureSanitaireService) {
+            NotificationService notificationService
+    ) {
         this.rendezVousRepository = rendezVousRepository;
         this.agendaMedecinRepository = agendaMedecinRepository;
-
+        this.structureSanitaireRepository = structureSanitaireRepository;
+        this.medecinRepository = medecinRepository;
+        this.utilisateurRepository = utilisateurRepository;
+        this.journeeActiviteService = journeeActiviteService;
         this.rendezVousMapper = rendezVousMapper;
         this.notificationService = notificationService;
-        this.utilisateurRepository = utilisateurRepository;
-        this.medecinRepository = medecinRepository1;
-        this.structureSanitaireRepository = structureSanitaireRepository1;
-        this.medecinStructureSanitaireService = medecinStructureSanitaireService;
     }
+
+    /* ============================================================
+       CRÉATION RENDEZ-VOUS (POINT CENTRAL DU SYSTÈME)
+       ============================================================ */
     @Transactional
     public RendezVousDTO creerRendezVous(RendezVousDTO dto) {
-        // Récupérer l'agenda
+
+        /* 1️⃣ Agenda */
         AgendaMedecin agenda = agendaMedecinRepository.findById(dto.getAgendaId())
-                .orElseThrow(() -> new RuntimeException("Agenda non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
 
-       // Vérifier si l'utilisateur a déjà 2 rendez-vous
-        int nbRdvExistants = rendezVousRepository.countByAgendaMedecinIdAndEmail(dto.getAgendaId(), dto.getEmail());
-        if (nbRdvExistants >= 2) {
-            throw new RuntimeException("Vous avez déjà atteint la limite de 2 rendez-vous pour cet agenda.");
+        if (!agenda.isAutorise()) {
+            throw new RuntimeException("Agenda désactivé");
         }
 
-        // Vérifier s'il reste des rendez-vous disponibles
-        if (agenda.getRdvPris() >= agenda.getNombrePatient()) {
-            throw new RuntimeException("Aucun créneau disponible");
+        /* 2️⃣ Date */
+        LocalDate date = dto.getDate();
+        if (date == null) {
+            throw new RuntimeException("La date est obligatoire");
         }
 
-        // Incrémenter le nombre de RDV pris
-        agenda.setRdvPris(agenda.getRdvPris() + 1);
-        agendaMedecinRepository.save(agenda);
+        /* 3️⃣ Journée d’activité */
+        JourneeActivite journee = journeeActiviteService.getOrCreate(date, agenda);
 
-        // Construire le rendez-vous
-        RendezVous rendezVous = new RendezVous();
-        rendezVous.setNom(dto.getNom());
-        rendezVous.setPrenom(dto.getPrenom());
-        rendezVous.setEmail(dto.getEmail());
-        rendezVous.setSexe(dto.getSexe());
-        rendezVous.setAge(dto.getAge());
-        rendezVous.setAdresse(dto.getAdresse());
-        rendezVous.setTelephone(dto.getTelephone());
-        rendezVous.setMotif(dto.getMotif());
-        rendezVous.setAgendaMedecin(agenda);
-        rendezVous.setMedecin(agenda.getMedecin());
-        Medecin medecin = agenda.getMedecin();
-        rendezVous.setStructureSanitaire(medecinStructureSanitaireService.getUneStructureSanitaireActiveByMedecin(medecin));
+        if (!journee.isAutorise()) {
+            throw new RuntimeException("La journée est fermée");
+        }
+
+        /* 4️⃣ Limite patient (2 RDV / jour) */
+        int rdvPatient = rendezVousRepository
+                .countByJourneeActivite_IdAndEmail(journee.getId(), dto.getEmail());
+
+        if (rdvPatient >= 2) {
+            throw new RuntimeException("Limite de 2 rendez-vous atteinte pour cette journée");
+        }
+
+        /* 5️⃣ Capacité journée */
+        int capacite = agenda.getPlages().stream()
+                .filter(PlageHoraire::isAutorise)
+                .mapToInt(p -> p.getNombrePatients() != null ? p.getNombrePatients() : 0)
+                .sum();
+
+        int rdvJournee = rendezVousRepository
+                .countByJourneeActivite_Id(journee.getId());
+
+        if (rdvJournee >= capacite) {
+            throw new RuntimeException("Plus aucun créneau disponible");
+        }
+        /* 6️⃣ Récupération de la plage horaire */
+        PlageHoraire plageSelectionnee = agenda.getPlages().stream()
+                .filter(PlageHoraire::isAutorise)
+                .filter(p -> p.getHeureDebut().equals(dto.getHeureDebut()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Plage horaire introuvable"));
+
+        /* Vérification capacité restante */
+        if (plageSelectionnee.getNombrePatientsRestants() <= 0) {
+            throw new RuntimeException("Ce créneau est complet");
+        }
+
+
+
+        /* 7️⃣ Détermination période (MATIN / SOIR) */
+        PeriodeJournee periode = determinerPeriode(dto.getHeureDebut());
+
+        /* 7️⃣ Création RDV */
+        RendezVous rdv = new RendezVous();
+        rdv.setId(generateId());
+
+        rdv.setNom(dto.getNom());
+        rdv.setPrenom(dto.getPrenom());
+        rdv.setEmail(dto.getEmail());
+        rdv.setSexe(dto.getSexe());
+        rdv.setAge(dto.getAge());
+        rdv.setAdresse(dto.getAdresse());
+        rdv.setTelephone(dto.getTelephone());
+        rdv.setMotif(dto.getMotif());
+
+        rdv.setDate(date);
+        rdv.setHeureDebut(dto.getHeureDebut());
+        rdv.setPeriodeJournee(periode);
+        rdv.setPlageHoraire(plageSelectionnee);
+
+        rdv.setAgendaMedecin(agenda);
+        rdv.setJourneeActivite(journee);
+        rdv.setMedecin(agenda.getMedecin());
+        rdv.setStructureSanitaire(agenda.getStructureSanitaire());
+
+        /* 8️⃣ Spécialités */
         Set<String> specialites = new HashSet<>();
-
-// ton modèle Medecin expose visiblement UNE seule spécialité sous forme de String
-        String sp = medecin.getRefSpecialite(); // <- String
+        String sp = agenda.getMedecin().getRefSpecialite();
         if (sp != null && !sp.isBlank()) {
             specialites.add(sp.trim());
         }
+        rdv.setRefSpecialites(specialites);
 
-        rendezVous.setRefSpecialites(specialites);
-
-        // Lier l'utilisateur connecté si existant
-        String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
-        utilisateurRepository.findByEmail(emailConnecte).ifPresent(rendezVous::setUtilisateur);
-        if (rendezVous.getId() == null) {
-            rendezVous.setId(generateUserId());
+        /* 9️⃣ Utilisateur connecté */
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            utilisateurRepository.findByEmail(auth.getName())
+                    .ifPresent(rdv::setUtilisateur);
         }
 
-        RendezVous saved = rendezVousRepository.save(rendezVous);
-     //✅ Notifications
-     notificationService.envoyerAuPatient(dto.getEmail(), dto.getNom(), medecin.getNomMedecin());
-     notificationService.envoyerAuMedecin(medecin.getEmail(), medecin.getNomMedecin(), dto.getNom());
+        /* 🔟 Sauvegarde */
+        RendezVous saved = rendezVousRepository.save(rdv);
+
+        /* 🔔 Notifications */
+        notificationService.envoyerAuPatient(
+                saved.getEmail(),
+                saved.getNom(),
+                agenda.getMedecin().getNomMedecin()
+        );
+
+        notificationService.envoyerAuMedecin(
+                agenda.getMedecin().getEmail(),
+                agenda.getMedecin().getNomMedecin(),
+                saved.getNom()
+        );
 
         return rendezVousMapper.toDTO(saved);
     }
 
-    private String generateUserId() {
-        return "RendezVous-" + java.util.UUID.randomUUID();
+    /* ============================================================
+       MÉTHODES UTILITAIRES
+       ============================================================ */
+    private String generateId() {
+        return "RDV-" + UUID.randomUUID();
     }
 
     public List<RendezVousDTO> listerTous() {
@@ -122,64 +188,65 @@ public class RendezVousService {
         return rendezVousRepository.findById(id)
                 .map(rendezVousMapper::toDTO);
     }
-    public List<RendezVousDTO> trouverParStructureSanitaire(StructureSanitaire structureSanitaire) {
-        return rendezVousRepository.findByStructureSanitaire(structureSanitaire)
-                .stream()
-                .map(rendezVousMapper::toDTO)
-                .toList();
+    private PeriodeJournee determinerPeriode(LocalTime heureDebut) {
+        return heureDebut.isBefore(LocalTime.NOON)
+                ? PeriodeJournee.MATIN
+                : PeriodeJournee.SOIR;
     }
 
     public List<RendezVousDTO> trouverParMedecin(Medecin medecin) {
         return rendezVousRepository.findByMedecin(medecin)
-                .stream()
-                .map(rendezVousMapper::toDTO)
-                .toList();
+                .stream().map(rendezVousMapper::toDTO).toList();
     }
 
-    public List<RendezVousDTO> trouverParNomStructure(String nomStructureSanitaire) {
+    public List<RendezVousDTO> trouverParMedecinId(String medecinId) {
+        return rendezVousRepository.findByMedecin_Id(medecinId)
+                .stream().map(rendezVousMapper::toDTO).toList();
+    }
+
+    public List<RendezVousDTO> trouverParAgendaId(String agendaId) {
+        agendaMedecinRepository.findById(agendaId)
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
+        return rendezVousRepository.findByAgendaMedecin_Id(agendaId)
+                .stream().map(rendezVousMapper::toDTO).toList();
+    }
+
+    public List<RendezVousDTO> trouverParStructure(String nomStructure) {
         StructureSanitaire structure = structureSanitaireRepository
-                .findByNomStructureSanitaireIgnoreCase(nomStructureSanitaire)
-                .orElseThrow(() -> new RuntimeException("Structure non trouvée : " + nomStructureSanitaire));
+                .findByNomStructureSanitaireIgnoreCase(nomStructure)
+                .orElseThrow(() -> new RuntimeException("Structure introuvable"));
         return rendezVousRepository.findByStructureSanitaire(structure)
                 .stream().map(rendezVousMapper::toDTO).toList();
     }
 
-    public List<RendezVousDTO> trouverParNomMedecin(String nomMedecin) {
-        Medecin medecin = medecinRepository
-                .findByNomMedecinIgnoreCase(nomMedecin)
-                .orElseThrow(() -> new RuntimeException("Médecin non trouvé : " + nomMedecin));
-        return rendezVousRepository.findByMedecin(medecin)
-                .stream().map(rendezVousMapper::toDTO).toList();
-    }
-
-
     public void supprimer(String id) {
         rendezVousRepository.deleteById(id);
     }
+    @Transactional
+    public RendezVousDTO modifierStatut(String rdvId, boolean actif) {
+        RendezVous rdv = rendezVousRepository.findById(rdvId)
+                .orElseThrow(() -> new RuntimeException("Rendez-vous introuvable"));
 
-    public List<RendezVousDTO> trouverParDate(LocalDate date) {
-        return rendezVousRepository.findByAgendaMedecin_Date(date)
-                .stream()
-                .map(rendezVousMapper::toDTO)
-                .toList();
+        rdv.setActif(actif); // Modifier le statut
+        RendezVous updated = rendezVousRepository.save(rdv);
+
+        return rendezVousMapper.toDTO(updated);
     }
-    public List<RendezVousDTO> trouverParMedecinId(String medecinId) {
-        return rendezVousRepository.findByMedecin_Id(medecinId)
-                .stream()
-                .map(rendezVousMapper::toDTO)
-                .toList();
+    @Transactional
+    public List<RendezVousDTO> modifierStatutTousParJournee(String journeeId, boolean actif) {
+        List<RendezVous> rdvs = rendezVousRepository.findByJourneeActivite_Id(journeeId);
+        rdvs.forEach(rdv -> rdv.setActif(actif));
+        List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
+
+        return updated.stream().map(rendezVousMapper::toDTO).toList();
     }
+    @Transactional
+    public List<RendezVousDTO> modifierStatutTousParAgenda(String agendaId, boolean actif) {
+        List<RendezVous> rdvs = rendezVousRepository.findByAgendaMedecin_Id(agendaId);
+        rdvs.forEach(rdv -> rdv.setActif(actif));
+        List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
 
-    public List<RendezVousDTO> trouverParAgendaId(String agendaId) {
-
-        // (optionnel) vérifier que l’agenda existe
-        agendaMedecinRepository.findById(agendaId)
-                .orElseThrow(() -> new RuntimeException("Agenda introuvable : " + agendaId));
-
-        return rendezVousRepository.findByAgendaMedecin_Id(agendaId)
-                .stream()
-                .map(rendezVousMapper::toDTO)
-                .toList();
+        return updated.stream().map(rendezVousMapper::toDTO).toList();
     }
 
 }
