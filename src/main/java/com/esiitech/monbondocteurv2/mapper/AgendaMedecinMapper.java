@@ -1,9 +1,8 @@
 package com.esiitech.monbondocteurv2.mapper;
 
 import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
-import com.esiitech.monbondocteurv2.model.AgendaMedecin;
-import com.esiitech.monbondocteurv2.model.Medecin;
-import com.esiitech.monbondocteurv2.model.StructureSanitaire;
+import com.esiitech.monbondocteurv2.dto.PlageHoraireDto;
+import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.MedecinRepository;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,38 +17,85 @@ public class AgendaMedecinMapper {
     @Autowired
     private StructureSanitaireRepository structureSanitaireRepository;
 
+    /* =========================
+       ENTITY → DTO
+       ========================= */
     public AgendaMedecinDto toDto(AgendaMedecin entity) {
         AgendaMedecinDto dto = new AgendaMedecinDto();
+
         dto.setId(entity.getId());
+        dto.setJour(entity.getJour());
+        dto.setAutorise(entity.isAutorise());
+
         dto.setMedecinId(entity.getMedecin().getId());
-        dto.setDate(entity.getDate());
-        dto.setHeureDebut(entity.getHeureDebut());
-        dto.setHeureFin(entity.getHeureFin());
-        dto.setNombrePatient(entity.getNombrePatient());
-        dto.setRdvPris(entity.getRdvPris());
-        dto.setActif(entity.isActif());
-        dto.setStructureSanitaireId(entity.getStructureSanitaire().getId()); // ✅ On retourne seulement l'ID
+        dto.setStructureSanitaireId(entity.getStructureSanitaire().getId());
+
+        dto.setPlages(
+                entity.getPlages()
+                        .stream()
+                        .map(this::toPlageDto)
+                        .toList()
+        );
+
         return dto;
     }
 
+    private PlageHoraireDto toPlageDto(PlageHoraire plage) {
+        PlageHoraireDto dto = new PlageHoraireDto();
+
+        dto.setId(plage.getId());
+        dto.setPeriode(plage.getPeriode());
+        dto.setHeureDebut(plage.getHeureDebut());
+        dto.setHeureFin(plage.getHeureFin());
+        dto.setNombrePatients(plage.getNombrePatients());
+        dto.setAutorise(plage.isAutorise());
+
+        return dto;
+    }
+
+    /* =========================
+       DTO → ENTITY
+       ========================= */
     public AgendaMedecin toEntity(AgendaMedecinDto dto) {
-        AgendaMedecin entity = new AgendaMedecin();
-        entity.setId(dto.getId());
-        entity.setActif(dto.isActif());
+        AgendaMedecin agenda = new AgendaMedecin();
 
+        agenda.setId(dto.getId());
+        agenda.setJour(dto.getJour());
+        agenda.setAutorise(dto.isAutorise());
+
+        // Médecin
         Medecin medecin = medecinRepository.findById(dto.getMedecinId())
-                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'ID " + dto.getMedecinId()));
-        entity.setMedecin(medecin);
+                .orElseThrow(() -> new RuntimeException("Médecin introuvable"));
+        agenda.setMedecin(medecin);
 
-        StructureSanitaire structure = structureSanitaireRepository.findById(dto.getStructureSanitaireId())
-                .orElseThrow(() -> new RuntimeException("Structure introuvable avec l'ID " + dto.getStructureSanitaireId()));
-        entity.setStructureSanitaire(structure);
+        // Structure sanitaire
+        StructureSanitaire structure = structureSanitaireRepository
+                .findById(dto.getStructureSanitaireId())
+                .orElseThrow(() -> new RuntimeException("Structure sanitaire introuvable"));
+        agenda.setStructureSanitaire(structure);
 
-        entity.setDate(dto.getDate());
-        entity.setHeureDebut(dto.getHeureDebut());
-        entity.setHeureFin(dto.getHeureFin());
-        entity.setNombrePatient(dto.getNombrePatient());
-        entity.setRdvPris(dto.getRdvPris());
-        return entity;
+        // Plages horaires
+        agenda.setPlages(
+                dto.getPlages()
+                        .stream()
+                        .map(p -> toPlageEntity(p, agenda))
+                        .toList()
+        );
+
+        return agenda;
+    }
+
+    private PlageHoraire toPlageEntity(PlageHoraireDto dto, AgendaMedecin agenda) {
+        PlageHoraire plage = new PlageHoraire();
+
+        plage.setId(dto.getId());
+        plage.setAgenda(agenda);
+        plage.setPeriode(dto.getPeriode());
+        plage.setHeureDebut(dto.getHeureDebut());
+        plage.setHeureFin(dto.getHeureFin());
+        plage.setNombrePatients(dto.getNombrePatients());
+        plage.setAutorise(dto.isAutorise());
+
+        return plage;
     }
 }

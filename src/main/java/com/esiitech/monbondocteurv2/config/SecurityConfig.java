@@ -65,7 +65,8 @@ public class SecurityConfig {
                                 "/api/V2/structuresanitaires/resend-otp",
                                 "/api/V2/auth/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/V2/rendezvous"
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()   // ⬅⬅ Autoriser l'accès aux fichiers
                         .anyRequest().authenticated()
