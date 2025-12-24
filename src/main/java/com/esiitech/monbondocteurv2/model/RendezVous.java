@@ -53,9 +53,18 @@
         @JoinColumn(name = "plage_id")
         private PlageHoraire plageHoraire;
         private String agendaId;
+        private boolean archive = false; // nouveau champ pour l’archivage
 
 
 // + getters/setters
+
+        public boolean isArchive() {
+            return archive;
+        }
+
+        public void setArchive(boolean archive) {
+            this.archive = archive;
+        }
 
         public String getAgendaId() {
             return agendaId;

@@ -161,8 +161,13 @@ public class AgendaMedecinService {
 
         agenda.setAutorise(dto.isAutorise());
 
-        agenda.getPlages().clear();
+        /* 🗂️ ARCHIVER les anciennes plages (PAS DE DELETE) */
+        agenda.getPlages().forEach(plage -> {
+            plage.setAutorise(false);
+            plage.setArchive(true);
+        });
 
+        /* ➕ CRÉER les nouvelles plages */
         dto.getPlages().forEach(pDto -> {
             PlageHoraire plage = new PlageHoraire();
             plage.setAgenda(agenda);
@@ -170,14 +175,14 @@ public class AgendaMedecinService {
             plage.setHeureFin(pDto.getHeureFin());
             plage.setNombrePatients(pDto.getNombrePatients());
             plage.setAutorise(pDto.isAutorise());
+            plage.setArchive(false);
             plage.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+
             agenda.getPlages().add(plage);
         });
 
         return mapper.toDto(repository.save(agenda));
     }
-
-
     @Transactional
     public List<AgendaMedecinDto> updateWeek(AgendaSemaineRequest request) {
 
@@ -195,13 +200,18 @@ public class AgendaMedecinService {
                             new RuntimeException("Agenda inexistant pour " + dto.getJour())
                     );
 
-            // 🔒 VÉRIFICATION JOURNÉE
+            // 🔒 VÉRIFICATION MÉTIER
             verifierJourneeModifiable(agenda);
 
             agenda.setAutorise(dto.isAutorise());
 
-            agenda.getPlages().clear();
+            /* 🗂️ ARCHIVER anciennes plages */
+            agenda.getPlages().forEach(plage -> {
+                plage.setAutorise(false);
+                plage.setArchive(true);
+            });
 
+            /* ➕ NOUVELLES plages */
             dto.getPlages().forEach(pDto -> {
                 PlageHoraire plage = new PlageHoraire();
                 plage.setAgenda(agenda);
@@ -209,7 +219,9 @@ public class AgendaMedecinService {
                 plage.setHeureFin(pDto.getHeureFin());
                 plage.setNombrePatients(pDto.getNombrePatients());
                 plage.setAutorise(pDto.isAutorise());
+                plage.setArchive(false);
                 plage.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+
                 agenda.getPlages().add(plage);
             });
 
@@ -217,7 +229,6 @@ public class AgendaMedecinService {
 
         }).toList();
     }
-
 
     private void verifierJourneeModifiable(AgendaMedecin agenda) {
 

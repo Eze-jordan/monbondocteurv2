@@ -26,6 +26,7 @@ public class PlageHoraire {
     private LocalTime heureFin;
 
     private Integer nombrePatients;
+    private boolean archive = false;
 
     private boolean autorise;
 
@@ -34,6 +35,22 @@ public class PlageHoraire {
 
     public int getNombrePatientsRestants() {
         return nombrePatients - rendezVous.size();
+    }
+
+    public boolean isArchive() {
+        return archive;
+    }
+
+    public void setArchive(boolean archive) {
+        this.archive = archive;
+    }
+
+    public List<RendezVous> getRendezVous() {
+        return rendezVous;
+    }
+
+    public void setRendezVous(List<RendezVous> rendezVous) {
+        this.rendezVous = rendezVous;
     }
 
     public String getId() {

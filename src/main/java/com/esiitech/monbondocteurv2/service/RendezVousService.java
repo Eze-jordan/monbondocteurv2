@@ -188,6 +188,7 @@ public class RendezVousService {
         return rendezVousRepository.findById(id)
                 .map(rendezVousMapper::toDTO);
     }
+
     private PeriodeJournee determinerPeriode(LocalTime heureDebut) {
         return heureDebut.isBefore(LocalTime.NOON)
                 ? PeriodeJournee.MATIN
@@ -227,24 +228,38 @@ public class RendezVousService {
         RendezVous rdv = rendezVousRepository.findById(rdvId)
                 .orElseThrow(() -> new RuntimeException("Rendez-vous introuvable"));
 
-        rdv.setActif(actif); // Modifier le statut
-        RendezVous updated = rendezVousRepository.save(rdv);
+        rdv.setActif(actif);
 
+        // Archiver automatiquement si le rendez-vous est désactivé
+        if (!actif) {
+            rdv.setArchive(true);
+        }
+
+        RendezVous updated = rendezVousRepository.save(rdv);
         return rendezVousMapper.toDTO(updated);
     }
+
+
     @Transactional
     public List<RendezVousDTO> modifierStatutTousParJournee(String journeeId, boolean actif) {
         List<RendezVous> rdvs = rendezVousRepository.findByJourneeActivite_Id(journeeId);
-        rdvs.forEach(rdv -> rdv.setActif(actif));
+        rdvs.forEach(rdv -> {
+            rdv.setActif(actif);
+            if (!actif) rdv.setArchive(true);
+        });
         List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
-
         return updated.stream().map(rendezVousMapper::toDTO).toList();
     }
+
+
     @Transactional
     public List<RendezVousDTO> modifierStatutTousParAgenda(String agendaId, boolean actif) {
         List<RendezVous> rdvs = rendezVousRepository.findByAgendaMedecin_Id(agendaId);
-        rdvs.forEach(rdv -> rdv.setActif(actif));
-        List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
+        rdvs.forEach(rdv -> {
+            rdv.setActif(actif);
+            if (!actif) rdv.setArchive(true);
+        });        List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
+
 
         return updated.stream().map(rendezVousMapper::toDTO).toList();
     }

@@ -112,4 +112,15 @@ public class AgendaMedecinController {
     ) {
         return ResponseEntity.ok(service.updateWeek(request));
     }
+
+    /**
+     * 🔄 Modifier un seul jour de l'agenda
+     */
+    @PutMapping("/day")
+    public ResponseEntity<AgendaMedecinDto> updateDay(
+            @RequestBody AgendaMedecinDto dto
+    ) {
+        AgendaMedecinDto updated = service.updateDay(dto);
+        return ResponseEntity.ok(updated);
+    }
 }
