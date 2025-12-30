@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -135,4 +136,47 @@ public class GlobalExceptionHandler {
         // logger.info("Authentication required: {}", ex.getMessage());
         return new ResponseEntity<>(err, HttpStatus.UNAUTHORIZED);
     }
+
+    @ExceptionHandler(AccesRefuseException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorDetails> handleAccesRefuse(
+            AccesRefuseException ex,
+            HttpServletRequest request) {
+
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.FORBIDDEN.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(err, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(AgendaNonModifiableException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleAgendaNonModifiable(
+            AgendaNonModifiableException ex,
+            HttpServletRequest request) {
+
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(AgendaExisteDejaException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleAgendaExiste(
+            AgendaExisteDejaException ex,
+            HttpServletRequest request) {
+
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
+
 }
