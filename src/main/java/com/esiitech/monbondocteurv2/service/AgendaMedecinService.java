@@ -2,6 +2,9 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
 import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
+import com.esiitech.monbondocteurv2.exception.AccesRefuseException;
+import com.esiitech.monbondocteurv2.exception.AgendaExisteDejaException;
+import com.esiitech.monbondocteurv2.exception.AgendaNonModifiableException;
 import com.esiitech.monbondocteurv2.exception.DisponibiliteConflitException;
 import com.esiitech.monbondocteurv2.mapper.AgendaMedecinMapper;
 import com.esiitech.monbondocteurv2.model.*;
@@ -40,7 +43,7 @@ public class AgendaMedecinService {
                 dto.getStructureSanitaireId(),
                 dto.getJour())) {
 
-            throw new RuntimeException(
+            throw new AgendaExisteDejaException(
                     "Un agenda existe déjà pour ce jour dans cette structure"
             );
         }
@@ -140,7 +143,7 @@ public class AgendaMedecinService {
                 .orElseThrow(() -> new RuntimeException("Accès refusé"));
 
         if (!"MEDECIN".equals(medecin.getRole().name())) {
-            throw new RuntimeException("Seul un médecin peut gérer son agenda");
+            throw new AccesRefuseException("Seul un médecin peut gérer son agenda");
         }
     }
 
@@ -238,7 +241,7 @@ public class AgendaMedecinService {
 
                     // ❌ Journée ouverte
                     if (journee.isAutorise()) {
-                        throw new RuntimeException(
+                        throw new AgendaNonModifiableException(
                                 "Impossible de modifier : la journée est ouverte"
                         );
                     }
