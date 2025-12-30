@@ -49,10 +49,9 @@ public class AgendaMedecinMapper {
         dto.setHeureFin(plage.getHeureFin());
         dto.setNombrePatients(plage.getNombrePatients());
         dto.setAutorise(plage.isAutorise());
-
         return dto;
-    }
 
+    }
     /* =========================
        DTO → ENTITY
        ========================= */
@@ -84,6 +83,7 @@ public class AgendaMedecinMapper {
 
         return agenda;
     }
+
 
     private PlageHoraire toPlageEntity(PlageHoraireDto dto, AgendaMedecin agenda) {
         PlageHoraire plage = new PlageHoraire();
