@@ -12,7 +12,7 @@ public class AgendaMedecin {
     @Id
     @Column(name = "id", nullable = false, length = 100, updatable = false)
     private String  id;
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "medecin_id", nullable = false)
     private Medecin medecin;
     @Column(nullable = false)

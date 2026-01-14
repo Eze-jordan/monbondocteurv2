@@ -178,5 +178,19 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(err, HttpStatus.CONFLICT);
     }
+    @ExceptionHandler(CreneauCompletException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleCreneauComplet(
+            CreneauCompletException ex,
+            HttpServletRequest request) {
+
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
 
 }

@@ -211,7 +211,7 @@ public class NotificationService {
     }
 
 
-    public void envoyerBienvenueAuMedecin(String email, String nomMedecin, Long idMedecin) {
+public void envoyerBienvenueAuMedecin(String email, String nomMedecin, Long idMedecin) {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         try {

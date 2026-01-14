@@ -39,7 +39,19 @@ public class JourneeActivite {
     @Column(nullable = false)
     private LocalDateTime heureOuverture;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutJournee statut = StatutJournee.OUVERTE;
+
     // getters / setters
+
+    public StatutJournee getStatut() {
+        return statut;
+    }
+
+    public void setStatut(StatutJournee statut) {
+        this.statut = statut;
+    }
 
     public String getId() {
         return id;

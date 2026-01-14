@@ -6,9 +6,19 @@ public class JourneeActiviteDTO {
     private String agendaId; // nouveau champ
     private MedecinDTO medecin;
     private StructureSanitaireDTO structureSanitaire;
+    private String statut;
+
 
     public String getAgendaId() {
         return agendaId;
+    }
+
+    public String getStatut() {
+        return statut;
+    }
+
+    public void setStatut(String statut) {
+        this.statut = statut;
     }
 
     public void setAgendaId(String agendaId) {

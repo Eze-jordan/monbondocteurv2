@@ -10,13 +10,11 @@ import org.springframework.transaction.annotation.Transactional; // <-- celui-ci
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import static java.time.temporal.ChronoUnit.HOURS;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
