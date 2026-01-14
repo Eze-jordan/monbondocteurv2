@@ -1,6 +1,7 @@
 package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
+import com.esiitech.monbondocteurv2.exception.CreneauCompletException;
 import com.esiitech.monbondocteurv2.mapper.RendezVousMapper;
 import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.*;
@@ -105,7 +106,7 @@ public class RendezVousService {
 
         /* Vérification capacité restante */
         if (plageSelectionnee.getNombrePatientsRestants() <= 0) {
-            throw new RuntimeException("Ce créneau est complet");
+            throw new CreneauCompletException("Ce créneau est complet");
         }
 
 
@@ -262,6 +263,18 @@ public class RendezVousService {
 
 
         return updated.stream().map(rendezVousMapper::toDTO).toList();
+    }
+
+    @Transactional
+    public void desactiverTousLesRdvDeLaJournee(String journeeId) {
+        List<RendezVous> rdvs = rendezVousRepository.findByJourneeActivite_Id(journeeId);
+
+        rdvs.forEach(rdv -> {
+            rdv.setActif(false);
+            rdv.setArchive(true);
+        });
+
+        rendezVousRepository.saveAll(rdvs);
     }
 
 }

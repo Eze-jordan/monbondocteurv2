@@ -6,6 +6,7 @@ import com.esiitech.monbondocteurv2.model.JourSemaine;
 import com.esiitech.monbondocteurv2.model.JourneeActivite;
 import com.esiitech.monbondocteurv2.repository.AgendaMedecinRepository;
 import com.esiitech.monbondocteurv2.service.JourneeActiviteService;
+import com.esiitech.monbondocteurv2.service.RendezVousService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 @RestController
 @RequestMapping("/api/V2/journees")
@@ -24,7 +26,7 @@ public class JourneeActiviteController {
     @Autowired
     private AgendaMedecinRepository agendaMedecinRepository;
 
-
+@Autowired private RendezVousService rendezVousService;
     /**
      * Récupère ou crée une journée d'activité pour un médecin et une date (via ID d'agenda)
      */
@@ -42,14 +44,18 @@ public class JourneeActiviteController {
     }
 
     /**
-     * Ferme une journée d'activité
+     * Ferme une journée d'activité et désactive tous les rendez-vous associés
      */
     @PostMapping("/{journeeId}/fermer")
     public ResponseEntity<String> fermerJournee(@PathVariable String journeeId) {
-        journeeActiviteService.fermerJournee(journeeId);
-        return ResponseEntity.ok("Journée fermée avec succès");
-    }
 
+        journeeActiviteService.fermerJournee(journeeId);
+        rendezVousService.desactiverTousLesRdvDeLaJournee(journeeId);
+
+        return ResponseEntity.ok(
+                "Journée fermée avec succès. Tous les rendez-vous ont été désactivés."
+        );
+    }
     /**
      * Récupérer ou créer la journée d'activité pour un médecin dans une structure
      * sans connaître l'ID de l'agenda.
@@ -80,5 +86,18 @@ public class JourneeActiviteController {
 
         // Retourner le DTO
         return ResponseEntity.ok(journeeActiviteService.toDTO(journee));
+    }
+    /**
+     * Récupérer toutes les journées d'activité
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<JourneeActiviteDTO>> getToutesLesJournees() {
+        return ResponseEntity.ok(
+                journeeActiviteService.getToutesLesJournees()
+        );
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<JourneeActivite> getJournee(@PathVariable String id) {
+        return ResponseEntity.ok(journeeActiviteService.getJourneeById(id));
     }
 }

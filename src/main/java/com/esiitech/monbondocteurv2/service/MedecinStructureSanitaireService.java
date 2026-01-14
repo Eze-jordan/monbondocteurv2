@@ -6,10 +6,8 @@ import com.esiitech.monbondocteurv2.exception.RelationDejaExistanteException;
 import com.esiitech.monbondocteurv2.exception.SpecialiteIncompatibleException;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
 import com.esiitech.monbondocteurv2.mapper.MedecinStructureSanitaireMapper;
-import com.esiitech.monbondocteurv2.model.Medecin;
-import com.esiitech.monbondocteurv2.model.MedecinStructureSanitaire;
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
-import com.esiitech.monbondocteurv2.model.StructureSanitaire;
+import com.esiitech.monbondocteurv2.model.*;
+import com.esiitech.monbondocteurv2.repository.AgendaMedecinRepository;
 import com.esiitech.monbondocteurv2.repository.MedecinRepository;
 import com.esiitech.monbondocteurv2.repository.MedecinStructureSanitaireRepository;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
@@ -18,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +31,8 @@ public class MedecinStructureSanitaireService {
     @Autowired private MedecinRepository medecinRepository;
     @Autowired private MedecinMapper medecinMapper;
     @Autowired private StructureSanitaireRepository structureSanitaireRepository;
+    @Autowired private AgendaMedecinRepository agendaMedecinRepository;
+
 
     public List<MedecinStructureSanitaireDto> findAll() {
         return repository.findAll().stream().map(mapper::toDto).collect(Collectors.toList());
@@ -100,6 +101,8 @@ public class MedecinStructureSanitaireService {
 
         try {
             MedecinStructureSanitaire saved = repository.save(entity);
+            // créer agendas par défaut pour cette structure
+            creerAgendasParDefautSiAbsents(medecin, structure);
             return mapper.toDto(saved);
         } catch (DataIntegrityViolationException ex) {
             // si la contrainte unique côté DB est déclenchée (concurrence),
@@ -184,5 +187,49 @@ public class MedecinStructureSanitaireService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
+    private void creerAgendasParDefautSiAbsents(Medecin medecin, StructureSanitaire structure) {
+
+        for (JourSemaine jour : JourSemaine.values()) {
+
+            boolean existe = agendaMedecinRepository
+                    .existsByMedecinIdAndStructureSanitaireIdAndJour(
+                            medecin.getId(),
+                            structure.getId(),
+                            jour
+                    );
+
+            if (existe) continue;
+
+            AgendaMedecin agenda = new AgendaMedecin();
+            agenda.setId("AGENDA-" + java.util.UUID.randomUUID());
+            agenda.setMedecin(medecin);
+            agenda.setStructureSanitaire(structure);
+            agenda.setJour(jour);
+            agenda.setAutorise(true);
+
+            // ✅ Plages par défaut (exemple)
+            List<PlageHoraire> plages = List.of(
+                    buildPlage(agenda, LocalTime.of(8, 0),  LocalTime.of(12, 0), 10),
+                    buildPlage(agenda, LocalTime.of(14, 0), LocalTime.of(18, 0), 10)
+            );
+
+            agenda.setPlages(plages);
+
+            agendaMedecinRepository.save(agenda);
+        }
+    }
+
+    private PlageHoraire buildPlage(AgendaMedecin agenda, LocalTime debut, LocalTime fin, int nbPatients) {
+        PlageHoraire p = new PlageHoraire();
+        p.setAgenda(agenda);
+        p.setHeureDebut(debut);
+        p.setHeureFin(fin);
+        p.setNombrePatients(nbPatients);
+        p.setAutorise(true);
+        p.setArchive(false);
+        p.setPeriode(debut.isBefore(LocalTime.NOON) ? PeriodeJournee.MATIN : PeriodeJournee.SOIR);
+        return p;
+    }
+
 
 }
