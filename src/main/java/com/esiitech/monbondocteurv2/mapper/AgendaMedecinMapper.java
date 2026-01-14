@@ -30,15 +30,19 @@ public class AgendaMedecinMapper {
         dto.setMedecinId(entity.getMedecin().getId());
         dto.setStructureSanitaireId(entity.getStructureSanitaire().getId());
 
+        // ✅ ICI : filtrer AVANT le mapping vers DTO
         dto.setPlages(
                 entity.getPlages()
                         .stream()
+                        .filter(p -> !p.isArchive())   // 👈 uniquement les plages actives
                         .map(this::toPlageDto)
                         .toList()
         );
+        dto.setActif(entity.isActif());
 
         return dto;
     }
+
 
     private PlageHoraireDto toPlageDto(PlageHoraire plage) {
         PlageHoraireDto dto = new PlageHoraireDto();
@@ -49,6 +53,7 @@ public class AgendaMedecinMapper {
         dto.setHeureFin(plage.getHeureFin());
         dto.setNombrePatients(plage.getNombrePatients());
         dto.setAutorise(plage.isAutorise());
+
         return dto;
 
     }
@@ -61,6 +66,7 @@ public class AgendaMedecinMapper {
         agenda.setId(dto.getId());
         agenda.setJour(dto.getJour());
         agenda.setAutorise(dto.isAutorise());
+        agenda.setActif(dto.isActif());
 
         // Médecin
         Medecin medecin = medecinRepository.findById(dto.getMedecinId())
