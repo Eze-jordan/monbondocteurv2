@@ -206,6 +206,8 @@ public class MedecinStructureSanitaireService {
             agenda.setStructureSanitaire(structure);
             agenda.setJour(jour);
             agenda.setAutorise(true);
+            agenda.setActif(false);
+
 
             // ✅ Plages par défaut (exemple)
             List<PlageHoraire> plages = List.of(

@@ -29,6 +29,8 @@ public class AgendaMedecin {
     @JoinColumn(name = "structure_sanitaire_id", nullable = false)
     private StructureSanitaire structureSanitaire;
 
+    @Column(name = "actif", nullable = false)
+    private boolean actif = false;
 
     public StructureSanitaire getStructureSanitaire() {
         return structureSanitaire;
@@ -36,6 +38,14 @@ public class AgendaMedecin {
 
     public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
         this.structureSanitaire = structureSanitaire;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
     }
 
     public String getId() {

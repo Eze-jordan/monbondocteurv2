@@ -2,6 +2,7 @@ package com.esiitech.monbondocteurv2.controller;
 
 import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
 import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
+import com.esiitech.monbondocteurv2.dto.AgendaStatusRequest;
 import com.esiitech.monbondocteurv2.service.AgendaMedecinService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +17,8 @@ import java.util.List;
 public class AgendaMedecinController {
 
     private final AgendaMedecinService service;
+    @Autowired
+    private AgendaMedecinService agendaMedecinService;
 
     @Autowired
     public AgendaMedecinController(AgendaMedecinService service) {
@@ -121,6 +124,15 @@ public class AgendaMedecinController {
             @RequestBody AgendaMedecinDto dto
     ) {
         AgendaMedecinDto updated = service.updateDay(dto);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{agendaId}/status")
+    public ResponseEntity<AgendaMedecinDto> updateAgendaStatus(
+            @PathVariable String agendaId,
+            @RequestBody AgendaStatusRequest request
+    ) {
+        AgendaMedecinDto updated = agendaMedecinService.updateAgendaStatus(agendaId, request.isActif());
         return ResponseEntity.ok(updated);
     }
 }

@@ -155,37 +155,48 @@ public class AgendaMedecinService {
 
         checkIfUserIsMedecin();
 
-        AgendaMedecin agenda = repository
-                .findById(dto.getId())
+        AgendaMedecin agenda = repository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
 
-        // 🔒 VÉRIFICATION MÉTIER
         verifierJourneeModifiable(agenda);
 
         agenda.setAutorise(dto.isAutorise());
 
-        /* 🗂️ ARCHIVER les anciennes plages (PAS DE DELETE) */
-        agenda.getPlages().forEach(plage -> {
-            plage.setAutorise(false);
-            plage.setArchive(true);
-        });
+        // Indexer les plages existantes par id
+        var existingById = agenda.getPlages().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        PlageHoraire::getId,
+                        p -> p
+                ));
 
-        /* ➕ CRÉER les nouvelles plages */
-        dto.getPlages().forEach(pDto -> {
-            PlageHoraire plage = new PlageHoraire();
-            plage.setAgenda(agenda);
-            plage.setHeureDebut(pDto.getHeureDebut());
-            plage.setHeureFin(pDto.getHeureFin());
-            plage.setNombrePatients(pDto.getNombrePatients());
-            plage.setAutorise(pDto.isAutorise());
-            plage.setArchive(false);
-            plage.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+        // ✅ On UPDATE uniquement
+        for (var pDto : dto.getPlages()) {
 
-            agenda.getPlages().add(plage);
-        });
+            if (pDto.getId() == null || pDto.getId().isBlank()) {
+                throw new RuntimeException("Modification refusée : une plage sans id créerait une nouvelle entrée.");
+            }
+
+            PlageHoraire existing = existingById.get(pDto.getId());
+            if (existing == null) {
+                throw new RuntimeException("Plage introuvable (id=" + pDto.getId() + ") pour cet agenda.");
+            }
+
+            existing.setHeureDebut(pDto.getHeureDebut());
+            existing.setHeureFin(pDto.getHeureFin());
+            existing.setNombrePatients(pDto.getNombrePatients());
+            existing.setAutorise(pDto.isAutorise());
+
+            // si tu veux recalculer la période automatiquement :
+            existing.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+
+            // surtout ne pas toucher archive ici (tu peux même supprimer le concept)
+            existing.setArchive(false);
+        }
 
         return mapper.toDto(repository.save(agenda));
     }
+
+
     @Transactional
     public List<AgendaMedecinDto> updateWeek(AgendaSemaineRequest request) {
 
@@ -203,35 +214,37 @@ public class AgendaMedecinService {
                             new RuntimeException("Agenda inexistant pour " + dto.getJour())
                     );
 
-            // 🔒 VÉRIFICATION MÉTIER
             verifierJourneeModifiable(agenda);
 
             agenda.setAutorise(dto.isAutorise());
 
-            /* 🗂️ ARCHIVER anciennes plages */
-            agenda.getPlages().forEach(plage -> {
-                plage.setAutorise(false);
-                plage.setArchive(true);
-            });
+            var existingById = agenda.getPlages().stream()
+                    .collect(java.util.stream.Collectors.toMap(PlageHoraire::getId, p -> p));
 
-            /* ➕ NOUVELLES plages */
-            dto.getPlages().forEach(pDto -> {
-                PlageHoraire plage = new PlageHoraire();
-                plage.setAgenda(agenda);
-                plage.setHeureDebut(pDto.getHeureDebut());
-                plage.setHeureFin(pDto.getHeureFin());
-                plage.setNombrePatients(pDto.getNombrePatients());
-                plage.setAutorise(pDto.isAutorise());
-                plage.setArchive(false);
-                plage.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+            for (var pDto : dto.getPlages()) {
 
-                agenda.getPlages().add(plage);
-            });
+                if (pDto.getId() == null || pDto.getId().isBlank()) {
+                    throw new RuntimeException("Modification refusée : une plage sans id créerait une nouvelle entrée.");
+                }
+
+                PlageHoraire existing = existingById.get(pDto.getId());
+                if (existing == null) {
+                    throw new RuntimeException("Plage introuvable (id=" + pDto.getId() + ") pour " + dto.getJour());
+                }
+
+                existing.setHeureDebut(pDto.getHeureDebut());
+                existing.setHeureFin(pDto.getHeureFin());
+                existing.setNombrePatients(pDto.getNombrePatients());
+                existing.setAutorise(pDto.isAutorise());
+                existing.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+                existing.setArchive(false);
+            }
 
             return mapper.toDto(repository.save(agenda));
 
         }).toList();
     }
+
 
     private void verifierJourneeModifiable(AgendaMedecin agenda) {
 
@@ -256,6 +269,18 @@ public class AgendaMedecinService {
                         );
                     }
                 });
+    }
+    @Transactional
+    public AgendaMedecinDto updateAgendaStatus(String agendaId, boolean actif) {
+
+        checkIfUserIsMedecin();
+
+        AgendaMedecin agenda = repository.findById(agendaId)
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
+
+        agenda.setActif(actif);
+
+        return mapper.toDto(repository.save(agenda));
     }
 
 }
