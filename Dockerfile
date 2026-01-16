@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-alpine as builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 
 WORKDIR application
 
@@ -11,11 +11,20 @@ RUN chmod +x mvnw
 RUN ./mvnw clean package -DskipTests
 RUN java -Djarmode=layertools -jar target/*.jar extract
 
+
 FROM eclipse-temurin:21-jre-jammy
+
 WORKDIR application
 
-RUN apt-get update && \
-    apt-get install -y libreoffice && \
+# 🔑 Fix GPG / apt signatures
+RUN apt-get update || true && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gnupg \
+        dirmngr && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends libreoffice && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
