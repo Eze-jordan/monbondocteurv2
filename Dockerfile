@@ -12,19 +12,14 @@ RUN ./mvnw clean package -DskipTests
 RUN java -Djarmode=layertools -jar target/*.jar extract
 
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-bookworm
 
 WORKDIR application
 
-# 🔑 Fix GPG / apt signatures
-RUN apt-get update || true && \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates \
-        gnupg \
-        dirmngr && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends libreoffice && \
+        libreoffice \
+        ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
