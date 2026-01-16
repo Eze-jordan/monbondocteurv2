@@ -1,14 +1,16 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Arrêter et supprimer tous les conteneurs du projet
+cd "$(dirname "$0")"
+
+# Stop & remove containers
 docker compose down
 
-# Supprimer l'image de l'application (optionnel)
-docker rmi monbondocteurv2-app:latest 2>/dev/null || true
+# Update code
+git pull --ff-only
 
-# Récupérer les dernières modifications depuis Git
-git pull
+# (Optional) remove old image if it exists
+docker image rm -f monbondocteurv2-app:latest 2>/dev/null || true
 
-# Reconstruire et relancer uniquement le service app
+# Rebuild + start only app
 docker compose up -d --build app
