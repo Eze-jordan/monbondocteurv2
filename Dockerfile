@@ -12,7 +12,7 @@ RUN ./mvnw clean package -DskipTests
 RUN java -Djarmode=layertools -jar target/*.jar extract
 
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jdk-slim-bookworm
 
 WORKDIR application
 
