@@ -11,7 +11,7 @@ RUN chmod +x mvnw
 RUN ./mvnw clean package -DskipTests
 RUN java -Djarmode=layertools -jar target/*.jar extract
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR application
 
 RUN apt-get update && \
