@@ -205,8 +205,7 @@ public class MedecinStructureSanitaireService {
             agenda.setMedecin(medecin);
             agenda.setStructureSanitaire(structure);
             agenda.setJour(jour);
-            agenda.setAutorise(true);
-            agenda.setActif(false);
+            agenda.setAutorise(false);
 
 
             // ✅ Plages par défaut (exemple)

@@ -3,6 +3,7 @@ package com.esiitech.monbondocteurv2.controller;
 import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
 import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
 import com.esiitech.monbondocteurv2.dto.AgendaStatusRequest;
+import com.esiitech.monbondocteurv2.dto.AgendaWeekStatusRequest;
 import com.esiitech.monbondocteurv2.service.AgendaMedecinService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -126,13 +127,20 @@ public class AgendaMedecinController {
         AgendaMedecinDto updated = service.updateDay(dto);
         return ResponseEntity.ok(updated);
     }
-
-    @PatchMapping("/{agendaId}/status")
-    public ResponseEntity<AgendaMedecinDto> updateAgendaStatus(
-            @PathVariable String agendaId,
-            @RequestBody AgendaStatusRequest request
+    /**
+     * ✅ Autoriser tous les jours de la semaine
+     */
+    @PutMapping("/week/autorise")
+    @Operation(
+            summary = "Autoriser toute la semaine",
+            description = "Met autorise=true pour tous les jours de l’agenda d’un médecin"
+    )
+    public ResponseEntity<List<AgendaMedecinDto>> autoriserTouteLaSemaine(
+            @RequestBody AgendaWeekStatusRequest request
     ) {
-        AgendaMedecinDto updated = agendaMedecinService.updateAgendaStatus(agendaId, request.isActif());
-        return ResponseEntity.ok(updated);
+        request.setAutorise(true);
+        return ResponseEntity.ok(service.updateWeekAutorisation(request));
     }
+
+
 }
