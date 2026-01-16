@@ -31,4 +31,9 @@ public interface AgendaMedecinRepository extends JpaRepository<AgendaMedecin, St
     );
 
     List<AgendaMedecin> findByStructureSanitaireId(String structureId);
+
+    List<AgendaMedecin> findByMedecin_IdAndStructureSanitaire_Id(
+            String medecinId,
+            String structureSanitaireId
+    );
 }

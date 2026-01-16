@@ -2,6 +2,7 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
 import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
+import com.esiitech.monbondocteurv2.dto.AgendaWeekStatusRequest;
 import com.esiitech.monbondocteurv2.exception.AccesRefuseException;
 import com.esiitech.monbondocteurv2.exception.AgendaExisteDejaException;
 import com.esiitech.monbondocteurv2.exception.AgendaNonModifiableException;
@@ -270,17 +271,23 @@ public class AgendaMedecinService {
                     }
                 });
     }
-    @Transactional
-    public AgendaMedecinDto updateAgendaStatus(String agendaId, boolean actif) {
+    public List<AgendaMedecinDto> updateWeekAutorisation(AgendaWeekStatusRequest request) {
 
-        checkIfUserIsMedecin();
+        List<AgendaMedecin> agendas = repository
+                .findByMedecin_IdAndStructureSanitaire_Id(
+                        request.getMedecinId(),
+                        request.getStructureSanitaireId()
+                );
 
-        AgendaMedecin agenda = repository.findById(agendaId)
-                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
+        agendas.forEach(agenda -> agenda.setAutorise(request.isAutorise()));
 
-        agenda.setActif(actif);
+        repository.saveAll(agendas);
 
-        return mapper.toDto(repository.save(agenda));
+        return agendas.stream()
+                .map(mapper::toDto)
+                .toList();
     }
+
+
 
 }

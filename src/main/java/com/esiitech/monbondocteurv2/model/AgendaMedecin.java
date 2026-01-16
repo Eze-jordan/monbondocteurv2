@@ -2,8 +2,6 @@ package com.esiitech.monbondocteurv2.model;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 @Entity
@@ -24,13 +22,10 @@ public class AgendaMedecin {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )    private List<PlageHoraire> plages;
-
     @ManyToOne
     @JoinColumn(name = "structure_sanitaire_id", nullable = false)
     private StructureSanitaire structureSanitaire;
 
-    @Column(name = "actif", nullable = false)
-    private boolean actif = false;
 
     public StructureSanitaire getStructureSanitaire() {
         return structureSanitaire;
@@ -39,15 +34,6 @@ public class AgendaMedecin {
     public void setStructureSanitaire(StructureSanitaire structureSanitaire) {
         this.structureSanitaire = structureSanitaire;
     }
-
-    public boolean isActif() {
-        return actif;
-    }
-
-    public void setActif(boolean actif) {
-        this.actif = actif;
-    }
-
     public String getId() {
         return id;
     }

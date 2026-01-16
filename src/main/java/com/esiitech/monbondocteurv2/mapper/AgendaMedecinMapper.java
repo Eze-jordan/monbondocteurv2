@@ -38,7 +38,6 @@ public class AgendaMedecinMapper {
                         .map(this::toPlageDto)
                         .toList()
         );
-        dto.setActif(entity.isActif());
 
         return dto;
     }
@@ -66,7 +65,6 @@ public class AgendaMedecinMapper {
         agenda.setId(dto.getId());
         agenda.setJour(dto.getJour());
         agenda.setAutorise(dto.isAutorise());
-        agenda.setActif(dto.isActif());
 
         // Médecin
         Medecin medecin = medecinRepository.findById(dto.getMedecinId())
