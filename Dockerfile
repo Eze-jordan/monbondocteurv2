@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /application
 
@@ -13,12 +13,11 @@ RUN ./mvnw clean package -DskipTests
 RUN java -Djarmode=layertools -jar target/*.jar extract
 
 # ---- Run stage ----
-FROM eclipse-temurin:21-jre-jammy
-
+FROM eclipse-temurin:21-jre
 WORKDIR /application
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libreoffice && \
+    apt-get install -y libreoffice && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
