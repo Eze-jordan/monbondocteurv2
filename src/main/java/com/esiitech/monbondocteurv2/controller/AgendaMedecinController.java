@@ -1,9 +1,6 @@
 package com.esiitech.monbondocteurv2.controller;
 
-import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
-import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
-import com.esiitech.monbondocteurv2.dto.AgendaStatusRequest;
-import com.esiitech.monbondocteurv2.dto.AgendaWeekStatusRequest;
+import com.esiitech.monbondocteurv2.dto.*;
 import com.esiitech.monbondocteurv2.service.AgendaMedecinService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -139,6 +136,13 @@ public class AgendaMedecinController {
             @RequestBody AgendaWeekStatusRequest request
     ) {
         return ResponseEntity.ok(service.updateWeekAutorisation(request));
+    }
+
+    @PutMapping("/day/plages/autorise")
+    public ResponseEntity<AgendaMedecinDto> updatePlagesAutorisationByDay(
+            @RequestBody PlagesDayStatusRequest request
+    ) {
+        return ResponseEntity.ok(service.updatePlagesAutorisationByDay(request));
     }
 
 

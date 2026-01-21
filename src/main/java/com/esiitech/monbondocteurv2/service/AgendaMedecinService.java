@@ -288,6 +288,34 @@ public class AgendaMedecinService {
                 .toList();
     }
 
+    @Transactional
+    public AgendaMedecinDto updatePlagesAutorisationByDay(com.esiitech.monbondocteurv2.dto.PlagesDayStatusRequest request) {
+
+        checkIfUserIsMedecin();
+
+        AgendaMedecin agenda = repository
+                .findByMedecinIdAndStructureSanitaireIdAndJour(
+                        request.getMedecinId(),
+                        request.getStructureSanitaireId(),
+                        request.getJour()
+                )
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable pour " + request.getJour()));
+
+        // si tu veux empêcher modification quand journée ouverte / rdv actifs
+        verifierJourneeModifiable(agenda);
+
+        if (agenda.getPlages() == null || agenda.getPlages().isEmpty()) {
+            return mapper.toDto(agenda); // rien à modifier
+        }
+
+        // ✅ Mettre à jour toutes les plages de ce jour
+        agenda.getPlages().forEach(plage -> plage.setAutorise(request.isAutorise()));
+
+        // Optionnel : si tu veux aussi couper la journée entière
+        // agenda.setAutorise(request.isAutorise());
+
+        return mapper.toDto(repository.save(agenda));
+    }
 
 
 }
