@@ -82,7 +82,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:4200",
-                "https://monbondocteur.esiitech-gabon.com"
+                "https://api-monbondocteur.solutech-one.com",
+                "https://appclinique.solutech-one.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("*"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
