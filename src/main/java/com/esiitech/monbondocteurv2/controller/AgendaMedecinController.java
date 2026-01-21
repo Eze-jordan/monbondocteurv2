@@ -132,13 +132,12 @@ public class AgendaMedecinController {
      */
     @PutMapping("/week/autorise")
     @Operation(
-            summary = "Autoriser toute la semaine",
-            description = "Met autorise=true pour tous les jours de l’agenda d’un médecin"
+            summary = "Mettre à jour l’autorisation de toute la semaine",
+            description = "Met autorise=true ou false pour tous les jours"
     )
-    public ResponseEntity<List<AgendaMedecinDto>> autoriserTouteLaSemaine(
+    public ResponseEntity<List<AgendaMedecinDto>> updateAutorisationSemaine(
             @RequestBody AgendaWeekStatusRequest request
     ) {
-        request.setAutorise(true);
         return ResponseEntity.ok(service.updateWeekAutorisation(request));
     }
 
