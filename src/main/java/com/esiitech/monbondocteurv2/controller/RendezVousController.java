@@ -1,10 +1,12 @@
 package com.esiitech.monbondocteurv2.controller;
 
+import com.esiitech.monbondocteurv2.dto.AttributionRdvRequest;
 import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
 import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.service.RendezVousService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -113,5 +115,36 @@ public class RendezVousController {
     ) {
         List<RendezVousDTO> updatedList = rendezVousService.modifierStatutTousParAgenda(agendaId, actif);
         return ResponseEntity.ok(updatedList);
+    }
+
+
+    /**
+     * ✅ Patient: Créer une demande RDV dans une structure + service
+     * Statut = EN_ATTENTE, sans médecin/agenda/plage/journée.
+     */
+    @PostMapping("/demande/service")
+    public ResponseEntity<RendezVousDTO> creerDemandeParService(@Valid @RequestBody RendezVousDTO dto) {
+        return ResponseEntity.ok(rendezVousService.creerDemandeRdvStructureParService(dto));
+    }
+
+    /**
+     * ✅ Structure: Attribuer un RDV EN_ATTENTE à un médecin + agenda + créneau
+     * Statut devient CONFIRME.
+     */
+    @PutMapping("/{rdvId}/attribuer")
+    public ResponseEntity<RendezVousDTO> attribuer(@PathVariable String rdvId,
+                                                   @Valid @RequestBody AttributionRdvRequest req) {
+        return ResponseEntity.ok(rendezVousService.attribuerRdv(rdvId, req));
+    }
+
+    /**
+     * (Optionnel) Structure/Admin: Lister les demandes EN_ATTENTE d'une structure
+     * Tu peux filtrer par specialite si tu veux.
+     */
+    @GetMapping("/structure/{structureId}/en-attente")
+    public ResponseEntity<List<RendezVousDTO>> listerEnAttente(@PathVariable String structureId,
+                                                               @RequestParam(required = false) String specialite) {
+        // si tu n'as pas encore la méthode, commente ce endpoint
+        return ResponseEntity.ok(rendezVousService.listerDemandesEnAttente(structureId, specialite));
     }
 }

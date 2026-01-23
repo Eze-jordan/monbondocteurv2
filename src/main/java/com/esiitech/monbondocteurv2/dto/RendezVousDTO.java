@@ -1,6 +1,7 @@
 package com.esiitech.monbondocteurv2.dto;
 
 import com.esiitech.monbondocteurv2.model.Sexe;
+import com.esiitech.monbondocteurv2.model.StatutRendezVous;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -28,6 +29,10 @@ public class RendezVousDTO {
     private LocalTime heureDebut; // + getter/setter
     private String agendaId;
     private boolean actif = true;
+    private String specialite; // service demandé (ex: "Cardiologie")
+    private String structureId;
+    private StatutRendezVous statut;
+
 
     public LocalTime getHeureDebut() {
         return heureDebut;
@@ -49,6 +54,14 @@ public class RendezVousDTO {
     }
     public void setAgendaId(String agendaId) {
         this.agendaId = agendaId;
+    }
+
+    public StatutRendezVous getStatut() {
+        return statut;
+    }
+
+    public void setStatut(StatutRendezVous statut) {
+        this.statut = statut;
     }
 
     public String getId() {
@@ -138,5 +151,21 @@ public class RendezVousDTO {
 
     public void setDate(LocalDate date) {
         this.date = date;
+    }
+
+    public String getSpecialite() {
+        return specialite;
+    }
+
+    public void setSpecialite(String specialite) {
+        this.specialite = specialite;
+    }
+
+    public String getStructureId() {
+        return structureId;
+    }
+
+    public void setStructureId(String structureId) {
+        this.structureId = structureId;
     }
 }

@@ -21,9 +21,15 @@ public class RendezVousMapper {
         dto.setRefSpecialites(entity.getRefSpecialites());
         dto.setHeureDebut(entity.getHeureDebut());
         dto.setActif(entity.isActif());
+        dto.setStatut(entity.getStatut());
 
         if (entity.getAgendaMedecin() != null) {
             dto.setAgendaId(entity.getAgendaMedecin().getId());
+        }
+
+        // (optionnel) structureId
+        if (entity.getStructureSanitaire() != null) {
+            dto.setStructureId(entity.getStructureSanitaire().getId());
         }
         return dto;
     }
@@ -44,6 +50,7 @@ public class RendezVousMapper {
         entity.setRefSpecialites(dto.getRefSpecialites());
         entity.setHeureDebut(dto.getHeureDebut());
         entity.setActif(dto.isActif());
+        entity.setStatut(dto.getStatut());
 
 
         // Note : les relations avec les entités (medecin, date, horaire, etc.)

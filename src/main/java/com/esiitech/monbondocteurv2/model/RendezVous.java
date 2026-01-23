@@ -12,9 +12,9 @@
         @Id
         @Column(name = "id", nullable = false,length = 100,updatable = false)
         private String  id;
-        @ManyToOne(cascade = CascadeType.PERSIST)
+        @ManyToOne
         private AgendaMedecin agendaMedecin;
-        @ManyToOne(cascade = CascadeType.PERSIST)
+        @ManyToOne
         private Medecin medecin;
         @ManyToOne
         @JoinColumn(name = "structure_sanitaire_id")
@@ -50,13 +50,23 @@
         private LocalTime heureDebut;
         private PeriodeJournee periodeJournee;
         @ManyToOne
-        @JoinColumn(name = "plage_id")
+        @JoinColumn(name = "plage_id",nullable = true)
         private PlageHoraire plageHoraire;
+
         private String agendaId;
         private boolean archive = false; // nouveau champ pour l’archivage
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false)
+        private StatutRendezVous statut = StatutRendezVous.EN_ATTENTE;
+        // + getters/setters
 
+        public StatutRendezVous getStatut() {
+            return statut;
+        }
 
-// + getters/setters
+        public void setStatut(StatutRendezVous statut) {
+            this.statut = statut;
+        }
 
         public boolean isArchive() {
             return archive;
@@ -146,7 +156,7 @@
         }
 
         @ManyToOne
-        @JoinColumn(name = "journee_activite_id", nullable = false)
+        @JoinColumn(name = "journee_activite_id", nullable = true)
         private JourneeActivite journeeActivite;
 
         public JourneeActivite getJourneeActivite() {
