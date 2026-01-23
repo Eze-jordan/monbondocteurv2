@@ -34,6 +34,12 @@ public class Medecin  implements UserDetails {
 
     @Column(nullable = false)
     private boolean actif = false;
+    @ManyToOne
+    @JoinColumn(name = "structure_sanitaire_id")
+    private StructureSanitaire structureSanitaire;
+
+    public StructureSanitaire getStructureSanitaire() { return structureSanitaire; }
+    public void setStructureSanitaire(StructureSanitaire s) { this.structureSanitaire = s; }
 
     public String getId() {
         return id;

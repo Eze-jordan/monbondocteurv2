@@ -12,7 +12,6 @@ public class AgendaMedecinDto {
     private boolean autorise;
     private String structureSanitaireId;
     private List<PlageHoraireDto> plages;
-    private boolean actif;
 
     // getters / setters
 
@@ -20,13 +19,8 @@ public class AgendaMedecinDto {
         return id;
     }
 
-    public boolean isActif() {
-        return actif;
-    }
 
-    public void setActif(boolean actif) {
-        this.actif = actif;
-    }
+
 
     public void setId(String id) {
         this.id = id;
