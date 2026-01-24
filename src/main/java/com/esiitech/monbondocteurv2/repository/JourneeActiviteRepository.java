@@ -19,4 +19,13 @@ public interface JourneeActiviteRepository  extends JpaRepository<JourneeActivit
     Optional<JourneeActivite> findByDateAndAgenda_Id(LocalDate date, String agendaId);
 
     Optional<JourneeActivite> findByAgenda_Id(String agendaId);
+
+
+    List<JourneeActivite> findByMedecin_IdOrderByDateDesc(String medecinId);
+
+    // optionnel: filtrer par période
+    List<JourneeActivite> findByMedecin_IdAndDateBetweenOrderByDateDesc(
+            String medecinId, LocalDate start, LocalDate end
+    );
+
 }
