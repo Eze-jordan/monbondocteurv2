@@ -137,6 +137,7 @@ public class RendezVousService {
         rdv.setJourneeActivite(journee);
         rdv.setMedecin(agenda.getMedecin());
         rdv.setStructureSanitaire(agenda.getStructureSanitaire());
+        rdv.setStatut(StatutRendezVous.CONFIRME);
 
         /* 8️⃣ Spécialités */
         Set<String> specialites = new HashSet<>();
@@ -162,6 +163,7 @@ public class RendezVousService {
                 saved.getNom(),
                 agenda.getMedecin().getNomMedecin()
         );
+
 
         notificationService.envoyerAuMedecin(
                 agenda.getMedecin().getEmail(),
