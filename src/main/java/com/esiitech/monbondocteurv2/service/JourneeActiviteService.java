@@ -89,4 +89,14 @@ public class JourneeActiviteService {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Journée d'activité introuvable"));
     }
+
+    public List<JourneeActiviteDTO> getJourneesByMedecin(String medecinId) {
+        return repository.findByMedecin_IdOrderByDateDesc(medecinId)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+
+
 }

@@ -100,4 +100,10 @@ public class JourneeActiviteController {
     public ResponseEntity<JourneeActivite> getJournee(@PathVariable String id) {
         return ResponseEntity.ok(journeeActiviteService.getJourneeById(id));
     }
+
+    // par medecinId
+    @GetMapping("/medecin/{medecinId}")
+    public List<JourneeActiviteDTO> getByMedecin(@PathVariable String medecinId) {
+        return journeeActiviteService.getJourneesByMedecin(medecinId);
+    }
 }
