@@ -11,6 +11,11 @@ public class PlageHoraireDto {
     private LocalTime heureFin;
     private Integer nombrePatients;
     private boolean autorise;
+    private Integer nombrePatientsRestants; // ✅ AJOUT
+
+    public Integer getNombrePatientsRestants() { return nombrePatientsRestants; }
+    public void setNombrePatientsRestants(Integer nombrePatientsRestants) { this.nombrePatientsRestants = nombrePatientsRestants; }
+
 
     // =========================
     // GETTERS & SETTERS

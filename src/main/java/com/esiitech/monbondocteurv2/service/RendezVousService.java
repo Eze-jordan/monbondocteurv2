@@ -71,6 +71,11 @@ public class RendezVousService {
             throw new RuntimeException("La date est obligatoire");
         }
 
+        /* ✅ Heure obligatoire (sinon impossible de choisir une plage) */
+        if (dto.getHeureDebut() == null) {
+            throw new RuntimeException("L'heure de début est obligatoire");
+        }
+
         /* 3️⃣ Journée d’activité */
         JourneeActivite journee = journeeActiviteService.getOrCreate(date, agenda);
 
@@ -93,29 +98,31 @@ public class RendezVousService {
                 .sum();
 
         int rdvJournee = rendezVousRepository
-                .countByJourneeActivite_Id(journee.getId());
+                .countByJourneeActivite_IdAndActifTrueAndArchiveFalse(journee.getId());
 
         if (rdvJournee >= capacite) {
             throw new RuntimeException("Plus aucun créneau disponible");
         }
-        /* 6️⃣ Récupération de la plage horaire */
-        PlageHoraire plageSelectionnee = agenda.getPlages().stream()
-                .filter(PlageHoraire::isAutorise)
-                .filter(p -> p.getHeureDebut().equals(dto.getHeureDebut()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Plage horaire introuvable"));
 
-        /* Vérification capacité restante */
-        if (plageSelectionnee.getNombrePatientsRestants() <= 0) {
+        /* 6️⃣ Récupération de la plage horaire (intervalle) */
+        PlageHoraire plageSelectionnee = trouverPlagePourHeure(agenda, dto.getHeureDebut());
+
+        /* ✅ Vérification capacité restante PAR JOURNÉE + PLAGE */
+        int capPlage = (plageSelectionnee.getNombrePatients() != null) ? plageSelectionnee.getNombrePatients() : 0;
+
+        int used = rendezVousRepository.countByJourneeActivite_IdAndPlageHoraire_IdAndActifTrueAndArchiveFalse(
+                journee.getId(),
+                plageSelectionnee.getId()
+        );
+
+        if (used >= capPlage) {
             throw new CreneauCompletException("Ce créneau est complet");
         }
-
-
 
         /* 7️⃣ Détermination période (MATIN / SOIR) */
         PeriodeJournee periode = determinerPeriode(dto.getHeureDebut());
 
-        /* 7️⃣ Création RDV */
+        /* 8️⃣ Création RDV */
         RendezVous rdv = new RendezVous();
         rdv.setId(generateId());
 
@@ -129,7 +136,10 @@ public class RendezVousService {
         rdv.setMotif(dto.getMotif());
 
         rdv.setDate(date);
+
+        // ✅ IMPORTANT : on persist l'heure
         rdv.setHeureDebut(dto.getHeureDebut());
+
         rdv.setPeriodeJournee(periode);
         rdv.setPlageHoraire(plageSelectionnee);
 
@@ -138,8 +148,10 @@ public class RendezVousService {
         rdv.setMedecin(agenda.getMedecin());
         rdv.setStructureSanitaire(agenda.getStructureSanitaire());
         rdv.setStatut(StatutRendezVous.CONFIRME);
+        rdv.setActif(true);
+        rdv.setArchive(false);
 
-        /* 8️⃣ Spécialités */
+        /* 9️⃣ Spécialités */
         Set<String> specialites = new HashSet<>();
         String sp = agenda.getMedecin().getRefSpecialite();
         if (sp != null && !sp.isBlank()) {
@@ -147,14 +159,14 @@ public class RendezVousService {
         }
         rdv.setRefSpecialites(specialites);
 
-        /* 9️⃣ Utilisateur connecté */
+        /* 🔟 Utilisateur connecté */
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
             utilisateurRepository.findByEmail(auth.getName())
                     .ifPresent(rdv::setUtilisateur);
         }
 
-        /* 🔟 Sauvegarde */
+        /* 1️⃣1️⃣ Sauvegarde */
         RendezVous saved = rendezVousRepository.save(rdv);
 
         /* 🔔 Notifications */
@@ -163,7 +175,6 @@ public class RendezVousService {
                 saved.getNom(),
                 agenda.getMedecin().getNomMedecin()
         );
-
 
         notificationService.envoyerAuMedecin(
                 agenda.getMedecin().getEmail(),
@@ -199,6 +210,19 @@ public class RendezVousService {
                 : PeriodeJournee.SOIR;
     }
 
+    /* ✅ AJOUTE ICI */
+    private PlageHoraire trouverPlagePourHeure(AgendaMedecin agenda, LocalTime heure) {
+        if (agenda.getPlages() == null || agenda.getPlages().isEmpty()) {
+            throw new RuntimeException("Aucune plage horaire disponible pour cet agenda");
+        }
+
+        return agenda.getPlages().stream()
+                .filter(PlageHoraire::isAutorise)
+                .filter(p -> p.getHeureDebut() != null && p.getHeureFin() != null)
+                .filter(p -> !heure.isBefore(p.getHeureDebut()) && heure.isBefore(p.getHeureFin()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Plage horaire introuvable"));
+    }
     public List<RendezVousDTO> trouverParMedecin(Medecin medecin) {
         return rendezVousRepository.findByMedecin(medecin)
                 .stream().map(rendezVousMapper::toDTO).toList();
@@ -227,6 +251,7 @@ public class RendezVousService {
     public void supprimer(String id) {
         rendezVousRepository.deleteById(id);
     }
+
     @Transactional
     public RendezVousDTO modifierStatut(String rdvId, boolean actif) {
         RendezVous rdv = rendezVousRepository.findById(rdvId)
@@ -234,7 +259,6 @@ public class RendezVousService {
 
         rdv.setActif(actif);
 
-        // Archiver automatiquement si le rendez-vous est désactivé
         if (!actif) {
             rdv.setArchive(true);
         }
@@ -242,7 +266,6 @@ public class RendezVousService {
         RendezVous updated = rendezVousRepository.save(rdv);
         return rendezVousMapper.toDTO(updated);
     }
-
 
     @Transactional
     public List<RendezVousDTO> modifierStatutTousParJournee(String journeeId, boolean actif) {
@@ -255,16 +278,14 @@ public class RendezVousService {
         return updated.stream().map(rendezVousMapper::toDTO).toList();
     }
 
-
     @Transactional
     public List<RendezVousDTO> modifierStatutTousParAgenda(String agendaId, boolean actif) {
         List<RendezVous> rdvs = rendezVousRepository.findByAgendaMedecin_Id(agendaId);
         rdvs.forEach(rdv -> {
             rdv.setActif(actif);
             if (!actif) rdv.setArchive(true);
-        });        List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
-
-
+        });
+        List<RendezVous> updated = rendezVousRepository.saveAll(rdvs);
         return updated.stream().map(rendezVousMapper::toDTO).toList();
     }
 
@@ -280,18 +301,19 @@ public class RendezVousService {
         rendezVousRepository.saveAll(rdvs);
     }
 
+    /* ============================================================
+       DEMANDE RDV (structure/service) EN ATTENTE
+       ============================================================ */
     @Transactional
     public RendezVousDTO creerDemandeRdvStructureParService(RendezVousDTO dto) {
 
         StructureSanitaire structure = structureSanitaireRepository.findById(dto.getStructureId())
                 .orElseThrow(() -> new RuntimeException("Structure introuvable"));
 
-        // ✅ service obligatoire
         if (dto.getSpecialite() == null || dto.getSpecialite().isBlank()) {
             throw new RuntimeException("Le service (spécialité) est obligatoire");
         }
 
-        // ✅ vérifier que la structure propose bien ce service
         boolean ok = structure.getRefSpecialites() != null &&
                 structure.getRefSpecialites().stream()
                         .anyMatch(s -> s != null && s.trim().equalsIgnoreCase(dto.getSpecialite().trim()));
@@ -307,8 +329,6 @@ public class RendezVousService {
         rdv.setStatut(StatutRendezVous.EN_ATTENTE);
 
         rdv.setDate(dto.getDate());
-        rdv.setHeureDebut(dto.getHeureDebut());
-        rdv.setPeriodeJournee(determinerPeriode(dto.getHeureDebut()));
 
         rdv.setNom(dto.getNom());
         rdv.setPrenom(dto.getPrenom());
@@ -319,7 +339,7 @@ public class RendezVousService {
         rdv.setAge(dto.getAge());
         rdv.setMotif(dto.getMotif());
 
-        // ✅ stocker le service demandé dans le RDV
+        // ✅ stocker le service demandé
         rdv.getRefSpecialites().clear();
         rdv.getRefSpecialites().add(dto.getSpecialite().trim());
 
@@ -328,18 +348,16 @@ public class RendezVousService {
         rdv.setMedecin(null);
         rdv.setJourneeActivite(null);
         rdv.setPlageHoraire(null);
+        rdv.setHeureDebut(null);
+        rdv.setPeriodeJournee(null);
 
         RendezVous saved = rendezVousRepository.save(rdv);
-
-       /* notificationService.envoyerAlaStructureNouvelleDemande(
-                structure.getEmail(),
-                structure.getNomStructureSanitaire(),
-                saved.getNom()
-        );
-*/
         return rendezVousMapper.toDTO(saved);
     }
 
+    /* ============================================================
+       ATTRIBUTION D’UN RDV EN ATTENTE
+       ============================================================ */
     @Transactional
     public RendezVousDTO attribuerRdv(String rdvId, AttributionRdvRequest req) {
 
@@ -351,7 +369,7 @@ public class RendezVousService {
             throw new RuntimeException("Ce rendez-vous n'est pas en attente");
         }
 
-        // 2) Structure connectée (sécurité)
+        // 2) Structure connectée
         String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
         StructureSanitaire structureConnectee = structureSanitaireRepository.findByEmail(emailConnecte)
                 .orElseThrow(() -> new RuntimeException("Structure connectée introuvable"));
@@ -361,12 +379,12 @@ public class RendezVousService {
             throw new RuntimeException("Accès refusé : ce RDV n'appartient pas à votre structure");
         }
 
-        // 3) Service demandé par le patient (stocké dans refSpecialites du RDV)
+        // 3) Service demandé
         String serviceDemande = rdv.getRefSpecialites().stream()
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Service demandé introuvable"));
 
-        // 4) Médecin + check service
+        // 4) Médecin
         Medecin medecin = medecinRepository.findById(req.getMedecinId())
                 .orElseThrow(() -> new RuntimeException("Médecin introuvable"));
 
@@ -377,8 +395,6 @@ public class RendezVousService {
             throw new RuntimeException("Ce médecin n'appartient pas au service demandé");
         }
 
-        // (Optionnel mais recommandé) vérifier que le médecin appartient à la structure connectée
-        // adapte selon ton modèle (ex: medecin.getStructureSanitaire())
         if (medecin.getStructureSanitaire() != null &&
                 !medecin.getStructureSanitaire().getId().equals(structureConnectee.getId())) {
             throw new RuntimeException("Ce médecin n'appartient pas à votre structure");
@@ -388,7 +404,6 @@ public class RendezVousService {
         AgendaMedecin agenda = agendaMedecinRepository.findById(req.getAgendaId())
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
 
-        // agenda doit appartenir à la structure connectée
         if (agenda.getStructureSanitaire() != null &&
                 !agenda.getStructureSanitaire().getId().equals(structureConnectee.getId())) {
             throw new RuntimeException("Cet agenda n'appartient pas à votre structure");
@@ -398,7 +413,6 @@ public class RendezVousService {
             throw new RuntimeException("Agenda désactivé");
         }
 
-        // (Optionnel mais recommandé) agenda doit appartenir au médecin choisi
         if (agenda.getMedecin() != null && !agenda.getMedecin().getId().equals(medecin.getId())) {
             throw new RuntimeException("Cet agenda n'appartient pas à ce médecin");
         }
@@ -417,31 +431,37 @@ public class RendezVousService {
             throw new RuntimeException("La journée est fermée");
         }
 
-        // 8) Limite patient (2 RDV / jour) - tu peux garder
+        // 8) Limite patient (2 RDV / jour)
         int rdvPatient = rendezVousRepository.countByJourneeActivite_IdAndEmail(journee.getId(), rdv.getEmail());
         if (rdvPatient >= 2) {
             throw new RuntimeException("Limite de 2 rendez-vous atteinte pour cette journée");
         }
 
-        // 9) Capacité journée (comme ton code)
+        // 9) Capacité journée
         int capacite = agenda.getPlages().stream()
                 .filter(PlageHoraire::isAutorise)
                 .mapToInt(p -> p.getNombrePatients() != null ? p.getNombrePatients() : 0)
                 .sum();
 
-        int rdvJournee = rendezVousRepository.countByJourneeActivite_Id(journee.getId());
+        int rdvJournee = rendezVousRepository
+                .countByJourneeActivite_IdAndActifTrueAndArchiveFalse(journee.getId());
+
         if (rdvJournee >= capacite) {
             throw new RuntimeException("Plus aucun créneau disponible");
         }
 
-        // 10) Plage horaire
-        PlageHoraire plageSelectionnee = agenda.getPlages().stream()
-                .filter(PlageHoraire::isAutorise)
-                .filter(p -> p.getHeureDebut().equals(heure))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Plage horaire introuvable"));
+        // 10) Plage horaire ( intervalle)
+        PlageHoraire plageSelectionnee = trouverPlagePourHeure(agenda, heure);
 
-        if (plageSelectionnee.getNombrePatientsRestants() <= 0) {
+        // ✅ Check complet PAR JOURNÉE + PLAGE (corrigé)
+        int capPlage = (plageSelectionnee.getNombrePatients() != null) ? plageSelectionnee.getNombrePatients() : 0;
+
+        int used = rendezVousRepository.countByJourneeActivite_IdAndPlageHoraire_IdAndActifTrueAndArchiveFalse(
+                journee.getId(),
+                plageSelectionnee.getId()
+        );
+
+        if (used >= capPlage) {
             throw new CreneauCompletException("Ce créneau est complet");
         }
 
@@ -475,10 +495,10 @@ public class RendezVousService {
 
         return rendezVousMapper.toDTO(saved);
     }
+
     @Transactional(readOnly = true)
     public List<RendezVousDTO> listerDemandesEnAttente(String structureId, String specialite) {
         return rendezVousRepository.findEnAttenteByStructureAndService(structureId, specialite)
                 .stream().map(rendezVousMapper::toDTO).toList();
     }
-
 }

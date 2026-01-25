@@ -40,6 +40,16 @@ AND r.statut = com.esiitech.monbondocteurv2.model.StatutRendezVous.EN_ATTENTE
 AND (:specialite IS NULL OR lower(sp) = lower(:specialite))
 """)
     List<RendezVous> findEnAttenteByStructureAndService(String structureId, String specialite);
+    List<RendezVous> findByJourneeActivite_IdOrderByHeureDebutAsc(String journeeId);
+    // ✅ Nouveau : utilisé pour calculer la capacité par créneau dans une journée
+    int countByJourneeActivite_IdAndPlageHoraire_IdAndActifTrueAndArchiveFalse(
+            String journeeId,
+            String plageId
+    );
+
+    int countByJourneeActivite_IdAndActifTrueAndArchiveFalse(String journeeId);
+
+    int countByJourneeActivite_IdAndEmailAndActifTrueAndArchiveFalse(String journeeId, String email);
 
 }
 
