@@ -66,7 +66,13 @@ public class SecurityConfig {
                                 "/api/V2/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/api/V2/rendezvous"
+                                "/api/V2/rendezvous",
+                                "/api/V2/structuresanitaires/all",
+                                "/api/V2/structuresanitaires/ville/{ville}",
+                                "/api/V2/structuresanitaires/specialite/{specialite}",
+                                "/api/V2/structuresanitaires/{id}/specialites",
+                                "/api/V2/agendas/medecin/{medecinId}",
+                                "/api/V2/medecins/search"
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()   // ⬅⬅ Autoriser l'accès aux fichiers
                         .anyRequest().authenticated()

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Set;
 
 public class RendezVousDTO {
@@ -26,16 +27,47 @@ public class RendezVousDTO {
     private String motif;
     private Set<String> refSpecialites;
     private LocalDate date;
-    private LocalTime heureDebut; // + getter/setter
     private String agendaId;
     private boolean actif = true;
     private String specialite; // service demandé (ex: "Cardiologie")
     private String structureId;
     private StatutRendezVous statut;
+    private String jour;
+    private String periodeJournee;
+    private PlageHoraireDto plage; // ou plageHoraire
 
+    public PlageHoraireDto getPlage() {
+        return plage;
+    }
+
+    public void setPlage(PlageHoraireDto plage) {
+        this.plage = plage;
+    }
+
+    public String getPeriodeJournee() {
+        return periodeJournee;
+    }
+
+    public void setPeriodeJournee(String periodeJournee) {
+        this.periodeJournee = periodeJournee;
+    }
+
+    public String getJour() {
+        return jour;
+    }
+
+    public void setJour(String jour) {
+        this.jour = jour;
+    }
+
+    private LocalTime heureDebut;
 
     public LocalTime getHeureDebut() {
         return heureDebut;
+    }
+
+    public void setHeureDebut(LocalTime heureDebut) {
+        this.heureDebut = heureDebut;
     }
 
     public boolean isActif() {
@@ -46,9 +78,7 @@ public class RendezVousDTO {
         this.actif = actif;
     }
 
-    public void setHeureDebut(LocalTime heureDebut) {
-        this.heureDebut = heureDebut;
-    }
+
     public String getAgendaId() {
         return agendaId;
     }
