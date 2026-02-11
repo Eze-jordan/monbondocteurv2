@@ -61,14 +61,31 @@ public class RendezVousService {
         AgendaMedecin agenda = agendaMedecinRepository.findById(dto.getAgendaId())
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
 
-        if (!agenda.isAutorise()) {
-            throw new RuntimeException("Agenda désactivé");
-        }
-
         /* 2️⃣ Date */
         LocalDate date = dto.getDate();
         if (date == null) {
             throw new RuntimeException("La date est obligatoire");
+        }
+
+        LocalDate today = LocalDate.now();
+        if (date.isBefore(today)) {
+            throw new RuntimeException("Impossible de prendre un rendez-vous dans le passé");
+        }
+
+// optionnel : si RDV aujourd'hui, interdire une heure déjà passée
+        if (date.isEqual(today) && dto.getHeureDebut() != null && dto.getHeureDebut().isBefore(LocalTime.now())) {
+            throw new RuntimeException("Impossible de prendre un rendez-vous à une heure déjà passée");
+        }
+
+        // ✅ remplace agenda par la version effective pour cette date
+        agenda = agendaEffectifPourDate(
+                agenda.getMedecin().getId(),
+                agenda.getStructureSanitaire().getId(),
+                date
+        );
+
+        if (!agenda.isAutorise()) {
+            throw new RuntimeException("Agenda désactivé");
         }
 
         /* ✅ Heure obligatoire (sinon impossible de choisir une plage) */
@@ -166,7 +183,7 @@ public class RendezVousService {
                     .ifPresent(rdv::setUtilisateur);
         }
 
-        /* 1️⃣1️⃣ Sauvegarde */
+        /* Sauvegarde */
         RendezVous saved = rendezVousRepository.save(rdv);
 
         /* 🔔 Notifications */
@@ -419,12 +436,38 @@ public class RendezVousService {
 
         // 6) Date + heure
         LocalDate date = rdv.getDate();
-        if (date == null) throw new RuntimeException("Date RDV manquante");
+        if (date == null) {
+            throw new RuntimeException("Date RDV manquante");
+        }
+
+        LocalDate today = LocalDate.now();
+        if (date.isBefore(today)) {
+            throw new RuntimeException("Impossible d'attribuer un rendez-vous dans le passé");
+        }
+
+
+        // ✅ Agenda effectif pour la date (agenda versionné)
+        agenda = agendaEffectifPourDate(
+                req.getMedecinId(),
+                structureConnectee.getId(),
+                date
+        );
+        // ✅ re-check sur la version effective
+        if (!agenda.isAutorise()) {
+            throw new RuntimeException("Agenda désactivé pour cette date");
+        }
 
         LocalTime heure = (req.getHeureDebut() != null) ? req.getHeureDebut() : rdv.getHeureDebut();
-        if (heure == null) throw new RuntimeException("Heure RDV manquante");
 
-        // 7) Journée d'activité
+        if (heure == null) {
+            throw new RuntimeException("Heure RDV manquante");
+        }
+
+        if (date.isEqual(today) && heure != null && heure.isBefore(LocalTime.now())) {
+            throw new RuntimeException("Impossible d'attribuer un rendez-vous à une heure déjà passée");
+        }
+
+        // 7) Journée d'activité (avec le bon agenda)
         JourneeActivite journee = journeeActiviteService.getOrCreate(date, agenda);
 
         if (!journee.isAutorise()) {
@@ -501,4 +544,23 @@ public class RendezVousService {
         return rendezVousRepository.findEnAttenteByStructureAndService(structureId, specialite)
                 .stream().map(rendezVousMapper::toDTO).toList();
     }
+    private JourSemaine toJourSemaine(LocalDate date) {
+        // Ton enum JourSemaine = MONDAY..SUNDAY (anglais) => mapping direct
+        return JourSemaine.valueOf(date.getDayOfWeek().name());
+    }
+
+    private AgendaMedecin agendaEffectifPourDate(String medecinId, String structureId, LocalDate date) {
+        JourSemaine jour = toJourSemaine(date);
+
+        return agendaMedecinRepository
+                .findFirstByMedecin_IdAndStructureSanitaire_IdAndJourAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+                        medecinId,
+                        structureId,
+                        jour,
+                        date
+                )
+                .orElseThrow(() -> new RuntimeException("Aucun agenda effectif trouvé pour cette date"));
+    }
+
+
 }

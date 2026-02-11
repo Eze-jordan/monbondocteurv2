@@ -2,6 +2,7 @@ package com.esiitech.monbondocteurv2.dto;
 
 import com.esiitech.monbondocteurv2.model.JourSemaine;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class AgendaMedecinDto {
@@ -12,6 +13,7 @@ public class AgendaMedecinDto {
     private boolean autorise;
     private String structureSanitaireId;
     private List<PlageHoraireDto> plages;
+    private LocalDate effectiveFrom;
 
     // getters / setters
 
@@ -20,7 +22,13 @@ public class AgendaMedecinDto {
     }
 
 
+    public LocalDate getEffectiveFrom() {
+        return effectiveFrom;
+    }
 
+    public void setEffectiveFrom(LocalDate effectiveFrom) {
+        this.effectiveFrom = effectiveFrom;
+    }
 
     public void setId(String id) {
         this.id = id;
