@@ -1,20 +1,13 @@
 package com.esiitech.monbondocteurv2.repository;
 
-import com.esiitech.monbondocteurv2.model.Medecin;
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
-import com.esiitech.monbondocteurv2.model.RendezVous;
-import com.esiitech.monbondocteurv2.model.StructureSanitaire;
+import com.esiitech.monbondocteurv2.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 public interface RendezVousRepository extends JpaRepository<RendezVous, String> {
-    int countByAgendaMedecinIdAndEmail(String agendaId, String email);
-    // 🔍 Par spécialité
-    List<RendezVous> findByRefSpecialitesContaining(RefSpecialite specialite);
 
     // 🔍 Par structure sanitaire
     List<RendezVous> findByStructureSanitaire(StructureSanitaire structureSanitaire);
@@ -27,7 +20,6 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, String> 
     List<RendezVous> findByAgendaMedecin_Id(String agendaId);
 
     int countByJourneeActivite_IdAndEmail(String journeeId, String email);
-    int countByJourneeActivite_Id(String journeeId);
 
 
     List<RendezVous> findByJourneeActivite_Id(String journeeId);
@@ -49,7 +41,14 @@ AND (:specialite IS NULL OR lower(sp) = lower(:specialite))
 
     int countByJourneeActivite_IdAndActifTrueAndArchiveFalse(String journeeId);
 
-    int countByJourneeActivite_IdAndEmailAndActifTrueAndArchiveFalse(String journeeId, String email);
+    int countByMedecin_IdAndStructureSanitaire_IdAndDateBetweenAndActifTrueAndArchiveFalse(
+            String medecinId,
+            String structureId,
+            LocalDate start,
+            LocalDate end
+    );
+    boolean existsByPlageHoraire_Id(String plageId);
+
 
 }
 

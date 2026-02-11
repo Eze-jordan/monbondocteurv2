@@ -15,8 +15,6 @@ import java.util.List;
 public class AgendaMedecinController {
 
     private final AgendaMedecinService service;
-    @Autowired
-    private AgendaMedecinService agendaMedecinService;
 
     @Autowired
     public AgendaMedecinController(AgendaMedecinService service) {
@@ -57,25 +55,38 @@ public class AgendaMedecinController {
             summary = "Lister tous les agendas d’un médecin",
             description = "Retourne tous les agendas (actifs et inactifs) d’un médecin"
     )
-    @GetMapping(value = "/medecin/{medecinId}",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<AgendaMedecinDto>> getByMedecin(
-            @PathVariable String medecinId
-    ) {
-        return ResponseEntity.ok(service.getAllByMedecin(medecinId));
+    @GetMapping(value = "/medecin/{medecinId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<AgendaMedecinDto>> getByMedecin(@PathVariable String medecinId) {
+        return ResponseEntity.ok(service.getAgendasRecentsByMedecin(medecinId, java.time.LocalDate.now()));
     }
+
 
     @Operation(
             summary = "Lister les agendas d’une structure sanitaire",
             description = "Retourne tous les agendas associés à une structure"
     )
-    @GetMapping(value = "/structure/{structureId}",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<AgendaMedecinDto>> getByStructure(
-            @PathVariable String structureId
-    ) {
-        return ResponseEntity.ok(service.getByStructure(structureId));
+    @GetMapping(value = "/structure/{structureId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<AgendaMedecinDto>> getByStructure(@PathVariable String structureId) {
+        return ResponseEntity.ok(service.getAgendasRecentsByStructure(structureId, java.time.LocalDate.now()));
     }
+
+
+    /**
+     * ✅ Met à jour la semaine en cours (effectiveFrom = lundi de la semaine courante).
+     * Règle métier (dans le service) :
+     * - s'il existe des RDV sur la semaine => exception (409) demandant de fermer les journées d'activité
+     * - sinon => update des plages horaires
+     */
+    @PutMapping("/week/current")
+    public ResponseEntity<List<AgendaMedecinDto>> updateWeekCurrent(
+            @RequestBody AgendaSemaineRequest request
+    ) {
+        List<AgendaMedecinDto> result = service.updateWeekCurrent(request);
+        return ResponseEntity.ok(result);
+    }
+
+
+
 
     /* =========================
        SUPPRESSION
@@ -106,24 +117,14 @@ public class AgendaMedecinController {
 
     /* ============================================================
        MODIFICATION DE TOUTE LA SEMAINE
-       ============================================================ */
+       ============================================================
     @PutMapping("/week")
     public ResponseEntity<List<AgendaMedecinDto>> updateWeek(
             @RequestBody AgendaSemaineRequest request
     ) {
         return ResponseEntity.ok(service.updateWeek(request));
     }
-
-    /**
-     * 🔄 Modifier un seul jour de l'agenda
-     */
-    @PutMapping("/day")
-    public ResponseEntity<AgendaMedecinDto> updateDay(
-            @RequestBody AgendaMedecinDto dto
-    ) {
-        AgendaMedecinDto updated = service.updateDay(dto);
-        return ResponseEntity.ok(updated);
-    }
+ */
     /**
      * ✅ Autoriser tous les jours de la semaine
      */
@@ -137,13 +138,24 @@ public class AgendaMedecinController {
     ) {
         return ResponseEntity.ok(service.updateWeekAutorisation(request));
     }
-
+/*
     @PutMapping("/day/plages/autorise")
     public ResponseEntity<AgendaMedecinDto> updatePlagesAutorisationByDay(
             @RequestBody PlagesDayStatusRequest request
     ) {
         return ResponseEntity.ok(service.updatePlagesAutorisationByDay(request));
     }
-
+*/
+@PutMapping("/semaine/planifier")
+@Operation(
+        summary = "Planifier une mise à jour de la semaine (agenda versionné)",
+        description = "Crée une nouvelle version d'agenda avec effectiveFrom. Peut décaler/annuler/refuser selon la policy."
+)
+public ResponseEntity<String> planifierSemaine(
+        @RequestBody AgendaSemainePlanifieeRequest request
+) {
+    var start = service.planifierUpdateWeek(request);
+    return ResponseEntity.ok("Semaine planifiée à partir de : " + start);
+}
 
 }

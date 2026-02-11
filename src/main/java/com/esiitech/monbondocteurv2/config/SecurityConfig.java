@@ -72,7 +72,15 @@ public class SecurityConfig {
                                 "/api/V2/structuresanitaires/specialite/{specialite}",
                                 "/api/V2/structuresanitaires/{id}/specialites",
                                 "/api/V2/agendas/medecin/{medecinId}",
-                                "/api/V2/medecins/search"
+                                "/api/V2/agendas/structure/{structureId}",
+                                "/api/V2/medecins/all",
+                                "/api/V2/medecins/specialite/{specialite}",
+                                "/api/V2/medecins/actifs",
+                                "/api/V2/medecins/{id}",
+                                "/api/V2/medecins/search",
+                                "/api/V2/structuresanitaires/{id}",
+                                "/api/V2/structuresanitaires/specialites",
+                                "/api/V2/structuresanitaires/me"
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()   // ⬅⬅ Autoriser l'accès aux fichiers
                         .anyRequest().authenticated()

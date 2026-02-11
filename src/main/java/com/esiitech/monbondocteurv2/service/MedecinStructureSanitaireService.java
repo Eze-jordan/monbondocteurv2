@@ -1,7 +1,6 @@
 package com.esiitech.monbondocteurv2.service;
 
-import com.esiitech.monbondocteurv2.dto.MedecinDto;
-import com.esiitech.monbondocteurv2.dto.MedecinStructureSanitaireDto;
+import com.esiitech.monbondocteurv2.dto.*;
 import com.esiitech.monbondocteurv2.exception.RelationDejaExistanteException;
 import com.esiitech.monbondocteurv2.exception.SpecialiteIncompatibleException;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
@@ -16,6 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +32,8 @@ public class MedecinStructureSanitaireService {
     @Autowired private MedecinMapper medecinMapper;
     @Autowired private StructureSanitaireRepository structureSanitaireRepository;
     @Autowired private AgendaMedecinRepository agendaMedecinRepository;
+    @Autowired
+    private AgendaMedecinService agendaMedecinService;
 
 
     public List<MedecinStructureSanitaireDto> findAll() {
@@ -99,18 +101,17 @@ public class MedecinStructureSanitaireService {
             entity.setId(generateMedecinStructureSanitaireId());
         }
 
+        MedecinStructureSanitaire saved;
         try {
-            MedecinStructureSanitaire saved = repository.save(entity);
-            // créer agendas par défaut pour cette structure
-            creerAgendasParDefautSiAbsents(medecin, structure);
-            return mapper.toDto(saved);
+            saved = repository.save(entity);
         } catch (DataIntegrityViolationException ex) {
-            // si la contrainte unique côté DB est déclenchée (concurrence),
-            // on renvoie une exception métier compréhensible au front
-            throw new RelationDejaExistanteException(
-                    "Relation déjà existante (conflit détecté lors de l'enregistrement)"
-            );
+            throw new RelationDejaExistanteException("Relation déjà existante (conflit détecté lors de l'enregistrement)");
         }
+
+        // ensuite, hors try/catch :
+        agendaMedecinService.saveWeekForLinking(buildDefaultWeekRequest(medecinId, structureId));
+        return mapper.toDto(saved);
+
     }
 
 
@@ -189,13 +190,16 @@ public class MedecinStructureSanitaireService {
     }
     private void creerAgendasParDefautSiAbsents(Medecin medecin, StructureSanitaire structure) {
 
+        LocalDate effectiveFrom = lundi(LocalDate.now()); // semaine courante
+
         for (JourSemaine jour : JourSemaine.values()) {
 
             boolean existe = agendaMedecinRepository
-                    .existsByMedecinIdAndStructureSanitaireIdAndJour(
+                    .existsByMedecinIdAndStructureSanitaireIdAndJourAndEffectiveFrom(
                             medecin.getId(),
                             structure.getId(),
-                            jour
+                            jour,
+                            effectiveFrom
                     );
 
             if (existe) continue;
@@ -206,9 +210,8 @@ public class MedecinStructureSanitaireService {
             agenda.setStructureSanitaire(structure);
             agenda.setJour(jour);
             agenda.setAutorise(false);
+            agenda.setEffectiveFrom(effectiveFrom); // ✅ IMPORTANT
 
-
-            // ✅ Plages par défaut (exemple)
             List<PlageHoraire> plages = List.of(
                     buildPlage(agenda, LocalTime.of(8, 0),  LocalTime.of(12, 0), 10),
                     buildPlage(agenda, LocalTime.of(14, 0), LocalTime.of(18, 0), 10)
@@ -220,6 +223,12 @@ public class MedecinStructureSanitaireService {
         }
     }
 
+
+
+    private LocalDate lundi(LocalDate d) {
+        return d.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+    }
+
     private PlageHoraire buildPlage(AgendaMedecin agenda, LocalTime debut, LocalTime fin, int nbPatients) {
         PlageHoraire p = new PlageHoraire();
         p.setAgenda(agenda);
@@ -229,6 +238,48 @@ public class MedecinStructureSanitaireService {
         p.setAutorise(true);
         p.setArchive(false);
         p.setPeriode(debut.isBefore(LocalTime.NOON) ? PeriodeJournee.MATIN : PeriodeJournee.SOIR);
+        return p;
+    }
+    private AgendaSemaineRequest buildDefaultWeekRequest(String medecinId, String structureId) {
+
+
+        AgendaSemaineRequest req = new AgendaSemaineRequest();
+        req.setMedecinId(medecinId);
+        req.setStructureSanitaireId(structureId);
+
+        req.setAgendas(List.of(
+                buildAgendaDto(JourSemaine.MONDAY),
+                buildAgendaDto(JourSemaine.TUESDAY),
+                buildAgendaDto(JourSemaine.WEDNESDAY),
+                buildAgendaDto(JourSemaine.THURSDAY),
+                buildAgendaDto(JourSemaine.FRIDAY),
+                buildAgendaDto(JourSemaine.SATURDAY),
+                buildAgendaDto(JourSemaine.SUNDAY)
+        ));
+
+        return req;
+    }
+
+    private AgendaMedecinDto buildAgendaDto(JourSemaine jour) {
+        AgendaMedecinDto dto = new AgendaMedecinDto();
+        dto.setJour(jour);
+        dto.setAutorise(false);
+
+        dto.setPlages(List.of(
+                buildPlageDto(LocalTime.of(8, 0), LocalTime.of(12, 0), 10),
+                buildPlageDto(LocalTime.of(14, 0), LocalTime.of(18, 0), 10)
+        ));
+
+        return dto;
+    }
+
+    private PlageHoraireDto buildPlageDto(LocalTime debut, LocalTime fin, int nbPatients) {
+        PlageHoraireDto p = new PlageHoraireDto();
+        p.setHeureDebut(debut);
+        p.setHeureFin(fin);
+        p.setNombrePatients(nbPatients);
+        p.setAutorise(true);
+        // periode sera calculée dans saveWeekInternal (ou tu peux la mettre ici)
         return p;
     }
 

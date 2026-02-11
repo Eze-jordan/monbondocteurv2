@@ -1,6 +1,7 @@
 package com.esiitech.monbondocteurv2.repository;
 
 import com.esiitech.monbondocteurv2.model.JourneeActivite;
+import com.esiitech.monbondocteurv2.model.StatutJournee;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -12,20 +13,16 @@ public interface JourneeActiviteRepository  extends JpaRepository<JourneeActivit
             LocalDate date,
             String medecinId,
             String structureSanitaireId);
-
-    List<JourneeActivite> findByMedecinId(String medecinId);
-
-    List<JourneeActivite> findByStructureSanitaireId(String structureId);
-    Optional<JourneeActivite> findByDateAndAgenda_Id(LocalDate date, String agendaId);
+    List<JourneeActivite>
+    findByDateBeforeAndStatutNot(LocalDate date, StatutJournee statut);
 
     Optional<JourneeActivite> findByAgenda_Id(String agendaId);
 
 
     List<JourneeActivite> findByMedecin_IdOrderByDateDesc(String medecinId);
 
-    // optionnel: filtrer par période
-    List<JourneeActivite> findByMedecin_IdAndDateBetweenOrderByDateDesc(
-            String medecinId, LocalDate start, LocalDate end
-    );
+
+
+    List<JourneeActivite> findByMedecin_IdAndStructureSanitaire_IdAndDateBetween(String medecinId, String structureId, LocalDate start, LocalDate end);
 
 }

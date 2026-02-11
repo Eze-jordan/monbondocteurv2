@@ -2,6 +2,7 @@ package com.esiitech.monbondocteurv2.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -16,16 +17,26 @@ public class AgendaMedecin {
     @Column(nullable = false)
     private JourSemaine jour;
     private boolean autorise;
+    @Column(nullable = false)
+    private LocalDate effectiveFrom; // date à partir de laquelle cette version est valable
+
 
     @OneToMany(
             mappedBy = "agenda",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
+            cascade = CascadeType.ALL
+         //   orphanRemoval = true
     )    private List<PlageHoraire> plages;
     @ManyToOne
     @JoinColumn(name = "structure_sanitaire_id", nullable = false)
     private StructureSanitaire structureSanitaire;
 
+    public LocalDate getEffectiveFrom() {
+        return effectiveFrom;
+    }
+
+    public void setEffectiveFrom(LocalDate effectiveFrom) {
+        this.effectiveFrom = effectiveFrom;
+    }
 
     public StructureSanitaire getStructureSanitaire() {
         return structureSanitaire;

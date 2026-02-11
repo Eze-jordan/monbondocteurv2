@@ -6,13 +6,15 @@ import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
 import com.esiitech.monbondocteurv2.mapper.RendezVousMapper;
 import com.esiitech.monbondocteurv2.model.AgendaMedecin;
 import com.esiitech.monbondocteurv2.model.JourneeActivite;
-import com.esiitech.monbondocteurv2.model.PlageHoraire;          // ✅ IMPORT
+import com.esiitech.monbondocteurv2.model.PlageHoraire;
 import com.esiitech.monbondocteurv2.model.StatutJournee;
 import com.esiitech.monbondocteurv2.repository.JourneeActiviteRepository;
 import com.esiitech.monbondocteurv2.repository.RendezVousRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -101,7 +103,7 @@ public class JourneeActiviteService {
         struct.setPhotoPath(j.getStructureSanitaire().getPhotoPath());
         dto.setStructureSanitaire(struct);
 
-        // ✅ -------- Plages (depuis l’agenda) --------
+        //  -------- Plages (depuis l’agenda) --------
         if (j.getAgenda() != null && j.getAgenda().getPlages() != null) {
 
             List<PlageHoraireDto> plagesDto = j.getAgenda().getPlages().stream()
@@ -115,7 +117,7 @@ public class JourneeActiviteService {
                         pd.setAutorise(p.isAutorise());
                         pd.setNombrePatients(p.getNombrePatients());
 
-                        // ✅ RESTANTS PAR JOURNÉE (corrigé)
+                        //  RESTANTS PAR JOURNÉE (corrigé)
                         int cap = (p.getNombrePatients() != null) ? p.getNombrePatients() : 0;
                         int used = rendezVousRepository
                                 .countByJourneeActivite_IdAndPlageHoraire_IdAndActifTrueAndArchiveFalse(
@@ -131,7 +133,7 @@ public class JourneeActiviteService {
             dto.setPlages(plagesDto);
         }
 
-        // ✅ -------- RDVs de la journée --------
+        //  -------- RDVs de la journée --------
         List<RendezVousDTO> rdvsDto = rendezVousRepository
                 .findByJourneeActivite_IdOrderByHeureDebutAsc(j.getId())
                 .stream()
@@ -151,7 +153,7 @@ public class JourneeActiviteService {
         j.setAutorise(false);
         j.setStatut(StatutJournee.FERMEE);
 
-        // ✅ Optionnel mais logique : désactiver aussi tous les RDV de la journée
+        //  Optionnel mais logique : désactiver aussi tous les RDV de la journée
         // rendezVousRepository.findByJourneeActivite_Id(journeeId).forEach(r -> { r.setActif(false); r.setArchive(true); });
         // rendezVousRepository.saveAll(...);
 
@@ -176,4 +178,25 @@ public class JourneeActiviteService {
                 .map(this::toDTO)
                 .toList();
     }
+
+    @Transactional
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void fermerJourneesPassees() {
+
+        LocalDate today = LocalDate.now();
+
+        List<JourneeActivite> journees =
+                repository.findByDateBeforeAndStatutNot(
+                        today,
+                        StatutJournee.FERMEE
+                );
+
+        for (JourneeActivite j : journees) {
+            j.setAutorise(false);
+            j.setStatut(StatutJournee.FERMEE);
+        }
+
+        repository.saveAll(journees);
+    }
+
 }
