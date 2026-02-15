@@ -96,6 +96,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:4200",
+                "http://localhost:3000",
                 "https://api-monbondocteur.solutech-one.com",
                 "https://appclinique.solutech-one.com"
         ));
