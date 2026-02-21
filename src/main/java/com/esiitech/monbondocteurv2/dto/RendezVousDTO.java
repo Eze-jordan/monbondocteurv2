@@ -20,7 +20,7 @@ public class RendezVousDTO {
     @Email(message = "Email invalide")
     private String email;
     private String adresse;
-    @Size(min = 15, message = "Le Numero doit contenir au moins 15 caractères")
+    @Size(min = 11, message = "Le Numero doit contenir au moins 11 caractères")
     private String telephone;
     private Sexe sexe;
     private int age;

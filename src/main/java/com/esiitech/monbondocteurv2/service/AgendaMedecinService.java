@@ -5,6 +5,7 @@ import com.esiitech.monbondocteurv2.dto.AgendaSemainePlanifieeRequest;
 import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
 import com.esiitech.monbondocteurv2.dto.AgendaWeekStatusRequest;
 import com.esiitech.monbondocteurv2.exception.AccesRefuseException;
+import com.esiitech.monbondocteurv2.exception.AgendaIntrouvableException;
 import com.esiitech.monbondocteurv2.exception.AgendaNonModifiableException;
 import com.esiitech.monbondocteurv2.exception.SemaineNonModifiableException;
 import com.esiitech.monbondocteurv2.mapper.AgendaMedecinMapper;
@@ -19,6 +20,8 @@ import java.time.temporal.TemporalAdjusters;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AgendaMedecinService {
@@ -202,56 +205,65 @@ public class AgendaMedecinService {
         LocalDate start = lundi(LocalDate.now());
         LocalDate end = start.plusDays(6);
 
-        // 0) Si tu veux bloquer TOUTE la semaine dès qu'il y a 1 RDV quelque part :
+        // 1️⃣ Bloquer si un RDV existe dans la semaine
         int rdvSemaine = rendezVousRepository
                 .countByMedecin_IdAndStructureSanitaire_IdAndDateBetweenAndActifTrueAndArchiveFalse(
                         medecinId, structureId, start, end
                 );
+
         if (rdvSemaine > 0) {
             throw new SemaineNonModifiableException(
-                    "Modification refusée : des rendez-vous existent sur la semaine en cours (" + start + "). " +
-                            "Veuillez fermer les journées d’activité concernées avant de modifier les plages."
+                    "Modification refusée : des rendez-vous existent sur la semaine en cours (" + start + ")."
             );
         }
 
-        // 1) Sinon on modifie jour par jour
+        // 2️⃣ Modification jour par jour (sans effectiveFrom)
         return request.getAgendas().stream().map(dto -> {
 
-            // agenda "version" semaine courante (si tu versionnes, ajoute effectiveFrom=start ici)
             AgendaMedecin agenda = repository
-                    .findByMedecin_IdAndStructureSanitaire_IdAndJourAndEffectiveFrom(
-                            medecinId, structureId, dto.getJour(), start
+                    .findByMedecin_IdAndStructureSanitaire_IdAndJour(
+                            medecinId,
+                            structureId,
+                            dto.getJour()
                     )
-                    .orElseThrow(() -> new RuntimeException("Agenda introuvable pour " + dto.getJour() + " (semaine " + start + ")"));
+                    .orElseThrow(() -> new AgendaIntrouvableException(
+                            "Agenda introuvable pour " + dto.getJour()
+                    ));
 
-            // 2) Double sécurité : si tu as une journée d’activité ouverte, tu bloques
+            // 3️⃣ Double sécurité : bloquer si journée ouverte
             journeeActiviteRepository
                     .findByAgenda_Id(agenda.getId())
                     .ifPresent(journee -> {
                         if (journee.isAutorise()) {
                             throw new AgendaNonModifiableException(
-                                    "Impossible de modifier : la journée d’activité est ouverte pour " + dto.getJour() +
-                                            ". Fermez la journée d’activité puis réessayez."
+                                    "Impossible de modifier : la journée d’activité est ouverte pour "
+                                            + dto.getJour()
                             );
                         }
                     });
 
-            // 3) Update champs simples
+            // 4️⃣ Update autorisation du jour
             agenda.setAutorise(dto.isAutorise());
 
-            // 4) Update plages (UPDATE uniquement, comme ton updateDay)
-            var existingById = agenda.getPlages().stream()
-                    .collect(java.util.stream.Collectors.toMap(PlageHoraire::getId, p -> p));
+            // 5️⃣ Update des plages existantes uniquement
+            Map<String, PlageHoraire> existingById = agenda.getPlages()
+                    .stream()
+                    .collect(Collectors.toMap(PlageHoraire::getId, p -> p));
 
             for (var pDto : dto.getPlages()) {
 
                 if (pDto.getId() == null || pDto.getId().isBlank()) {
-                    throw new RuntimeException("Modification refusée : plage sans id (risque de création).");
+                    throw new IllegalArgumentException(
+                            "Modification refusée : plage sans id."
+                    );
                 }
 
                 PlageHoraire existing = existingById.get(pDto.getId());
+
                 if (existing == null) {
-                    throw new RuntimeException("Plage introuvable (id=" + pDto.getId() + ") pour " + dto.getJour());
+                    throw new AgendaIntrouvableException(
+                            "Plage introuvable (id=" + pDto.getId() + ") pour " + dto.getJour()
+                    );
                 }
 
                 existing.setHeureDebut(pDto.getHeureDebut());
@@ -266,8 +278,6 @@ public class AgendaMedecinService {
 
         }).toList();
     }
-
-
    /* @Transactional
     public List<AgendaMedecinDto> updateWeek(AgendaSemaineRequest request) {
 
@@ -400,9 +410,11 @@ public class AgendaMedecinService {
         AgendaUpdatePolicy policy =
                 (request.getPolicy() != null) ? request.getPolicy() : AgendaUpdatePolicy.SHIFT_TO_NEXT_FREE_WEEK;
 
-        LocalDate start = lundi(
-                (request.getWeekStart() != null) ? request.getWeekStart() : LocalDate.now()
-        ).plusWeeks(1);
+        LocalDate baseDate = (request.getWeekStart() != null)
+                ? request.getWeekStart()
+                : LocalDate.now();
+
+        LocalDate start = lundi(baseDate);
 
         LocalDate end = start.plusDays(6);
 
