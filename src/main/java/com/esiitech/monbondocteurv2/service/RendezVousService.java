@@ -468,11 +468,10 @@ public class RendezVousService {
         }
 
         // 7) Journée d'activité (avec le bon agenda)
-        JourneeActivite journee = journeeActiviteService.getOrCreate(date, agenda);
+        // récupère la prochaine journée autorisée si celle demandée est fermée
+        JourneeActivite journee = getJourneeDisponible(agenda, date);
 
-        if (!journee.isAutorise()) {
-            throw new RuntimeException("La journée est fermée");
-        }
+
 
         // 8) Limite patient (2 RDV / jour)
         int rdvPatient = rendezVousRepository.countByJourneeActivite_IdAndEmail(journee.getId(), rdv.getEmail());
@@ -561,6 +560,24 @@ public class RendezVousService {
                 )
                 .orElseThrow(() -> new RuntimeException("Aucun agenda effectif trouvé pour cette date"));
     }
+    private JourneeActivite getJourneeDisponible(AgendaMedecin agenda, LocalDate date) {
+        LocalDate checkDate = date;
 
+        while (true) {
+            JourneeActivite journee = journeeActiviteService.getOrCreate(checkDate, agenda);
+
+            if (journee.isAutorise()) {
+                return journee;
+            }
+
+            // avancer d'un jour
+            checkDate = checkDate.plusDays(1);
+
+            // optionnel : limiter à 1 an pour éviter boucle infinie
+            if (checkDate.isAfter(date.plusYears(1))) {
+                throw new RuntimeException("Aucune journée disponible pour ce RDV dans l'année à venir");
+            }
+        }
+    }
 
 }

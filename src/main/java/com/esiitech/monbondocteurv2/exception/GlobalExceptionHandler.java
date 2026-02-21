@@ -178,6 +178,7 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(err, HttpStatus.CONFLICT);
     }
+
     @ExceptionHandler(CreneauCompletException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorDetails> handleCreneauComplet(
@@ -191,6 +192,37 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
+
+
+    @ExceptionHandler(SemaineNonModifiableException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorDetails> handleSemaineNonModifiable(
+            SemaineNonModifiableException ex,
+            HttpServletRequest request) {
+
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(err, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(AgendaIntrouvableException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<ErrorDetails> handleAgendaIntrouvable(
+            AgendaIntrouvableException ex,
+            HttpServletRequest request) {
+
+        ErrorDetails err = new ErrorDetails(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(err, HttpStatus.NOT_FOUND);
     }
 
 }
