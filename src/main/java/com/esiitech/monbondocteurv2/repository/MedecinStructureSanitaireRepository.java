@@ -35,6 +35,14 @@ public interface MedecinStructureSanitaireRepository extends JpaRepository<Medec
 
   // retourne toutes les relations actives d'un médecin
     List<MedecinStructureSanitaire> findByMedecinIdAndActifTrue(String medecinId);
-
+    @Query("""
+    SELECT mss.medecin
+    FROM MedecinStructureSanitaire mss
+    WHERE mss.structureSanitaire.id = :structureId
+      AND mss.actif = true
+      AND LOWER(TRIM(mss.medecin.refSpecialite)) = LOWER(TRIM(:specialite))
+""")
+    List<Medecin> findMedecinsActifsByStructureAndSpecialite(@Param("structureId") String structureId,
+                                                             @Param("specialite") String specialite);
 
 }

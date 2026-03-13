@@ -81,5 +81,11 @@ public class MedecinStructureSanitaireController {
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("medecins/structure/{structureId}/specialite/{specialite}")
+    public List<MedecinDto> getMedecinsByStructureAndSpecialite(
+            @PathVariable String structureId,
+            @PathVariable String specialite) {
+        return medecinStructureSanitaireService.getMedecinsByStructureAndSpecialite(structureId, specialite);
+    }
 
 }
