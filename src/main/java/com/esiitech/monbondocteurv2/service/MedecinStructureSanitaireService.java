@@ -282,6 +282,14 @@ public class MedecinStructureSanitaireService {
         // periode sera calculée dans saveWeekInternal (ou tu peux la mettre ici)
         return p;
     }
+    public List<MedecinDto> getMedecinsByStructureAndSpecialite(String structureId, String specialite) {
+        if (structureId == null || structureId.isBlank() || specialite == null || specialite.isBlank()) {
+            return Collections.emptyList();
+        }
 
+        return repository.findMedecinsActifsByStructureAndSpecialite(structureId, specialite).stream()
+                .map(medecinMapper::toDto)
+                .collect(Collectors.toList());
+    }
 
 }
