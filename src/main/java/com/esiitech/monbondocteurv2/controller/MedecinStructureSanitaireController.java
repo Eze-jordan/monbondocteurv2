@@ -81,10 +81,10 @@ public class MedecinStructureSanitaireController {
         return ResponseEntity.ok(list);
     }
 
-    @GetMapping("medecins/structure/{structureId}/specialite/{specialite}")
+    @GetMapping("/medecins/structure/{structureId}/specialite")
     public List<MedecinDto> getMedecinsByStructureAndSpecialite(
             @PathVariable String structureId,
-            @PathVariable String specialite) {
+            @RequestParam String specialite) {
         return medecinStructureSanitaireService.getMedecinsByStructureAndSpecialite(structureId, specialite);
     }
 
