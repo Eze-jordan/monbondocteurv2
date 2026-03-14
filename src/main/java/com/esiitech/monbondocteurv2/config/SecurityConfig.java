@@ -82,7 +82,7 @@ public class SecurityConfig {
                                 "/api/V2/structuresanitaires/specialites",
                                 "/api/V2/structuresanitaires/me",
                                 "/api/V2/liaisons/{structureId}/medecins",
-                                "api/V2/liaisons/medecins/structure/{structureId}/specialite/{specialite}"
+                                "api/V2/liaisons/medecins/structure/{structureId}/specialite"
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()   // ⬅⬅ Autoriser l'accès aux fichiers
                         .anyRequest().authenticated()

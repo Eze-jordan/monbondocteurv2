@@ -287,7 +287,10 @@ public class MedecinStructureSanitaireService {
             return Collections.emptyList();
         }
 
-        return repository.findMedecinsActifsByStructureAndSpecialite(structureId, specialite).stream()
+        return repository.findMedecinsActifsByStructureAndSpecialite(
+                        structureId.trim(),
+                        specialite.trim()
+                ).stream()
                 .map(medecinMapper::toDto)
                 .collect(Collectors.toList());
     }

@@ -30,11 +30,13 @@ public interface MedecinStructureSanitaireRepository extends JpaRepository<Medec
 
     // Variante : uniquement les affectations actives
     List<MedecinStructureSanitaire> findByStructureSanitaireIdAndActifTrue(String structureId);
+
     // retourne true si la relation existe déjà
     boolean existsByStructureSanitaireIdAndMedecinId(String structureId, String medecinId);
 
-  // retourne toutes les relations actives d'un médecin
+    // retourne toutes les relations actives d'un médecin
     List<MedecinStructureSanitaire> findByMedecinIdAndActifTrue(String medecinId);
+
     @Query("""
     SELECT mss.medecin
     FROM MedecinStructureSanitaire mss
@@ -42,7 +44,8 @@ public interface MedecinStructureSanitaireRepository extends JpaRepository<Medec
       AND mss.actif = true
       AND LOWER(TRIM(mss.medecin.refSpecialite)) = LOWER(TRIM(:specialite))
 """)
-    List<Medecin> findMedecinsActifsByStructureAndSpecialite(@Param("structureId") String structureId,
-                                                             @Param("specialite") String specialite);
-
+    List<Medecin> findMedecinsActifsByStructureAndSpecialite(
+            @Param("structureId") String structureId,
+            @Param("specialite") String specialite
+    );
 }
