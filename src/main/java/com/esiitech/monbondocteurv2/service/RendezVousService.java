@@ -178,10 +178,15 @@ public class RendezVousService {
 
         /* 🔟 Utilisateur connecté */
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            utilisateurRepository.findByEmail(auth.getName())
-                    .ifPresent(rdv::setUtilisateur);
+
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            throw new RuntimeException("Utilisateur non authentifié");
         }
+
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Utilisateur connecté introuvable"));
+
+        rdv.setUtilisateur(utilisateur);
 
         /* Sauvegarde */
         RendezVous saved = rendezVousRepository.save(rdv);
