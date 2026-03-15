@@ -147,5 +147,12 @@ public class RendezVousController {
     ) {
         return ResponseEntity.ok(rendezVousService.listerDemandesEnAttente(structureId, specialite));
     }
-
+    @GetMapping("/rendezvous/patient/{patientId}")
+    public List<RendezVousDTO> getRendezVousParPatient(@PathVariable String patientId) {
+        return rendezVousService.recupererRendezVousParPatientId(patientId);
+    }
+    @GetMapping("/rendezvous/patient/{patientId}/actifs")
+    public List<RendezVousDTO> getRendezVousActifsParPatient(@PathVariable String patientId) {
+        return rendezVousService.recupererRendezVousActifsParPatientId(patientId);
+    }
 }
