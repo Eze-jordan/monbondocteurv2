@@ -579,5 +579,31 @@ public class RendezVousService {
             }
         }
     }
+    @Transactional(readOnly = true)
+    public List<RendezVousDTO> recupererRendezVousParPatientId(String patientId) {
 
+        if (patientId == null || patientId.isBlank()) {
+            throw new RuntimeException("Id patient invalide");
+        }
+
+        return rendezVousRepository
+                .findByUtilisateur_IdOrderByDateDescHeureDebutDesc(patientId)
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RendezVousDTO> recupererRendezVousActifsParPatientId(String patientId) {
+
+        if (patientId == null || patientId.isBlank()) {
+            throw new RuntimeException("Id patient invalide");
+        }
+
+        return rendezVousRepository
+                .findByUtilisateur_IdAndActifTrueAndArchiveFalseOrderByDateDescHeureDebutDesc(patientId)
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
+    }
 }

@@ -49,6 +49,8 @@ AND (:specialite IS NULL OR lower(sp) = lower(:specialite))
     );
     boolean existsByPlageHoraire_Id(String plageId);
 
+    List<RendezVous> findByUtilisateur_IdOrderByDateDescHeureDebutDesc(String utilisateurId);
+    List<RendezVous> findByUtilisateur_IdAndActifTrueAndArchiveFalseOrderByDateDescHeureDebutDesc(String utilisateurId);
 
 }
 
