@@ -2,6 +2,8 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.StructureSanitaireDto;
+import com.esiitech.monbondocteurv2.enums.Role;
+import com.esiitech.monbondocteurv2.enums.Statut;
 import com.esiitech.monbondocteurv2.mapper.StructureSanitaireMapper;
 import com.esiitech.monbondocteurv2.model.*;
 import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
@@ -16,16 +18,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.Assert;
 
-import java.security.SecureRandom;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
+
 @Service
 public class StructureSanitaireService implements UserDetailsService {
 
@@ -47,6 +45,8 @@ public class StructureSanitaireService implements UserDetailsService {
     private NotificationService notificationService;
     @Autowired
     private StructureSanitaireMapper mapper;
+    @Autowired
+    private AbonnementStructureService abonnementStructureService;
     // ✅ deux propriétés distinctes
     @Value("${app.upload.dir.structureSanitaire}")
     private String uploadDirStructure;            // ex: /var/app/uploads/structuresanitaire
@@ -378,6 +378,8 @@ public class StructureSanitaireService implements UserDetailsService {
         StructureSanitaire ss = repository.findById(structureId)
                 .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
 
+        verifierAccesStructure(ss.getId());
+
         if (ss.getRefSpecialites() == null) ss.setRefSpecialites(new HashSet<>());
 
         // normaliser (trim, éviter doublons, ignorer vides)
@@ -476,7 +478,7 @@ public class StructureSanitaireService implements UserDetailsService {
         String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
         StructureSanitaire me = repository.findByEmail(emailConnecte)
                 .orElseThrow(() -> new RuntimeException("Structure introuvable pour l'email connecté"));
-
+        verifierAccesStructure(me.getId());
         applyAndValidateGps(me, lat, lon);
         repository.save(me);
         return mapper.toDto(me);
@@ -521,7 +523,7 @@ public class StructureSanitaireService implements UserDetailsService {
 
         StructureSanitaire ss = repository.findById(structureId)
                 .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
-
+        verifierAccesStructure(ss.getId());
         if (ss.getRefSpecialites() == null) ss.setRefSpecialites(new HashSet<>());
         if (ss.getArchivedSpecialites() == null) ss.setArchivedSpecialites(new HashSet<>());
 
@@ -567,7 +569,7 @@ public class StructureSanitaireService implements UserDetailsService {
 
         StructureSanitaire ss = repository.findById(structureId)
                 .orElseThrow(() -> new RuntimeException("Structure non trouvée"));
-
+        verifierAccesStructure(ss.getId());
         if (ss.getRefSpecialites() == null) ss.setRefSpecialites(new HashSet<>());
         if (ss.getArchivedSpecialites() == null) ss.setArchivedSpecialites(new HashSet<>());
 
@@ -606,6 +608,12 @@ public class StructureSanitaireService implements UserDetailsService {
     }
 
 
+    private void verifierAccesStructure(String structureId) {
+        if (structureId == null || structureId.isBlank()) {
+            throw new IllegalArgumentException("structureId est obligatoire pour vérifier l'abonnement.");
+        }
 
+        abonnementStructureService.verifierAccesAbonnement(structureId);
+    }
 }
 

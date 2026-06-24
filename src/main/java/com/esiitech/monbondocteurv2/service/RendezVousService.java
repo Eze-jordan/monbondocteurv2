@@ -2,6 +2,9 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.AttributionRdvRequest;
 import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.PeriodeJournee;
+import com.esiitech.monbondocteurv2.enums.StatutRendezVous;
 import com.esiitech.monbondocteurv2.exception.CreneauCompletException;
 import com.esiitech.monbondocteurv2.mapper.RendezVousMapper;
 import com.esiitech.monbondocteurv2.model.*;
@@ -30,7 +33,7 @@ public class RendezVousService {
     private final JourneeActiviteService journeeActiviteService;
     private final RendezVousMapper rendezVousMapper;
     private final NotificationService notificationService;
-
+    private final AbonnementStructureService abonnementStructureService;
     public RendezVousService(
             RendezVousRepository rendezVousRepository,
             AgendaMedecinRepository agendaMedecinRepository,
@@ -39,7 +42,7 @@ public class RendezVousService {
             UtilisateurRepository utilisateurRepository,
             JourneeActiviteService journeeActiviteService,
             RendezVousMapper rendezVousMapper,
-            NotificationService notificationService
+            NotificationService notificationService, AbonnementStructureService abonnementStructureService
     ) {
         this.rendezVousRepository = rendezVousRepository;
         this.agendaMedecinRepository = agendaMedecinRepository;
@@ -49,6 +52,7 @@ public class RendezVousService {
         this.journeeActiviteService = journeeActiviteService;
         this.rendezVousMapper = rendezVousMapper;
         this.notificationService = notificationService;
+        this.abonnementStructureService = abonnementStructureService;
     }
 
     /* ============================================================
@@ -60,7 +64,7 @@ public class RendezVousService {
         /* 1️⃣ Agenda */
         AgendaMedecin agenda = agendaMedecinRepository.findById(dto.getAgendaId())
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
-
+        verifierAccesStructure(agenda.getStructureSanitaire().getId());
         /* 2️⃣ Date */
         LocalDate date = dto.getDate();
         if (date == null) {
@@ -266,8 +270,11 @@ public class RendezVousService {
         StructureSanitaire structure = structureSanitaireRepository
                 .findByNomStructureSanitaireIgnoreCase(nomStructure)
                 .orElseThrow(() -> new RuntimeException("Structure introuvable"));
+        verifierAccesStructure(structure.getId());
         return rendezVousRepository.findByStructureSanitaire(structure)
-                .stream().map(rendezVousMapper::toDTO).toList();
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
     }
 
     public void supprimer(String id) {
@@ -332,6 +339,8 @@ public class RendezVousService {
         StructureSanitaire structure = structureSanitaireRepository.findById(dto.getStructureId())
                 .orElseThrow(() -> new RuntimeException("Structure introuvable"));
 
+        verifierAccesStructure(structure.getId());
+
         if (dto.getSpecialite() == null || dto.getSpecialite().isBlank()) {
             throw new RuntimeException("Le service (spécialité) est obligatoire");
         }
@@ -387,6 +396,7 @@ public class RendezVousService {
         RendezVous rdv = rendezVousRepository.findById(rdvId)
                 .orElseThrow(() -> new RuntimeException("Rendez-vous introuvable"));
 
+
         if (rdv.getStatut() != StatutRendezVous.EN_ATTENTE) {
             throw new RuntimeException("Ce rendez-vous n'est pas en attente");
         }
@@ -395,6 +405,8 @@ public class RendezVousService {
         String emailConnecte = SecurityContextHolder.getContext().getAuthentication().getName();
         StructureSanitaire structureConnectee = structureSanitaireRepository.findByEmail(emailConnecte)
                 .orElseThrow(() -> new RuntimeException("Structure connectée introuvable"));
+
+        verifierAccesStructure(structureConnectee.getId());
 
         if (rdv.getStructureSanitaire() == null ||
                 !rdv.getStructureSanitaire().getId().equals(structureConnectee.getId())) {
@@ -545,8 +557,11 @@ public class RendezVousService {
 
     @Transactional(readOnly = true)
     public List<RendezVousDTO> listerDemandesEnAttente(String structureId, String specialite) {
+        verifierAccesStructure(structureId);
         return rendezVousRepository.findEnAttenteByStructureAndService(structureId, specialite)
-                .stream().map(rendezVousMapper::toDTO).toList();
+                .stream()
+                .map(rendezVousMapper::toDTO)
+                .toList();
     }
     private JourSemaine toJourSemaine(LocalDate date) {
         // Ton enum JourSemaine = MONDAY..SUNDAY (anglais) => mapping direct
@@ -610,5 +625,13 @@ public class RendezVousService {
                 .stream()
                 .map(rendezVousMapper::toDTO)
                 .toList();
+    }
+
+    private void verifierAccesStructure(String structureId) {
+        if (structureId == null || structureId.isBlank()) {
+            throw new IllegalArgumentException("structureId est obligatoire pour vérifier l'abonnement.");
+        }
+
+        abonnementStructureService.verifierAccesAbonnement(structureId);
     }
 }

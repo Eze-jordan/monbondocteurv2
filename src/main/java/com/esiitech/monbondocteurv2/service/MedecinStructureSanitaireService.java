@@ -1,6 +1,9 @@
 package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.*;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.PeriodeJournee;
+import com.esiitech.monbondocteurv2.enums.RefSpecialite;
 import com.esiitech.monbondocteurv2.exception.RelationDejaExistanteException;
 import com.esiitech.monbondocteurv2.exception.SpecialiteIncompatibleException;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;

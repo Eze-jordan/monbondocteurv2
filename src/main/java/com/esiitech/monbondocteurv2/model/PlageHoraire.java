@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.model;
 
+import com.esiitech.monbondocteurv2.enums.PeriodeJournee;
 import jakarta.persistence.*;
 
 import java.time.LocalTime;

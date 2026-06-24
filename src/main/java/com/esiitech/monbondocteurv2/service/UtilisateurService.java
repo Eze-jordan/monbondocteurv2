@@ -6,7 +6,7 @@ import com.esiitech.monbondocteurv2.mapper.UtilisateurMapper;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
 import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.repository.UtilisateurRepository;
-import com.esiitech.monbondocteurv2.model.Role;
+import com.esiitech.monbondocteurv2.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;

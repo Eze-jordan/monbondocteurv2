@@ -1,5 +1,7 @@
 package com.esiitech.monbondocteurv2.model;
 
+import com.esiitech.monbondocteurv2.enums.Role;
+import com.esiitech.monbondocteurv2.enums.Sexe;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

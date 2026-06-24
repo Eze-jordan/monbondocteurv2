@@ -1,12 +1,5 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
-import com.esiitech.monbondocteurv2.model.RefType;
-import com.esiitech.monbondocteurv2.model.Statut;
-import com.esiitech.monbondocteurv2.model.Ville;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

@@ -1,6 +1,6 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
 
 public class PlagesDayStatusRequest {
     private String medecinId;

@@ -1,7 +1,7 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.Role;
-import com.esiitech.monbondocteurv2.model.Sexe;
+import com.esiitech.monbondocteurv2.enums.Role;
+import com.esiitech.monbondocteurv2.enums.Sexe;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

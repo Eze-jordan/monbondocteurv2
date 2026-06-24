@@ -1,7 +1,7 @@
 package com.esiitech.monbondocteurv2.repository;
 
 import com.esiitech.monbondocteurv2.model.AgendaMedecin;
-import com.esiitech.monbondocteurv2.model.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -1,8 +1,6 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.RefGrade;
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
-import com.esiitech.monbondocteurv2.model.Role;
+import com.esiitech.monbondocteurv2.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
