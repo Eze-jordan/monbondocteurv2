@@ -1,5 +1,7 @@
     package com.esiitech.monbondocteurv2.model;
 
+    import com.esiitech.monbondocteurv2.enums.Role;
+    import com.esiitech.monbondocteurv2.enums.Statut;
     import jakarta.persistence.*;
     import org.springframework.security.core.GrantedAuthority;
     import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -10,7 +12,18 @@
     import jakarta.persistence.Column;
 
     import java.util.*;
+    import com.fasterxml.jackson.annotation.JsonIgnore;
+    import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+    @JsonIgnoreProperties({
+            "password",
+            "username",
+            "authorities",
+            "accountNonExpired",
+            "accountNonLocked",
+            "credentialsNonExpired",
+            "enabled"
+    })
     @Entity
     public class StructureSanitaire implements UserDetails {
         @Id
@@ -56,28 +69,32 @@
 
         @Column(nullable = false)
         private boolean actif = false;
-        @Column(name = "date_debut-abonnement")
+        @ManyToOne
+        @JoinColumn(name = "formule_abonnement_id")
+        private Formules formuleAbonnement;
+        @Column(name = "date_debut_abonnement")
         private Date DateDebutAbonnement;
         @Column(name = "date_fin_abonnement")
         private Date DateFinAbonnement;
-        @Column(name = "abonne-expire")
+        @Column(name = "abonne_expire")
         private boolean abonneExpire = true;
+
         @Enumerated(EnumType.STRING)
         private Statut statut;
         @Enumerated(EnumType.STRING)
         private Role role;
 
-
+        @JsonIgnore
         @Override
         public Collection<? extends GrantedAuthority> getAuthorities() {
             return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role));
         }
-
+        @JsonIgnore
         @Override
         public String getPassword() {
             return this.motDePasse;
         }
-
+        @JsonIgnore
         @Override
         public String getUsername() {
             return this.email;
@@ -138,7 +155,7 @@
         public void setNumeroTelephone(String numeroTelephone) {
             this.numeroTelephone = numeroTelephone;
         }
-
+        @JsonIgnore
         public String getMotDePasse() {
             return motDePasse;
         }
@@ -237,5 +254,13 @@
 
         public void setArchivedSpecialites(Set<String> archivedSpecialites) {
             this.archivedSpecialites = archivedSpecialites;
+        }
+
+        public Formules getFormuleAbonnement() {
+            return formuleAbonnement;
+        }
+
+        public void setFormuleAbonnement(Formules formuleAbonnement) {
+            this.formuleAbonnement = formuleAbonnement;
         }
     }

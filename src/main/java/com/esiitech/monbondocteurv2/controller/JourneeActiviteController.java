@@ -2,7 +2,7 @@ package com.esiitech.monbondocteurv2.controller;
 
 import com.esiitech.monbondocteurv2.dto.JourneeActiviteDTO;
 import com.esiitech.monbondocteurv2.model.AgendaMedecin;
-import com.esiitech.monbondocteurv2.model.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
 import com.esiitech.monbondocteurv2.model.JourneeActivite;
 import com.esiitech.monbondocteurv2.repository.AgendaMedecinRepository;
 import com.esiitech.monbondocteurv2.service.JourneeActiviteService;

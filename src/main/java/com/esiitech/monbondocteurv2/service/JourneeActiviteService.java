@@ -7,7 +7,7 @@ import com.esiitech.monbondocteurv2.mapper.RendezVousMapper;
 import com.esiitech.monbondocteurv2.model.AgendaMedecin;
 import com.esiitech.monbondocteurv2.model.JourneeActivite;
 import com.esiitech.monbondocteurv2.model.PlageHoraire;
-import com.esiitech.monbondocteurv2.model.StatutJournee;
+import com.esiitech.monbondocteurv2.enums.StatutJournee;
 import com.esiitech.monbondocteurv2.repository.JourneeActiviteRepository;
 import com.esiitech.monbondocteurv2.repository.RendezVousRepository;
 import jakarta.transaction.Transactional;

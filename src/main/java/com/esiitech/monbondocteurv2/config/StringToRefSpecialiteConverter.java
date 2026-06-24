@@ -1,6 +1,6 @@
 package com.esiitech.monbondocteurv2.config;
 
-import com.esiitech.monbondocteurv2.model.RefSpecialite;
+import com.esiitech.monbondocteurv2.enums.RefSpecialite;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 

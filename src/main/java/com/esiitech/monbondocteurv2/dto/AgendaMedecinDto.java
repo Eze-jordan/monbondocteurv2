@@ -1,6 +1,6 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
 
 import java.time.LocalDate;
 import java.util.List;

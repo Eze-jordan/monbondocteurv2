@@ -1,5 +1,8 @@
     package com.esiitech.monbondocteurv2.model;
 
+    import com.esiitech.monbondocteurv2.enums.PeriodeJournee;
+    import com.esiitech.monbondocteurv2.enums.Sexe;
+    import com.esiitech.monbondocteurv2.enums.StatutRendezVous;
     import jakarta.persistence.*;
 
     import java.time.LocalDate;

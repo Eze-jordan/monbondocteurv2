@@ -1,7 +1,7 @@
 package com.esiitech.monbondocteurv2.repository;
 
 import com.esiitech.monbondocteurv2.model.JourneeActivite;
-import com.esiitech.monbondocteurv2.model.StatutJournee;
+import com.esiitech.monbondocteurv2.enums.StatutJournee;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

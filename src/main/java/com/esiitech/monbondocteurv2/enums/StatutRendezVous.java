@@ -1,4 +1,4 @@
-package com.esiitech.monbondocteurv2.model;
+package com.esiitech.monbondocteurv2.enums;
 
 public enum StatutRendezVous {
     EN_ATTENTE,   // créé par patient pour une structure, pas encore assigné

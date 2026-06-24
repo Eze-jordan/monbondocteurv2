@@ -1,4 +1,4 @@
-package com.esiitech.monbondocteurv2.model;
+package com.esiitech.monbondocteurv2.enums;
 
 public enum RefSpecialite {
     MEDICINE_GENERAL,

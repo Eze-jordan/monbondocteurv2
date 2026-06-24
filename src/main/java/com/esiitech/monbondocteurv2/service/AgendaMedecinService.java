@@ -4,6 +4,10 @@ import com.esiitech.monbondocteurv2.dto.AgendaMedecinDto;
 import com.esiitech.monbondocteurv2.dto.AgendaSemainePlanifieeRequest;
 import com.esiitech.monbondocteurv2.dto.AgendaSemaineRequest;
 import com.esiitech.monbondocteurv2.dto.AgendaWeekStatusRequest;
+import com.esiitech.monbondocteurv2.enums.AgendaUpdatePolicy;
+import com.esiitech.monbondocteurv2.enums.JourSemaine;
+import com.esiitech.monbondocteurv2.enums.PeriodeJournee;
+import com.esiitech.monbondocteurv2.enums.StatutJournee;
 import com.esiitech.monbondocteurv2.exception.AccesRefuseException;
 import com.esiitech.monbondocteurv2.exception.AgendaIntrouvableException;
 import com.esiitech.monbondocteurv2.exception.AgendaNonModifiableException;
@@ -32,12 +36,14 @@ public class AgendaMedecinService {
     @Autowired private RendezVousRepository rendezVousRepository;
     @Autowired private MedecinRepository medecinRepository;
     @Autowired private StructureSanitaireRepository structureSanitaireRepository;
-
+    @Autowired private AbonnementStructureService abonnementStructureService;
     /* =========================
        CRÉATION / MODIFICATION
        ========================= */
     @Transactional
     public AgendaMedecinDto save(AgendaMedecinDto dto) {
+
+        verifierAccesStructure(dto.getStructureSanitaireId());
 
 
         if (dto.getId() == null) {
@@ -70,7 +76,7 @@ public class AgendaMedecinService {
     public List<AgendaMedecinDto> saveWeek(AgendaSemaineRequest request) {
 
         checkIfUserIsMedecin();
-
+        verifierAccesStructure(request.getStructureSanitaireId());
         return request.getAgendas().stream().map(dto -> {
 
 
@@ -112,6 +118,8 @@ public class AgendaMedecinService {
     }
 
     public List<AgendaMedecinDto> getByStructure(String structureId) {
+        verifierAccesStructure(structureId);
+
         return repository.findByStructureSanitaireId(structureId)
                 .stream()
                 .map(mapper::toDto)
@@ -122,7 +130,12 @@ public class AgendaMedecinService {
        SUPPRESSION
        ========================= */
     public void delete(String agendaId) {
-        repository.deleteById(agendaId);
+        AgendaMedecin agenda = repository.findById(agendaId)
+                .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
+
+        verifierAccesStructure(agenda.getStructureSanitaire().getId());
+
+        repository.delete(agenda);
     }
 
     /* =========================
@@ -156,6 +169,8 @@ public class AgendaMedecinService {
 
         AgendaMedecin agenda = repository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
+
+        verifierAccesStructure(agenda.getStructureSanitaire().getId());
 
         verifierJourneeModifiable(agenda);
 
@@ -201,6 +216,7 @@ public class AgendaMedecinService {
 
         String medecinId = request.getMedecinId();
         String structureId = request.getStructureSanitaireId();
+        verifierAccesStructure(structureId);
 
         LocalDate start = lundi(LocalDate.now());
         LocalDate end = start.plusDays(6);
@@ -353,6 +369,8 @@ public class AgendaMedecinService {
     }
     public List<AgendaMedecinDto> updateWeekAutorisation(AgendaWeekStatusRequest request) {
 
+        verifierAccesStructure(request.getStructureSanitaireId());
+
         List<AgendaMedecin> agendas = repository
                 .findByMedecin_IdAndStructureSanitaire_Id(
                         request.getMedecinId(),
@@ -406,6 +424,7 @@ public class AgendaMedecinService {
 
         String medecinId = request.getMedecinId();
         String structureId = request.getStructureSanitaireId();
+        verifierAccesStructure(structureId);
 
         AgendaUpdatePolicy policy =
                 (request.getPolicy() != null) ? request.getPolicy() : AgendaUpdatePolicy.SHIFT_TO_NEXT_FREE_WEEK;
@@ -682,6 +701,13 @@ public class AgendaMedecinService {
             return mapper.toDto(repository.save(agenda));
 
         }).toList();
+    }
+    private void verifierAccesStructure(String structureId) {
+        if (structureId == null || structureId.isBlank()) {
+            throw new IllegalArgumentException("structureId est obligatoire pour vérifier l'abonnement.");
+        }
+
+        abonnementStructureService.verifierAccesAbonnement(structureId);
     }
 
 }

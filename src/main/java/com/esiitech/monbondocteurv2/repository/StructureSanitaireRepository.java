@@ -1,7 +1,6 @@
 package com.esiitech.monbondocteurv2.repository;
 
 import com.esiitech.monbondocteurv2.model.StructureSanitaire;
-import com.esiitech.monbondocteurv2.model.Ville;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,4 +41,5 @@ public interface StructureSanitaireRepository extends JpaRepository<StructureSan
     boolean existsByNumeroTelephoneAndIdNot(String numeroTelephone, String id);
 
 
+    Optional<StructureSanitaire> findByNumeroTelephone(String numeroTelephone);
 }

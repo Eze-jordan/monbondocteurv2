@@ -1,14 +1,13 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.Sexe;
-import com.esiitech.monbondocteurv2.model.StatutRendezVous;
+import com.esiitech.monbondocteurv2.enums.Sexe;
+import com.esiitech.monbondocteurv2.enums.StatutRendezVous;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Set;
 
 public class RendezVousDTO {

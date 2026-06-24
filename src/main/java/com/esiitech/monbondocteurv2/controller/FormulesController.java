@@ -60,4 +60,9 @@ public class FormulesController {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/actives")
+    @Operation(summary = "Lister les formules actives")
+    public ResponseEntity<List<Formules>> getAllActives() {
+        return ResponseEntity.ok(service.getAllActives());
+    }
 }

@@ -1,6 +1,6 @@
 package com.esiitech.monbondocteurv2.dto;
 
-import com.esiitech.monbondocteurv2.model.PeriodeJournee;
+import com.esiitech.monbondocteurv2.enums.PeriodeJournee;
 import java.time.LocalTime;
 
 public class PlageHoraireDto {
