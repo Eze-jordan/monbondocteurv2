@@ -20,11 +20,12 @@ public class MedecinMapper {
         dto.setRole(entity.getRole());
         dto.setPhotoPath(entity.getPhotoPath());
         dto.setActif(entity.isActif());
+        dto.setNumeroTelephone(entity.getNumeroTelephone());
         return dto;
     }
-        /**
-         * Convertir le DTO de la demande medecin en entité Utilisateur
-         */
+    /**
+     * Convertir le DTO de la demande medecin en entité Utilisateur
+     */
     public Medecin toEntity(MedecinDto dto) {
         Medecin entity = new Medecin();
         entity.setId(dto.getId());
@@ -36,6 +37,7 @@ public class MedecinMapper {
         entity.setMotDePasse(dto.getMotDePasse());
         entity.setPhotoPath(dto.getPhotoPath());
         entity.setRole(dto.getRole());
+        entity.setNumeroTelephone(dto.getNumeroTelephone());
         entity.setActif(dto.isActif());
         return entity;
     }

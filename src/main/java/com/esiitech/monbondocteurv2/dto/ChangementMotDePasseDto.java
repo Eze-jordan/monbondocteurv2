@@ -1,9 +1,10 @@
 package com.esiitech.monbondocteurv2.dto;
 
 public class ChangementMotDePasseDto {
+
     private String email;
     private String nouveauMotDePasse;
-    private String confirmerMotDePasse;
+    private String confirmationMotDePasse;
 
     public String getEmail() {
         return email;
@@ -21,13 +22,11 @@ public class ChangementMotDePasseDto {
         this.nouveauMotDePasse = nouveauMotDePasse;
     }
 
-    public String getConfirmerMotDePasse() {
-        return confirmerMotDePasse;
+    public String getConfirmationMotDePasse() {
+        return confirmationMotDePasse;
     }
 
-    public void setConfirmerMotDePasse(String confirmerMotDePasse) {
-        this.confirmerMotDePasse = confirmerMotDePasse;
+    public void setConfirmationMotDePasse(String confirmationMotDePasse) {
+        this.confirmationMotDePasse = confirmationMotDePasse;
     }
-
-    // Getters et setters
 }

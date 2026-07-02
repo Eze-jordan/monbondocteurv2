@@ -53,8 +53,10 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/V2/structuresanitaires/create",
                                 "/api/V2/users/create",
-                                "/api/V2/medecins/create"
+                                "/api/V2/medecins/create",
+                                "/api/V2/structuresanitaires/structureSanitaire/motdepasse/reset"
                         ).permitAll()
+                        .requestMatchers("/api/V2/public/**").permitAll()
                         .requestMatchers(
                                 "/api/V2/users/activation",
                                 "/api/V2/users/resend-otp",
@@ -100,7 +102,8 @@ public class SecurityConfig {
                 "http://localhost:4200",
                 "http://localhost:3000",
                 "https://api-monbondocteur.solutech-one.com",
-                "https://appclinique.solutech-one.com"
+                "https://appclinique.solutech-one.com",
+                "http://192.168.1.65:3000"
         ));
         configuration.setAllowedMethods(Arrays.asList("*"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

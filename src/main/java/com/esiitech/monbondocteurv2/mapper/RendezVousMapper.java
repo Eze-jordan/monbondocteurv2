@@ -1,82 +1,61 @@
 package com.esiitech.monbondocteurv2.mapper;
 
-import com.esiitech.monbondocteurv2.dto.PlageHoraireDto;
 import com.esiitech.monbondocteurv2.dto.RendezVousDTO;
+import com.esiitech.monbondocteurv2.model.Medecin;
 import com.esiitech.monbondocteurv2.model.RendezVous;
+import com.esiitech.monbondocteurv2.model.StructureSanitaire;
 import org.springframework.stereotype.Component;
+
 @Component
 public class RendezVousMapper {
 
-    public RendezVousDTO toDTO(RendezVous entity) {
+    public RendezVousDTO toDTO(RendezVous rdv) {
+        if (rdv == null) return null;
+
         RendezVousDTO dto = new RendezVousDTO();
-        dto.setId(entity.getId());
-        dto.setNom(entity.getNom());
-        dto.setPrenom(entity.getPrenom());
-        dto.setEmail(entity.getEmail());
-        dto.setTelephone(entity.getTelephone());
-        dto.setAdresse(entity.getAdresse());
-        dto.setSexe(entity.getSexe());
-        dto.setAge(entity.getAge());
-        dto.setMotif(entity.getMotif());
-        dto.setDate(entity.getDate());
-        dto.setRefSpecialites(entity.getRefSpecialites());
-        dto.setHeureDebut(entity.getHeureDebut());
-        dto.setActif(entity.isActif());
-        dto.setStatut(entity.getStatut());
+        dto.setId(rdv.getId());
+        dto.setNom(rdv.getNom());
+        dto.setPrenom(rdv.getPrenom());
+        dto.setEmail(rdv.getEmail());
+        dto.setAdresse(rdv.getAdresse());
+        dto.setTelephone(rdv.getTelephone());
+        dto.setSexe(rdv.getSexe());
+        dto.setAge(rdv.getAge());
+        dto.setMotif(rdv.getMotif());
+        dto.setDate(rdv.getDate());
+        dto.setHeureDebut(rdv.getHeureDebut());
+        dto.setStatut(rdv.getStatut());
+        dto.setActif(rdv.isActif());
+        dto.setPeriodeJournee(rdv.getPeriodeJournee() != null ? rdv.getPeriodeJournee().name() : null);
+        dto.setRefSpecialites(rdv.getRefSpecialites());
+        dto.setAgendaId(rdv.getAgendaMedecin() != null ? rdv.getAgendaMedecin().getId() : null);
+        dto.setStructureId(rdv.getStructureSanitaire() != null ? rdv.getStructureSanitaire().getId() : null);
 
-        if (entity.getAgendaMedecin() != null) {
-            dto.setAgendaId(entity.getAgendaMedecin().getId());
+        // ✅ Infos médecin
+        if (rdv.getMedecin() != null) {
+            Medecin m = rdv.getMedecin();
+            dto.setMedecinId(m.getId());
+            dto.setMedecinNom(m.getNomMedecin());
+            dto.setMedecinPrenom(m.getPrenomMedecin());
+            dto.setMedecinSpecialite(m.getRefSpecialite());
+            dto.setMedecinPhoto(m.getPhotoPath());
+            dto.setMedecinEmail(m.getEmail());
+            dto.setMedecinTelephone(m.getNumeroTelephone());
         }
 
-
-        // ✅ periode (MATIN / SOIR)
-        if (entity.getPeriodeJournee() != null) {
-            dto.setPeriodeJournee(entity.getPeriodeJournee().name());
-            // ou dto.setPeriodeJournee(entity.getPeriodeJournee()); si ton DTO stocke l'enum
+        // ✅ Infos structure
+        if (rdv.getStructureSanitaire() != null) {
+            StructureSanitaire s = rdv.getStructureSanitaire();
+            dto.setStructureNom(s.getNomStructureSanitaire());
+            dto.setStructureAdresse(s.getAdresse());
+            dto.setStructureVille(s.getVille());
+            dto.setStructurePhoto(s.getPhotoPath());
+            dto.setStructureEmail(s.getEmail());
+            dto.setStructureTelephone(s.getNumeroTelephone());
+            dto.setStructureLatitude(s.getGpsLatitude() != null ? s.getGpsLatitude().doubleValue() : null);
+            dto.setStructureLongitude(s.getGpsLongitude() != null ? s.getGpsLongitude().doubleValue() : null);
         }
-        // (optionnel) structureId
-        if (entity.getStructureSanitaire() != null) {
-            dto.setStructureId(entity.getStructureSanitaire().getId());
-        }
-        if (entity.getDate() != null) {
-            dto.setJour(entity.getDate().getDayOfWeek().name()); // ex: MONDAY, TUESDAY...
-        }
-        if (entity.getPlageHoraire() != null) {
-            var p = entity.getPlageHoraire();
-            PlageHoraireDto pDto = new PlageHoraireDto();
-            pDto.setHeureDebut(p.getHeureDebut());
-            pDto.setHeureFin(p.getHeureFin());
-            pDto.setAutorise(p.isAutorise());
-
-            dto.setPlage(pDto);
-        }
-
 
         return dto;
-    }
-
-    public RendezVous toEntity(RendezVousDTO dto) {
-        RendezVous entity = new RendezVous();
-        entity.setId(dto.getId());
-        entity.setNom(dto.getNom());
-        entity.setPrenom(dto.getPrenom());
-        entity.setEmail(dto.getEmail());
-        entity.setTelephone(dto.getTelephone());
-        entity.setAdresse(dto.getAdresse());
-        entity.setSexe(dto.getSexe());
-        entity.setAge(dto.getAge());
-        entity.setMotif(dto.getMotif());
-        entity.setDate(dto.getDate());
-        entity.setAgendaId(dto.getAgendaId());
-        entity.setRefSpecialites(dto.getRefSpecialites());
-        entity.setHeureDebut(dto.getHeureDebut());
-        entity.setActif(dto.isActif());
-        entity.setStatut(dto.getStatut());
-        entity.setAgendaId(dto.getAgendaId());
-
-
-        // Note : les relations avec les entités (medecin, date, horaire, etc.)
-        // doivent être mises en place dans le service, pas ici
-        return entity;
     }
 }

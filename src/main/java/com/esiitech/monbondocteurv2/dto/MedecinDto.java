@@ -1,5 +1,6 @@
 package com.esiitech.monbondocteurv2.dto;
 
+
 import com.esiitech.monbondocteurv2.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +16,7 @@ public class MedecinDto {
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Email invalide")
     private String email;
+    private String numeroTelephone;
 
     @NotBlank(message = "Le mot de passe est obligatoire")
     @Size(min = 12, message = "Le mot de passe doit contenir au moins 12 caractères")
@@ -109,4 +111,6 @@ public class MedecinDto {
     public void setActif(boolean actif) {
         this.actif = actif;
     }
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
 }

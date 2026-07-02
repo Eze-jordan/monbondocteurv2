@@ -13,60 +13,86 @@ import com.esiitech.monbondocteurv2.exception.AgendaIntrouvableException;
 import com.esiitech.monbondocteurv2.exception.AgendaNonModifiableException;
 import com.esiitech.monbondocteurv2.exception.SemaineNonModifiableException;
 import com.esiitech.monbondocteurv2.mapper.AgendaMedecinMapper;
-import com.esiitech.monbondocteurv2.model.*;
-import com.esiitech.monbondocteurv2.repository.*;
+import com.esiitech.monbondocteurv2.model.AgendaMedecin;
+import com.esiitech.monbondocteurv2.model.JourneeActivite;
+import com.esiitech.monbondocteurv2.model.Medecin;
+import com.esiitech.monbondocteurv2.model.PlageHoraire;
+import com.esiitech.monbondocteurv2.model.RendezVous;
+import com.esiitech.monbondocteurv2.model.StructureSanitaire;
+import com.esiitech.monbondocteurv2.repository.AgendaMedecinRepository;
+import com.esiitech.monbondocteurv2.repository.JourneeActiviteRepository;
+import com.esiitech.monbondocteurv2.repository.MedecinRepository;
+import com.esiitech.monbondocteurv2.repository.RendezVousRepository;
+import com.esiitech.monbondocteurv2.repository.StructureSanitaireRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.DayOfWeek;
-import java.time.temporal.TemporalAdjusters;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class AgendaMedecinService {
 
-    @Autowired private AgendaMedecinRepository repository;
-    @Autowired private AgendaMedecinMapper mapper;
-    @Autowired private JourneeActiviteRepository journeeActiviteRepository;
-    @Autowired private RendezVousRepository rendezVousRepository;
-    @Autowired private MedecinRepository medecinRepository;
-    @Autowired private StructureSanitaireRepository structureSanitaireRepository;
-    @Autowired private AbonnementStructureService abonnementStructureService;
+    @Autowired
+    private AgendaMedecinRepository repository;
+
+    @Autowired
+    private AgendaMedecinMapper mapper;
+
+    @Autowired
+    private JourneeActiviteRepository journeeActiviteRepository;
+
+    @Autowired
+    private RendezVousRepository rendezVousRepository;
+
+    @Autowired
+    private MedecinRepository medecinRepository;
+
+    @Autowired
+    private StructureSanitaireRepository structureSanitaireRepository;
+
+    @Autowired
+    private AbonnementStructureService abonnementStructureService;
+
     /* =========================
        CRÉATION / MODIFICATION
        ========================= */
+
     @Transactional
     public AgendaMedecinDto save(AgendaMedecinDto dto) {
-
         verifierAccesStructure(dto.getStructureSanitaireId());
-
 
         if (dto.getId() == null) {
             dto.setId(generateAgendaId());
         }
 
-        // Convertir DTO en entité
         AgendaMedecin agenda = mapper.toEntity(dto);
+
         if (agenda.getEffectiveFrom() == null) {
             agenda.setEffectiveFrom(lundi(LocalDate.now()));
         }
 
-
-        // Remplir la période pour chaque plage horaire
         if (agenda.getPlages() != null) {
             agenda.getPlages().forEach(plage -> {
-                plage.setAgenda(agenda); // ✅ lien owning side
+                plage.setAgenda(agenda);
+
                 if (plage.getPeriode() == null && plage.getHeureDebut() != null) {
                     plage.setPeriode(determinerPeriode(plage.getHeureDebut()));
                 }
             });
         }
-
 
         AgendaMedecin saved = repository.save(agenda);
         return mapper.toDto(saved);
@@ -74,25 +100,24 @@ public class AgendaMedecinService {
 
     @Transactional
     public List<AgendaMedecinDto> saveWeek(AgendaSemaineRequest request) {
-
         checkIfUserIsMedecin();
         verifierAccesStructure(request.getStructureSanitaireId());
+
         return request.getAgendas().stream().map(dto -> {
-
-
             dto.setId(generateAgendaId());
             dto.setMedecinId(request.getMedecinId());
             dto.setStructureSanitaireId(request.getStructureSanitaireId());
 
             AgendaMedecin agenda = mapper.toEntity(dto);
+
             if (agenda.getEffectiveFrom() == null) {
                 agenda.setEffectiveFrom(lundi(LocalDate.now()));
             }
 
-            // Déterminer MATIN / SOIR automatiquement
             if (agenda.getPlages() != null) {
                 agenda.getPlages().forEach(plage -> {
-                    plage.setAgenda(agenda); // ✅ lien owning side
+                    plage.setAgenda(agenda);
+
                     if (plage.getPeriode() == null && plage.getHeureDebut() != null) {
                         plage.setPeriode(determinerPeriode(plage.getHeureDebut()));
                     }
@@ -100,16 +125,13 @@ public class AgendaMedecinService {
             }
 
             return mapper.toDto(repository.save(agenda));
-
         }).toList();
     }
-
-
-
 
     /* =========================
        LECTURE
        ========================= */
+
     public List<AgendaMedecinDto> getAllByMedecin(String medecinId) {
         return repository.findByMedecinId(medecinId)
                 .stream()
@@ -129,6 +151,8 @@ public class AgendaMedecinService {
     /* =========================
        SUPPRESSION
        ========================= */
+
+    @Transactional
     public void delete(String agendaId) {
         AgendaMedecin agenda = repository.findById(agendaId)
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
@@ -139,92 +163,88 @@ public class AgendaMedecinService {
     }
 
     /* =========================
-       UTILITAIRE PRIVÉ
+       UPDATE JOUR
        ========================= */
-    private PeriodeJournee determinerPeriode(LocalTime heureDebut) {
-        return heureDebut.isBefore(LocalTime.NOON)
-                ? PeriodeJournee.MATIN
-                : PeriodeJournee.SOIR;
-    }
 
-    private void checkIfUserIsMedecin() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Medecin medecin = medecinRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Accès refusé"));
-
-        if (!"MEDECIN".equals(medecin.getRole().name())) {
-            throw new AccesRefuseException("Seul un médecin peut gérer son agenda");
-        }
-    }
-
-
-    private String generateAgendaId() {
-        return "AGENDA-" + java.util.UUID.randomUUID();
-    }
     @Transactional
     public AgendaMedecinDto updateDay(AgendaMedecinDto dto) {
-
         checkIfUserIsMedecin();
 
         AgendaMedecin agenda = repository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Agenda introuvable"));
 
         verifierAccesStructure(agenda.getStructureSanitaire().getId());
-
         verifierJourneeModifiable(agenda);
 
         agenda.setAutorise(dto.isAutorise());
 
-        // Indexer les plages existantes par id
-        var existingById = agenda.getPlages().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        PlageHoraire::getId,
-                        p -> p
-                ));
+        if (dto.getPlages() != null && !dto.getPlages().isEmpty()) {
+            Map<String, PlageHoraire> existingById = agenda.getPlages()
+                    .stream()
+                    .filter(plage -> plage.getId() != null)
+                    .collect(Collectors.toMap(PlageHoraire::getId, plage -> plage, (a, b) -> a));
 
-        // ✅ On UPDATE uniquement
-        for (var pDto : dto.getPlages()) {
+            List<PlageHoraire> nouvellesPlages = new ArrayList<>();
 
-            if (pDto.getId() == null || pDto.getId().isBlank()) {
-                throw new RuntimeException("Modification refusée : une plage sans id créerait une nouvelle entrée.");
+            for (var pDto : dto.getPlages()) {
+                if (pDto.getId() != null && !pDto.getId().isBlank()) {
+                    PlageHoraire existing = existingById.get(pDto.getId());
+
+                    if (existing == null) {
+                        throw new RuntimeException("Plage introuvable (id=" + pDto.getId() + ") pour cet agenda.");
+                    }
+
+                    existing.setHeureDebut(pDto.getHeureDebut());
+                    existing.setHeureFin(pDto.getHeureFin());
+                    existing.setNombrePatients(pDto.getNombrePatients());
+                    existing.setAutorise(pDto.isAutorise());
+                    existing.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+                    existing.setArchive(false);
+
+                    nouvellesPlages.add(existing);
+                } else {
+                    PlageHoraire nouvellePlage = new PlageHoraire();
+                    nouvellePlage.setId(UUID.randomUUID().toString());
+                    nouvellePlage.setAgenda(agenda);
+                    nouvellePlage.setHeureDebut(pDto.getHeureDebut());
+                    nouvellePlage.setHeureFin(pDto.getHeureFin());
+                    nouvellePlage.setNombrePatients(pDto.getNombrePatients());
+                    nouvellePlage.setAutorise(pDto.isAutorise());
+                    nouvellePlage.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+                    nouvellePlage.setArchive(false);
+
+                    nouvellesPlages.add(nouvellePlage);
+                }
             }
 
-            PlageHoraire existing = existingById.get(pDto.getId());
-            if (existing == null) {
-                throw new RuntimeException("Plage introuvable (id=" + pDto.getId() + ") pour cet agenda.");
-            }
-
-            existing.setHeureDebut(pDto.getHeureDebut());
-            existing.setHeureFin(pDto.getHeureFin());
-            existing.setNombrePatients(pDto.getNombrePatients());
-            existing.setAutorise(pDto.isAutorise());
-
-            // si tu veux recalculer la période automatiquement :
-            existing.setPeriode(determinerPeriode(pDto.getHeureDebut()));
-
-            // surtout ne pas toucher archive ici (tu peux même supprimer le concept)
-            existing.setArchive(false);
+            agenda.setPlages(nouvellesPlages);
         }
 
         return mapper.toDto(repository.save(agenda));
     }
+
+    /* =========================
+       UPDATE SEMAINE COURANTE
+       ========================= */
+
     @Transactional
     public List<AgendaMedecinDto> updateWeekCurrent(AgendaSemaineRequest request) {
-
         checkIfUserIsMedecin();
 
         String medecinId = request.getMedecinId();
         String structureId = request.getStructureSanitaireId();
+
         verifierAccesStructure(structureId);
 
         LocalDate start = lundi(LocalDate.now());
         LocalDate end = start.plusDays(6);
 
-        // 1️⃣ Bloquer si un RDV existe dans la semaine
         int rdvSemaine = rendezVousRepository
                 .countByMedecin_IdAndStructureSanitaire_IdAndDateBetweenAndActifTrueAndArchiveFalse(
-                        medecinId, structureId, start, end
+                        medecinId,
+                        structureId,
+                        start,
+                        end
                 );
 
         if (rdvSemaine > 0) {
@@ -233,45 +253,36 @@ public class AgendaMedecinService {
             );
         }
 
-        // 2️⃣ Modification jour par jour (sans effectiveFrom)
         return request.getAgendas().stream().map(dto -> {
-
             AgendaMedecin agenda = repository
-                    .findByMedecin_IdAndStructureSanitaire_IdAndJour(
+                    .findFirstByMedecin_IdAndStructureSanitaire_IdAndJourAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
                             medecinId,
                             structureId,
-                            dto.getJour()
+                            dto.getJour(),
+                            LocalDate.now()
                     )
                     .orElseThrow(() -> new AgendaIntrouvableException(
                             "Agenda introuvable pour " + dto.getJour()
                     ));
 
-            // 3️⃣ Double sécurité : bloquer si journée ouverte
-            journeeActiviteRepository
-                    .findByAgenda_Id(agenda.getId())
-                    .ifPresent(journee -> {
-                        if (journee.isAutorise()) {
-                            throw new AgendaNonModifiableException(
-                                    "Impossible de modifier : la journée d’activité est ouverte pour "
-                                            + dto.getJour()
-                            );
-                        }
-                    });
+            journeeActiviteRepository.findByAgenda_Id(agenda.getId()).ifPresent(journee -> {
+                if (journee.isAutorise()) {
+                    throw new AgendaNonModifiableException(
+                            "Impossible de modifier : la journée d'activité est ouverte pour " + dto.getJour()
+                    );
+                }
+            });
 
-            // 4️⃣ Update autorisation du jour
             agenda.setAutorise(dto.isAutorise());
 
-            // 5️⃣ Update des plages existantes uniquement
             Map<String, PlageHoraire> existingById = agenda.getPlages()
                     .stream()
-                    .collect(Collectors.toMap(PlageHoraire::getId, p -> p));
+                    .filter(plage -> plage.getId() != null)
+                    .collect(Collectors.toMap(PlageHoraire::getId, plage -> plage, (a, b) -> a));
 
             for (var pDto : dto.getPlages()) {
-
                 if (pDto.getId() == null || pDto.getId().isBlank()) {
-                    throw new IllegalArgumentException(
-                            "Modification refusée : plage sans id."
-                    );
+                    throw new IllegalArgumentException("Modification refusée : plage sans id.");
                 }
 
                 PlageHoraire existing = existingById.get(pDto.getId());
@@ -291,91 +302,16 @@ public class AgendaMedecinService {
             }
 
             return mapper.toDto(repository.save(agenda));
-
-        }).toList();
-    }
-   /* @Transactional
-    public List<AgendaMedecinDto> updateWeek(AgendaSemaineRequest request) {
-
-        checkIfUserIsMedecin();
-
-        return request.getAgendas().stream().map(dto -> {
-
-            AgendaMedecin agenda = repository
-                    .findByMedecinIdAndStructureSanitaireIdAndJour(
-                            request.getMedecinId(),
-                            request.getStructureSanitaireId(),
-                            dto.getJour()
-                    )
-                    .orElseThrow(() ->
-                            new RuntimeException("Agenda inexistant pour " + dto.getJour())
-                    );
-
-            verifierJourneeModifiable(agenda);
-
-            agenda.setAutorise(dto.isAutorise());
-
-            var existingById = agenda.getPlages().stream()
-                    .collect(java.util.stream.Collectors.toMap(PlageHoraire::getId, p -> p));
-
-            for (var pDto : dto.getPlages()) {
-
-                if (pDto.getId() == null || pDto.getId().isBlank()) {
-                    throw new RuntimeException("Modification refusée : une plage sans id créerait une nouvelle entrée.");
-                }
-
-                PlageHoraire existing = existingById.get(pDto.getId());
-                if (existing == null) {
-                    throw new RuntimeException("Plage introuvable (id=" + pDto.getId() + ") pour " + dto.getJour());
-                }
-
-                existing.setHeureDebut(pDto.getHeureDebut());
-                existing.setHeureFin(pDto.getHeureFin());
-                existing.setNombrePatients(pDto.getNombrePatients());
-                existing.setAutorise(pDto.isAutorise());
-                existing.setPeriode(determinerPeriode(pDto.getHeureDebut()));
-                existing.setArchive(false);
-            }
-
-            return mapper.toDto(repository.save(agenda));
-
         }).toList();
     }
 
-*/
-    private void verifierJourneeModifiable(AgendaMedecin agenda) {
-
-        journeeActiviteRepository
-                .findByAgenda_Id(agenda.getId())
-                .ifPresent(journee -> {
-
-                    // ❌ Journée ouverte
-                    if (journee.isAutorise()) {
-                        throw new AgendaNonModifiableException(
-                                "Impossible de modifier : la journée est ouverte"
-                        );
-                    }
-
-                    // ❌ RDV actifs existants
-                    int rdvActifs = rendezVousRepository
-                            .countByJourneeActivite_IdAndActifTrue(journee.getId());
-
-                    if (rdvActifs > 0) {
-                        throw new RuntimeException(
-                                "Impossible de modifier : des rendez-vous sont encore actifs"
-                        );
-                    }
-                });
-    }
     public List<AgendaMedecinDto> updateWeekAutorisation(AgendaWeekStatusRequest request) {
-
         verifierAccesStructure(request.getStructureSanitaireId());
 
-        List<AgendaMedecin> agendas = repository
-                .findByMedecin_IdAndStructureSanitaire_Id(
-                        request.getMedecinId(),
-                        request.getStructureSanitaireId()
-                );
+        List<AgendaMedecin> agendas = repository.findByMedecin_IdAndStructureSanitaire_Id(
+                request.getMedecinId(),
+                request.getStructureSanitaireId()
+        );
 
         agendas.forEach(agenda -> agenda.setAutorise(request.isAutorise()));
 
@@ -385,59 +321,31 @@ public class AgendaMedecinService {
                 .map(mapper::toDto)
                 .toList();
     }
-/*
-    @Transactional
-    public AgendaMedecinDto updatePlagesAutorisationByDay(com.esiitech.monbondocteurv2.dto.PlagesDayStatusRequest request) {
 
-        checkIfUserIsMedecin();
-
-        AgendaMedecin agenda = repository
-                .findByMedecinIdAndStructureSanitaireIdAndJour(
-                        request.getMedecinId(),
-                        request.getStructureSanitaireId(),
-                        request.getJour()
-                )
-                .orElseThrow(() -> new RuntimeException("Agenda introuvable pour " + request.getJour()));
-
-        // si tu veux empêcher modification quand journée ouverte / rdv actifs
-        verifierJourneeModifiable(agenda);
-
-        if (agenda.getPlages() == null || agenda.getPlages().isEmpty()) {
-            return mapper.toDto(agenda); // rien à modifier
-        }
-
-        // ✅ Mettre à jour toutes les plages de ce jour
-        agenda.getPlages().forEach(plage -> plage.setAutorise(request.isAutorise()));
-
-        // Optionnel : si tu veux aussi couper la journée entière
-        // agenda.setAutorise(request.isAutorise());
-
-        return mapper.toDto(repository.save(agenda));
-    }
-
- */
+    /* =========================
+       PLANIFICATION SEMAINE FUTURE
+       ========================= */
 
     @Transactional
     public LocalDate planifierUpdateWeek(AgendaSemainePlanifieeRequest request) {
-
         checkIfUserIsMedecin();
 
         String medecinId = request.getMedecinId();
         String structureId = request.getStructureSanitaireId();
+
         verifierAccesStructure(structureId);
 
-        AgendaUpdatePolicy policy =
-                (request.getPolicy() != null) ? request.getPolicy() : AgendaUpdatePolicy.SHIFT_TO_NEXT_FREE_WEEK;
+        AgendaUpdatePolicy policy = request.getPolicy() != null
+                ? request.getPolicy()
+                : AgendaUpdatePolicy.SHIFT_TO_NEXT_FREE_WEEK;
 
-        LocalDate baseDate = (request.getWeekStart() != null)
+        LocalDate baseDate = request.getWeekStart() != null
                 ? request.getWeekStart()
                 : LocalDate.now();
 
         LocalDate start = lundi(baseDate);
-
         LocalDate end = start.plusDays(6);
 
-        // 1) Trouver une semaine cible selon policy
         while (true) {
             int rdv = rendezVousRepository
                     .countByMedecin_IdAndStructureSanitaire_IdAndDateBetweenAndActifTrueAndArchiveFalse(
@@ -447,7 +355,9 @@ public class AgendaMedecinService {
                             end
                     );
 
-            if (rdv == 0) break;
+            if (rdv == 0) {
+                break;
+            }
 
             if (policy == AgendaUpdatePolicy.REFUSE_IF_CONFLICT) {
                 throw new RuntimeException("Impossible : il existe des RDV sur la semaine " + start);
@@ -458,28 +368,27 @@ public class AgendaMedecinService {
                 break;
             }
 
-            // SHIFT
             start = start.plusWeeks(1);
             end = start.plusDays(6);
         }
 
-        // 2) Pour chaque jour, UPSERT de la version (effectiveFrom = start)
         for (AgendaMedecinDto dto : request.getAgendas()) {
-
-            // on cherche si une version existe déjà pour ce (jour, effectiveFrom=start)
             var opt = repository.findByMedecin_IdAndStructureSanitaire_IdAndJourAndEffectiveFrom(
-                    medecinId, structureId, dto.getJour(), start
+                    medecinId,
+                    structureId,
+                    dto.getJour(),
+                    start
             );
 
             AgendaMedecin agenda;
+
             if (opt.isPresent()) {
                 agenda = opt.get();
             } else {
-                // charger les entités (pas de méthodes getById custom)
-                Medecin med = medecinRepository.findById(medecinId)
+                Medecin medecin = medecinRepository.findById(medecinId)
                         .orElseThrow(() -> new RuntimeException("Médecin introuvable: " + medecinId));
 
-                StructureSanitaire ss = structureSanitaireRepository.findById(structureId)
+                StructureSanitaire structureSanitaire = structureSanitaireRepository.findById(structureId)
                         .orElseThrow(() -> new RuntimeException("Structure introuvable: " + structureId));
 
                 agenda = new AgendaMedecin();
@@ -487,91 +396,73 @@ public class AgendaMedecinService {
                 agenda.setEffectiveFrom(start);
                 agenda.setJour(dto.getJour());
                 agenda.setAutorise(dto.isAutorise());
-                agenda.setMedecin(med);
-                agenda.setStructureSanitaire(ss);
-
-                // IMPORTANT: initialiser la liste si besoin
-                agenda.setPlages(new java.util.ArrayList<>());
+                agenda.setMedecin(medecin);
+                agenda.setStructureSanitaire(structureSanitaire);
+                agenda.setPlages(new ArrayList<>());
             }
 
-
-            // mise à jour champs simples
             agenda.setAutorise(dto.isAutorise());
 
-            // 3) MAJ plages SANS DELETE et SANS casser RDV
-            // règle: si une plage existante est utilisée par un RDV => on ne la modifie pas, on l’archive si elle n’existe plus dans la nouvelle config
-            // et on ajoute de nouvelles plages (nouveaux IDs)
+            List<PlageHoraire> existingPlages = agenda.getPlages() != null
+                    ? agenda.getPlages()
+                    : new ArrayList<>();
 
-            // index des plages existantes
-            List<PlageHoraire> existingPlages = (agenda.getPlages() != null) ? agenda.getPlages() : new java.util.ArrayList<>();
-            java.util.Map<String, PlageHoraire> existingById = existingPlages.stream()
-                    .filter(p -> p.getId() != null)
-                    .collect(java.util.stream.Collectors.toMap(PlageHoraire::getId, p -> p, (a,b) -> a));
+            Map<String, PlageHoraire> existingById = existingPlages.stream()
+                    .filter(plage -> plage.getId() != null)
+                    .collect(Collectors.toMap(PlageHoraire::getId, plage -> plage, (a, b) -> a));
 
-            // on va reconstruire une liste "cible"
-            java.util.List<PlageHoraire> finalPlages = new java.util.ArrayList<>();
+            List<PlageHoraire> finalPlages = new ArrayList<>();
 
-            // a) traiter plages demandées
             for (var pDto : dto.getPlages()) {
-
-                // si le front envoie un id, on tente de matcher
                 PlageHoraire matched = null;
+
                 if (pDto.getId() != null && !pDto.getId().isBlank()) {
                     matched = existingById.get(pDto.getId());
                 }
 
                 if (matched != null) {
-                    // plage existante : on ne modifie QUE si pas utilisée par un RDV
                     boolean used = rendezVousRepository.existsByPlageHoraire_Id(matched.getId());
 
                     if (used) {
-                        // immuable : on la garde telle quelle (optionnel: tu peux juste la laisser)
                         finalPlages.add(matched);
                     } else {
-                        // modifiable : on update
                         matched.setHeureDebut(pDto.getHeureDebut());
                         matched.setHeureFin(pDto.getHeureFin());
                         matched.setNombrePatients(pDto.getNombrePatients());
                         matched.setAutorise(pDto.isAutorise());
                         matched.setPeriode(determinerPeriode(pDto.getHeureDebut()));
                         matched.setArchive(false);
+
                         finalPlages.add(matched);
                     }
-
                 } else {
-                    // nouvelle plage : toujours nouveau ID
-                    PlageHoraire n = new PlageHoraire();
-                    n.setId(java.util.UUID.randomUUID().toString());
-                    n.setAgenda(agenda); // important
-                    n.setHeureDebut(pDto.getHeureDebut());
-                    n.setHeureFin(pDto.getHeureFin());
-                    n.setNombrePatients(pDto.getNombrePatients());
-                    n.setAutorise(pDto.isAutorise());
-                    n.setPeriode(determinerPeriode(pDto.getHeureDebut()));
-                    n.setArchive(false);
-                    finalPlages.add(n);
+                    PlageHoraire nouvellePlage = new PlageHoraire();
+                    nouvellePlage.setId(UUID.randomUUID().toString());
+                    nouvellePlage.setAgenda(agenda);
+                    nouvellePlage.setHeureDebut(pDto.getHeureDebut());
+                    nouvellePlage.setHeureFin(pDto.getHeureFin());
+                    nouvellePlage.setNombrePatients(pDto.getNombrePatients());
+                    nouvellePlage.setAutorise(pDto.isAutorise());
+                    nouvellePlage.setPeriode(determinerPeriode(pDto.getHeureDebut()));
+                    nouvellePlage.setArchive(false);
+
+                    finalPlages.add(nouvellePlage);
                 }
             }
 
-            // b) archiver les anciennes plages non reprises
-            java.util.Set<String> keptIds = finalPlages.stream()
+            Set<String> keptIds = finalPlages.stream()
                     .map(PlageHoraire::getId)
-                    .collect(java.util.stream.Collectors.toSet());
+                    .collect(Collectors.toSet());
 
             for (PlageHoraire old : existingPlages) {
-                if (old.getId() == null) continue;
+                if (old.getId() == null) {
+                    continue;
+                }
+
                 if (!keptIds.contains(old.getId())) {
-                    boolean used = rendezVousRepository.existsByPlageHoraire_Id(old.getId());
-                    if (used) {
-                        old.setArchive(true);
-                        old.setAutorise(false);
-                        finalPlages.add(old); // on la garde archivée pour historique
-                    } else {
-                        // PAS DE DELETE (Stratégie A) => on archive aussi
-                        old.setArchive(true);
-                        old.setAutorise(false);
-                        finalPlages.add(old);
-                    }
+                    old.setArchive(true);
+                    old.setAutorise(false);
+                    finalPlages.add(old);
                 }
             }
 
@@ -583,115 +474,112 @@ public class AgendaMedecinService {
         return start;
     }
 
-    private void annulerRdvsSemaine(String medecinId, String structureId, LocalDate start, LocalDate end) {
-
-        List<JourneeActivite> journees = journeeActiviteRepository
-                .findByMedecin_IdAndStructureSanitaire_IdAndDateBetween(medecinId, structureId, start, end);
-
-        for (JourneeActivite j : journees) {
-            List<RendezVous> rdvs = rendezVousRepository.findByJourneeActivite_Id(j.getId());
-            rdvs.forEach(r -> { r.setActif(false); r.setArchive(true); });
-            rendezVousRepository.saveAll(rdvs);
-
-            j.setAutorise(false);
-            j.setStatut(StatutJournee.FERMEE);
-            journeeActiviteRepository.save(j); // selon ton repo
-        }
-    }
-    private LocalDate lundi(LocalDate d) {
-        return d.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-    }
-
+    /* =========================
+       LECTURE DES AGENDAS RÉCENTS
+       ========================= */
 
     public List<AgendaMedecinDto> getAgendasRecents(String medecinId, String structureId, LocalDate dateRef) {
-
         List<AgendaMedecin> all = repository
-                .findByMedecin_IdAndStructureSanitaire_IdAndEffectiveFromLessThanEqual(medecinId, structureId, dateRef);
+                .findByMedecin_IdAndStructureSanitaire_IdAndEffectiveFromLessThanEqual(
+                        medecinId,
+                        structureId,
+                        dateRef
+                );
 
-        // garder le max effectiveFrom par jour
-        java.util.Map<JourSemaine, AgendaMedecin> latestByDay = new java.util.EnumMap<>(JourSemaine.class);
+        Map<JourSemaine, AgendaMedecin> latestByDay = new EnumMap<>(JourSemaine.class);
 
-        for (AgendaMedecin a : all) {
-            JourSemaine day = a.getJour();
+        for (AgendaMedecin agenda : all) {
+            JourSemaine day = agenda.getJour();
             AgendaMedecin existing = latestByDay.get(day);
 
-            if (existing == null || a.getEffectiveFrom().isAfter(existing.getEffectiveFrom())) {
-                latestByDay.put(day, a);
+            if (existing == null || agenda.getEffectiveFrom().isAfter(existing.getEffectiveFrom())) {
+                latestByDay.put(day, agenda);
             }
         }
 
-        return latestByDay.values().stream()
+        return latestByDay.values()
+                .stream()
                 .map(mapper::toDto)
                 .toList();
     }
+
     @Transactional(readOnly = true)
     public List<AgendaMedecinDto> getAgendasRecentsByMedecin(String medecinId, LocalDate dateRef) {
-
-        LocalDate ref = (dateRef != null) ? dateRef : LocalDate.now();
+        LocalDate ref = dateRef != null ? dateRef : LocalDate.now();
 
         List<AgendaMedecin> all = repository
-                .findByMedecin_IdAndEffectiveFromIsNotNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(medecinId, ref);
+                .findByMedecin_IdAndEffectiveFromIsNotNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+                        medecinId,
+                        ref
+                );
 
-        java.util.Map<JourSemaine, AgendaMedecin> latestByDay = new java.util.EnumMap<>(JourSemaine.class);
-        for (AgendaMedecin a : all) {
-            latestByDay.putIfAbsent(a.getJour(), a);
+        Map<JourSemaine, AgendaMedecin> latestByDay = new EnumMap<>(JourSemaine.class);
+
+        for (AgendaMedecin agenda : all) {
+            latestByDay.putIfAbsent(agenda.getJour(), agenda);
         }
 
-        return latestByDay.values().stream()
+        return latestByDay.values()
+                .stream()
                 .map(mapper::toDto)
                 .toList();
     }
-
 
     @Transactional(readOnly = true)
     public List<AgendaMedecinDto> getAgendasRecentsByStructure(String structureId, LocalDate dateRef) {
+        verifierAccesStructure(structureId);
 
-        LocalDate ref = (dateRef != null) ? dateRef : LocalDate.now();
+        LocalDate ref = dateRef != null ? dateRef : LocalDate.now();
 
         List<AgendaMedecin> all = repository
-                .findByStructureSanitaire_IdAndEffectiveFromIsNotNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(structureId, ref);
+                .findByStructureSanitaire_IdAndEffectiveFromIsNotNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+                        structureId,
+                        ref
+                );
 
-        java.util.Map<String, java.util.Map<JourSemaine, AgendaMedecin>> latest = new java.util.HashMap<>();
+        Map<String, Map<JourSemaine, AgendaMedecin>> latest = new HashMap<>();
 
-        for (AgendaMedecin a : all) {
-            String medId = a.getMedecin().getId();
+        for (AgendaMedecin agenda : all) {
+            String medecinId = agenda.getMedecin().getId();
 
-            latest.putIfAbsent(medId, new java.util.EnumMap<>(JourSemaine.class));
-            var byDay = latest.get(medId);
+            latest.putIfAbsent(medecinId, new EnumMap<>(JourSemaine.class));
 
-            // comme all est trié DESC, le premier rencontré est le plus récent
-            byDay.putIfAbsent(a.getJour(), a);
+            Map<JourSemaine, AgendaMedecin> byDay = latest.get(medecinId);
+            byDay.putIfAbsent(agenda.getJour(), agenda);
         }
 
-        return latest.values().stream()
-                .flatMap(m -> m.values().stream())
+        return latest.values()
+                .stream()
+                .flatMap(map -> map.values().stream())
                 .map(mapper::toDto)
                 .toList();
     }
-    // ✅ méthode utilisée lors de la liaison (admin, etc.)
+
+    /* =========================
+       LIAISON ADMIN / STRUCTURE
+       ========================= */
+
     @Transactional
     public List<AgendaMedecinDto> saveWeekForLinking(AgendaSemaineRequest request) {
         return saveWeekInternal(request);
     }
 
-    // 🔥 logique centrale (une seule source de vérité)
     private List<AgendaMedecinDto> saveWeekInternal(AgendaSemaineRequest request) {
-
-
         return request.getAgendas().stream().map(dto -> {
-
             dto.setId(generateAgendaId());
             dto.setMedecinId(request.getMedecinId());
             dto.setStructureSanitaireId(request.getStructureSanitaireId());
 
             AgendaMedecin agenda = mapper.toEntity(dto);
-            // ✅ si non fourni, on met la semaine courante
+
             if (agenda.getEffectiveFrom() == null) {
                 agenda.setEffectiveFrom(lundi(LocalDate.now()));
             }
+
             if (agenda.getPlages() != null) {
                 agenda.getPlages().forEach(plage -> {
-                    plage.setAgenda(agenda); // ✅ owning side
+                    plage.setAgenda(agenda);
+
                     if (plage.getPeriode() == null && plage.getHeureDebut() != null) {
                         plage.setPeriode(determinerPeriode(plage.getHeureDebut()));
                     }
@@ -699,9 +587,82 @@ public class AgendaMedecinService {
             }
 
             return mapper.toDto(repository.save(agenda));
-
         }).toList();
     }
+
+    /* =========================
+       UTILITAIRES PRIVÉS
+       ========================= */
+
+    private PeriodeJournee determinerPeriode(LocalTime heureDebut) {
+        return heureDebut.isBefore(LocalTime.NOON)
+                ? PeriodeJournee.MATIN
+                : PeriodeJournee.SOIR;
+    }
+
+    private void checkIfUserIsMedecin() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Medecin medecin = medecinRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Accès refusé"));
+
+        if (!"MEDECIN".equals(medecin.getRole().name())) {
+            throw new AccesRefuseException("Seul un médecin peut gérer son agenda");
+        }
+    }
+
+    private void verifierJourneeModifiable(AgendaMedecin agenda) {
+        journeeActiviteRepository.findByAgenda_Id(agenda.getId()).ifPresent(journee -> {
+            if (journee.isAutorise()) {
+                throw new AgendaNonModifiableException(
+                        "Impossible de modifier : la journée est ouverte"
+                );
+            }
+
+            int rdvActifs = rendezVousRepository.countByJourneeActivite_IdAndActifTrue(journee.getId());
+
+            if (rdvActifs > 0) {
+                throw new RuntimeException(
+                        "Impossible de modifier : des rendez-vous sont encore actifs"
+                );
+            }
+        });
+    }
+
+    private void annulerRdvsSemaine(String medecinId, String structureId, LocalDate start, LocalDate end) {
+        List<JourneeActivite> journees = journeeActiviteRepository
+                .findByMedecin_IdAndStructureSanitaire_IdAndDateBetween(
+                        medecinId,
+                        structureId,
+                        start,
+                        end
+                );
+
+        for (JourneeActivite journee : journees) {
+            List<RendezVous> rdvs = rendezVousRepository.findByJourneeActivite_Id(journee.getId());
+
+            rdvs.forEach(rdv -> {
+                rdv.setActif(false);
+                rdv.setArchive(true);
+            });
+
+            rendezVousRepository.saveAll(rdvs);
+
+            journee.setAutorise(false);
+            journee.setStatut(StatutJournee.FERMEE);
+
+            journeeActiviteRepository.save(journee);
+        }
+    }
+
+    private LocalDate lundi(LocalDate date) {
+        return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
+    private String generateAgendaId() {
+        return "AGENDA-" + UUID.randomUUID();
+    }
+
     private void verifierAccesStructure(String structureId) {
         if (structureId == null || structureId.isBlank()) {
             throw new IllegalArgumentException("structureId est obligatoire pour vérifier l'abonnement.");
@@ -709,5 +670,4 @@ public class AgendaMedecinService {
 
         abonnementStructureService.verifierAccesAbonnement(structureId);
     }
-
 }

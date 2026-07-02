@@ -30,6 +30,8 @@ public class Medecin  implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String numeroTelephone;
+
     @Column(nullable = false)
     private boolean actif = false;
     @ManyToOne
@@ -133,4 +135,7 @@ public class Medecin  implements UserDetails {
     public String getUsername() {
         return this.email;
     }
+
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
 }

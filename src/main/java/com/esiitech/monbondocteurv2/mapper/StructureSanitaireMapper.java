@@ -13,6 +13,7 @@ public class StructureSanitaireMapper {
         dto.setNomStructureSanitaire(entity.getNomStructureSanitaire());
         dto.setAdresse(entity.getAdresse());
         dto.setEmail(entity.getEmail());
+        // motDePasse volontairement omis → null dans le JSON
         dto.setNumeroTelephone(entity.getNumeroTelephone());
         dto.setPhotoPath(entity.getPhotoPath());
         dto.setVille(entity.getVille());
@@ -25,6 +26,7 @@ public class StructureSanitaireMapper {
         dto.setDateFinAbonnement(entity.getDateFinAbonnement());
         dto.setAbonneExpire(entity.isAbonneExpire());
         dto.setActif(entity.isActif());
+        dto.setStatut(entity.getStatut());
         return dto;
     }
 
@@ -47,6 +49,7 @@ public class StructureSanitaireMapper {
         entity.setDateFinAbonnement(dto.getDateFinAbonnement());
         entity.setAbonneExpire(dto.isAbonneExpire());
         entity.setActif(dto.isActif());
+        entity.setStatut(dto.getStatut());
         return entity;
     }
 }

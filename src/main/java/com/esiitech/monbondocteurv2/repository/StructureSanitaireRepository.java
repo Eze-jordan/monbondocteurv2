@@ -9,37 +9,51 @@ import java.util.List;
 import java.util.Optional;
 
 public interface StructureSanitaireRepository extends JpaRepository<StructureSanitaire, String> {
+
     Optional<StructureSanitaire> findByEmail(String email);
 
-    // Dans StructureSanitaireRepository
+    Optional<StructureSanitaire> findByNumeroTelephone(String numeroTelephone);
+
     Optional<StructureSanitaire> findByNomStructureSanitaireIgnoreCase(String nomStructureSanitaire);
-    @Query("SELECT s FROM StructureSanitaire s WHERE LOWER(s.refSpecialites) LIKE LOWER(CONCAT('%', :specialite, '%'))")
-    List<StructureSanitaire> findBySpecialiteContainingIgnoreCase(@Param("specialite") String specialite);
 
-    // spécialité exacte (insensible à la casse)
-    @Query("""
-           select s from StructureSanitaire s
-           join s.refSpecialites sp
-           where lower(sp) = lower(:specialite)
-           """)
-    List<StructureSanitaire> findBySpecialite(@Param("specialite") String specialite);
+    @Query("SELECT s FROM StructureSanitaire s " +
+            "WHERE LOWER(s.refSpecialites) LIKE LOWER(CONCAT('%', :specialite, '%'))")
+    List<StructureSanitaire> findBySpecialiteContainingIgnoreCase(
+            @Param("specialite") String specialite
+    );
 
-    // "contient" (partiel), via LIKE
-    @Query("""
-           select distinct s from StructureSanitaire s
-           join s.refSpecialites sp
-           where lower(sp) like lower(concat('%', :fragment, '%'))
-           """)
-    List<StructureSanitaire> searchBySpecialiteContains(@Param("fragment") String fragment);
+    @Query("SELECT s FROM StructureSanitaire s " +
+            "JOIN s.refSpecialites sp " +
+            "WHERE LOWER(sp) = LOWER(:specialite)")
+    List<StructureSanitaire> findBySpecialite(
+            @Param("specialite") String specialite
+    );
+
+    @Query("SELECT DISTINCT s FROM StructureSanitaire s " +
+            "JOIN s.refSpecialites sp " +
+            "WHERE LOWER(sp) LIKE LOWER(CONCAT('%', :fragment, '%'))")
+    List<StructureSanitaire> searchBySpecialiteContains(
+            @Param("fragment") String fragment
+    );
 
     List<StructureSanitaire> findByVilleIgnoreCase(String ville);
 
     boolean existsByEmail(String email);
+
     boolean existsByNumeroTelephone(String numeroTelephone);
 
     boolean existsByEmailAndIdNot(String email, String id);
+
     boolean existsByNumeroTelephoneAndIdNot(String numeroTelephone, String id);
 
+    @Query("SELECT DISTINCT s FROM StructureSanitaire s " +
+            "JOIN s.refSpecialites sp " +
+            "WHERE LOWER(s.ville) = LOWER(:ville) " +
+            "AND LOWER(sp) = LOWER(:specialite)")
+    List<StructureSanitaire> findByVilleAndSpecialite(
+            @Param("ville") String ville,
+            @Param("specialite") String specialite
+    );
 
-    Optional<StructureSanitaire> findByNumeroTelephone(String numeroTelephone);
+    long countByActifTrue();
 }
