@@ -9,18 +9,17 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-
 public interface AgendaMedecinRepository extends JpaRepository<AgendaMedecin, String> {
-    List<AgendaMedecin> findByMedecinId(String medecinId);
 
+    // ==================== MÉTHODES EXISTANTES DU PROJET AVEC PAIEMENT ====================
+
+    List<AgendaMedecin> findByMedecinId(String medecinId);
 
     Optional<AgendaMedecin> findByMedecin_IdAndStructureSanitaire_IdAndJour(
             String medecinId,
             String structureSanitaireId,
             JourSemaine jour
     );
-
-
 
     List<AgendaMedecin> findByStructureSanitaireId(String structureId);
 
@@ -36,33 +35,87 @@ public interface AgendaMedecinRepository extends JpaRepository<AgendaMedecin, St
             LocalDate date
     );
 
-
-
-    boolean existsByMedecinIdAndStructureSanitaireIdAndJourAndEffectiveFrom(String id, String id1, JourSemaine jour, LocalDate effectiveFrom);
-    java.util.Optional<AgendaMedecin> findByMedecin_IdAndStructureSanitaire_IdAndJourAndEffectiveFrom(
+    boolean existsByMedecinIdAndStructureSanitaireIdAndJourAndEffectiveFrom(
             String medecinId,
             String structureId,
             JourSemaine jour,
             LocalDate effectiveFrom
     );
-    List<AgendaMedecin> findByMedecin_IdAndStructureSanitaire_IdAndEffectiveFromLessThanEqual(
-            String medecinId, String structureId, LocalDate dateRef
+
+    Optional<AgendaMedecin> findByMedecin_IdAndStructureSanitaire_IdAndJourAndEffectiveFrom(
+            String medecinId,
+            String structureId,
+            JourSemaine jour,
+            LocalDate effectiveFrom
     );
 
-    // ====== POUR /medecin/{id} ======
+    List<AgendaMedecin> findByMedecin_IdAndStructureSanitaire_IdAndEffectiveFromLessThanEqual(
+            String medecinId,
+            String structureId,
+            LocalDate dateRef
+    );
+
     @EntityGraph(attributePaths = "plages")
     List<AgendaMedecin> findByMedecin_IdAndEffectiveFromIsNotNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
             String medecinId,
             LocalDate dateRef
     );
 
-    // ====== POUR /structure/{id} ======
     @EntityGraph(attributePaths = "plages")
     List<AgendaMedecin> findByStructureSanitaire_IdAndEffectiveFromIsNotNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
             String structureId,
             LocalDate dateRef
     );
 
+    // ==================== MÉTHODES AJOUTÉES DEPUIS LE PROJET SANS PAIEMENT ====================
 
+    Optional<AgendaMedecin> findFirstByMedecin_IdAndStructureSanitaire_IdAndJour(
+            String medecinId,
+            String structureId,
+            JourSemaine jour
+    );
 
+    Optional<AgendaMedecin> findFirstByMedecin_IdAndJourAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+            String medecinId,
+            JourSemaine jour,
+            LocalDate date
+    );
+
+    @EntityGraph(attributePaths = "plages")
+    List<AgendaMedecin> findByMedecinIdAndStructureSanitaireId(
+            String medecinId,
+            String structureId
+    );
+
+    @EntityGraph(attributePaths = "plages")
+    List<AgendaMedecin> findByMedecinIdAndStructureSanitaireIdAndJourAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+            String medecinId,
+            String structureId,
+            JourSemaine jour,
+            LocalDate dateRef
+    );
+
+    Optional<AgendaMedecin> findFirstByMedecinIdAndStructureSanitaireIdAndJourOrderByEffectiveFromDesc(
+            String medecinId,
+            String structureId,
+            JourSemaine jour
+    );
+
+    @EntityGraph(attributePaths = "plages")
+    List<AgendaMedecin> findByStructureSanitaireIdAndMedecinRefSpecialiteIgnoreCase(
+            String structureId,
+            String specialite
+    );
+
+    @EntityGraph(attributePaths = "plages")
+    List<AgendaMedecin> findByMedecinIdAndStructureSanitaireIdAndAutoriseTrue(
+            String medecinId,
+            String structureId
+    );
+
+    boolean existsByMedecinIdAndStructureSanitaireIdAndJour(
+            String medecinId,
+            String structureId,
+            JourSemaine jour
+    );
 }

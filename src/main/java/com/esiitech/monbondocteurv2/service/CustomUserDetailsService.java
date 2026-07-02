@@ -54,6 +54,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         StructureSanitaire structureSanitaire = structureSanitaireRepository.findByEmail(email).orElse(null);
         if (structureSanitaire != null) {
+            System.out.println("Connexion en tant que structure sanitaire : "
+                    + structureSanitaire.getEmail());
+
             return new CustomUserDetails(
                     structureSanitaire.getId(),
                     structureSanitaire.getEmail(),
@@ -61,10 +64,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                     structureSanitaire.getAuthorities(),
                     structureSanitaire.getNomStructureSanitaire(),
                     structureSanitaire.getRole().name(),
-                    structureSanitaire.isAbonneExpire() // ✅
+                    structureSanitaire.isAbonneExpire()
 
             );
-
         }
         System.out.println("Connexion en tant que structure sanitaire : " + structureSanitaire.getEmail());
         throw new UsernameNotFoundException("Aucun compte trouvé pour : " + email);

@@ -1,418 +1,621 @@
 package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.model.Validation;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Year;
+
 @Service
 public class NotificationService {
-    JavaMailSender javaMailSender;
+
+    private final JavaMailSender javaMailSender;
+
+    @Value("${app.front.url:https://monbondocteur.com}")
+    private String frontUrl;
+
+    @Value("${app.support.email:contact@monbondocteur.com}")
+    private String supportEmail;
+
+    @Value("${app.mail.from:noreply@solutech-one.com}")
+    private String fromEmail;
+
+    private static final String LOGO_ID = "logoImage";
+
+    private static final String PRIMARY = "#00A259";
+    private static final String SECONDARY = "#5AB379";
+    private static final String DARK = "#1a1a2e";
+    private static final String GRAY = "#f4f5f7";
+    private static final String TEXT = "#2d3748";
+    private static final String MUTED = "#718096";
+    private static final String BORDER = "#e2e8f0";
 
     public NotificationService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
 
-    public void envoyer(Validation validation) {
-        MimeMessage message = javaMailSender.createMimeMessage();
+    // =====================================================
+    // LOGO EMBARQUÉ
+    // =====================================================
 
+    private void attachLogoIfAvailable(MimeMessageHelper helper) {
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(validation.getUtilisateur().getEmail());
-            helper.setSubject("Votre code d'activation");
+            ClassPathResource resource = new ClassPathResource("static/images/logo.png");
 
-            String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
-                    <p>Bonjour M/Mme/Mlle.<strong>%s</strong>,</p>
-                    <p>Merci de vous être inscrit sur MonBonDocteur.</p>
-                    <p>Voici votre code d'activation :</p>
-                    <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-                    <p>⏳ Ce code est valable pendant 10 minutes.</p>
-                    <p style="color: #888; font-size: 12px; text-align: center;">
-                        Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
-                    </p>
-                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
-                </div>
-            </div>
-        """.formatted(validation.getUtilisateur().getNom(), validation.getCode());
+            if (!resource.exists()) {
+                return;
+            }
 
-            helper.setText(htmlContent, true);
-            javaMailSender.send(message);
-        } catch (MessagingException e) {
-            e.printStackTrace();
+            byte[] logoBytes = resource.getInputStream().readAllBytes();
+
+            helper.addInline(
+                    LOGO_ID,
+                    new ByteArrayResource(logoBytes),
+                    "image/png"
+            );
+        } catch (Exception ignored) {
+            // Si le logo n'existe pas, l'email part quand même.
         }
+    }
+
+    // =====================================================
+    // TEMPLATE UNIQUE
+    // =====================================================
+
+    private String buildTemplate(String title, String body, String actionLabel, String actionUrl) {
+        return """
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin:0;padding:0;background-color:%s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+            <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:%s;">
+                <tr>
+                    <td align="center" style="padding:40px 16px;">
+                        <table width="100%%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                            
+                            <tr>
+                                <td style="background-color:%s;padding:28px 24px;text-align:center;">
+                                    <img src="cid:%s" alt="monBonDocteur" style="height:36px;margin-bottom:12px;" />
+                                    <h2 style="margin:0;font-size:18px;font-weight:600;color:#ffffff;line-height:1.3;">%s</h2>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td style="padding:28px 24px;">
+                                    %s
+                                </td>
+                            </tr>
+                            
+                            %s
+                            
+                            <tr>
+                                <td style="padding:0 24px;">
+                                    <hr style="border:0;border-top:1px solid %s;margin:0;" />
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td style="padding:20px 24px;text-align:center;">
+                                    <p style="margin:0 0 6px;font-size:12px;color:%s;font-weight:500;">
+                                        monBon<span style="color:%s;">Docteur</span>
+                                    </p>
+                                    <p style="margin:0;font-size:11px;color:%s;line-height:1.5;">
+                                        Cet email a été envoyé automatiquement.<br/>
+                                        <a href="mailto:%s" style="color:%s;text-decoration:none;">%s</a>
+                                    </p>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                        
+                        <p style="margin-top:14px;font-size:11px;color:%s;">
+                            &copy; %d monBonDocteur. Tous droits r&eacute;serv&eacute;s.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """.formatted(
+                GRAY,
+                GRAY,
+                PRIMARY,
+                LOGO_ID,
+                escapeHtml(title),
+                body,
+                actionLabel != null && actionUrl != null
+                        ? buildActionButton(actionLabel, actionUrl)
+                        : "",
+                BORDER,
+                MUTED,
+                SECONDARY,
+                MUTED,
+                escapeHtml(supportEmail),
+                SECONDARY,
+                escapeHtml(supportEmail),
+                MUTED,
+                Year.now().getValue()
+        );
+    }
+
+    private String buildActionButton(String label, String url) {
+        return """
+        <tr>
+            <td style="padding:4px 24px 28px;text-align:center;">
+                <a href="%s" style="display:inline-block;padding:12px 32px;background-color:%s;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
+                    %s
+                </a>
+            </td>
+        </tr>
+        """.formatted(
+                escapeHtml(url),
+                PRIMARY,
+                escapeHtml(label)
+        );
+    }
+
+    // =====================================================
+    // CARTES EMAIL
+    // =====================================================
+
+    private String buildActivationCard(String nom, String code) {
+        return """
+        <p style="margin:0 0 6px;font-size:15px;color:%s;">Bonjour <strong style="color:%s;">%s</strong>,</p>
+        <p style="margin:0 0 20px;font-size:14px;color:%s;line-height:1.6;">
+            Merci d'avoir rejoint <strong>monBonDocteur</strong>. Pour activer votre compte, utilisez le code ci-dessous&nbsp;:
+        </p>
+        
+        <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr>
+                <td style="background-color:%s;border-radius:6px;padding:18px;text-align:center;">
+                    <span style="font-size:28px;font-weight:700;color:%s;letter-spacing:5px;font-family:'Courier New',monospace;">%s</span>
+                </td>
+            </tr>
+        </table>
+        
+        <p style="margin:0 0 6px;font-size:12px;color:%s;">
+            Ce code expire dans <strong>10 minutes</strong>.
+        </p>
+        <p style="margin:0;font-size:12px;color:%s;">
+            Si vous n'&ecirc;tes pas &agrave; l'origine de cette demande, ignorez cet email.
+        </p>
+        """.formatted(
+                TEXT,
+                DARK,
+                escapeHtml(nom),
+                TEXT,
+                GRAY,
+                PRIMARY,
+                escapeHtml(code),
+                MUTED,
+                MUTED
+        );
+    }
+
+    private String buildRdvPatientCard(String nomPatient, String nomMedecin, String date, String heure, String motif) {
+        String dateSafe = isBlank(date) ? "Non précisée" : date;
+        String heureSafe = isBlank(heure) ? "Non précisée" : heure;
+
+        String motifRow = "";
+        if (!isBlank(motif)) {
+            motifRow = """
+            <tr>
+                <td style="padding:5px 0;font-size:13px;color:%s;">Motif</td>
+                <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">%s</td>
+            </tr>
+            """.formatted(MUTED, DARK, escapeHtml(motif));
+        }
+
+        return """
+        <p style="margin:0 0 6px;font-size:15px;color:%s;">Bonjour <strong style="color:%s;">%s</strong>,</p>
+        <p style="margin:0 0 20px;font-size:14px;color:%s;line-height:1.6;">
+            Votre rendez-vous a &eacute;t&eacute; <strong style="color:%s;">confirm&eacute;</strong> avec le <strong>Dr %s</strong>.
+        </p>
+        
+        <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;border:1px solid %s;border-radius:6px;overflow:hidden;">
+            <tr>
+                <td style="background-color:%s;padding:10px 16px;font-size:11px;font-weight:600;color:%s;text-transform:uppercase;letter-spacing:0.5px;">
+                    D&eacute;tails du rendez-vous
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:14px 16px;">
+                    <table width="100%%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;width:90px;">Date</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;">Heure</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;">M&eacute;decin</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">Dr %s</td>
+                        </tr>
+                        %s
+                    </table>
+                </td>
+            </tr>
+        </table>
+        """.formatted(
+                TEXT,
+                DARK,
+                escapeHtml(nomPatient),
+                TEXT,
+                SECONDARY,
+                escapeHtml(nomMedecin),
+                BORDER,
+                GRAY,
+                MUTED,
+                MUTED,
+                DARK,
+                escapeHtml(dateSafe),
+                MUTED,
+                DARK,
+                escapeHtml(heureSafe),
+                MUTED,
+                DARK,
+                escapeHtml(nomMedecin),
+                motifRow
+        );
+    }
+
+    private String buildRdvMedecinCard(String nomMedecin, String nomPatient, String date, String heure) {
+        String dateSafe = isBlank(date) ? "Non précisée" : date;
+        String heureSafe = isBlank(heure) ? "Non précisée" : heure;
+
+        return """
+        <p style="margin:0 0 6px;font-size:15px;color:%s;">Bonjour <strong style="color:%s;">Dr %s</strong>,</p>
+        <p style="margin:0 0 20px;font-size:14px;color:%s;line-height:1.6;">
+            Un nouveau rendez-vous a &eacute;t&eacute; enregistr&eacute; avec le patient <strong>%s</strong>.
+        </p>
+        
+        <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;border:1px solid %s;border-radius:6px;overflow:hidden;">
+            <tr>
+                <td style="background-color:%s;padding:10px 16px;font-size:11px;font-weight:600;color:%s;text-transform:uppercase;letter-spacing:0.5px;">
+                    D&eacute;tails du rendez-vous
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:14px 16px;">
+                    <table width="100%%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;width:90px;">Date</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;">Heure</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;">Patient</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:500;">%s</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        """.formatted(
+                TEXT,
+                DARK,
+                escapeHtml(nomMedecin),
+                TEXT,
+                escapeHtml(nomPatient),
+                BORDER,
+                GRAY,
+                MUTED,
+                MUTED,
+                DARK,
+                escapeHtml(dateSafe),
+                MUTED,
+                DARK,
+                escapeHtml(heureSafe),
+                MUTED,
+                DARK,
+                escapeHtml(nomPatient)
+        );
+    }
+
+    private String buildWelcomeCard(String nom, String role, String identifiant, String motDePasse) {
+        String passwordRow = "";
+
+        if (!isBlank(motDePasse)) {
+            passwordRow = """
+            <tr>
+                <td style="padding:5px 0;font-size:13px;color:%s;">Mot de passe</td>
+                <td style="padding:5px 0;font-size:13px;color:%s;font-weight:600;font-family:'Courier New',monospace;">%s</td>
+            </tr>
+            """.formatted(MUTED, DARK, escapeHtml(motDePasse));
+        }
+
+        String passwordNote = !isBlank(motDePasse)
+                ? "Pensez &agrave; changer votre mot de passe apr&egrave;s votre premi&egrave;re connexion."
+                : "Vous pouvez maintenant vous connecter &agrave; votre espace.";
+
+        return """
+        <p style="margin:0 0 6px;font-size:15px;color:%s;">Bonjour <strong style="color:%s;">%s</strong>,</p>
+        <p style="margin:0 0 20px;font-size:14px;color:%s;line-height:1.6;">
+            Bienvenue sur <strong>monBonDocteur</strong>. Votre compte <strong style="color:%s;">%s</strong> a &eacute;t&eacute; cr&eacute;&eacute; avec succ&egrave;s.
+        </p>
+        
+        <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;border:1px solid %s;border-radius:6px;overflow:hidden;">
+            <tr>
+                <td style="background-color:%s;padding:10px 16px;font-size:11px;font-weight:600;color:%s;text-transform:uppercase;letter-spacing:0.5px;">
+                    Vos identifiants
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:14px 16px;">
+                    <table width="100%%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding:5px 0;font-size:13px;color:%s;width:110px;">Identifiant</td>
+                            <td style="padding:5px 0;font-size:13px;color:%s;font-weight:600;font-family:'Courier New',monospace;">%s</td>
+                        </tr>
+                        %s
+                    </table>
+                </td>
+            </tr>
+        </table>
+        
+        <p style="margin:0;font-size:12px;color:%s;">
+            %s
+        </p>
+        """.formatted(
+                TEXT,
+                DARK,
+                escapeHtml(nom),
+                TEXT,
+                SECONDARY,
+                escapeHtml(role),
+                BORDER,
+                GRAY,
+                MUTED,
+                MUTED,
+                DARK,
+                escapeHtml(identifiant),
+                passwordRow,
+                MUTED,
+                passwordNote
+        );
+    }
+
+    private String buildSimpleCard(String nom, String message) {
+        return """
+        <p style="margin:0 0 6px;font-size:15px;color:%s;">Bonjour <strong style="color:%s;">%s</strong>,</p>
+        <p style="margin:0;font-size:14px;color:%s;line-height:1.6;">%s</p>
+        """.formatted(
+                TEXT,
+                DARK,
+                escapeHtml(nom),
+                TEXT,
+                message
+        );
+    }
+
+    // =====================================================
+    // ACTIVATION
+    // =====================================================
+
+    public void envoyer(Validation validation) {
+        envoyerActivation(
+                validation.getUtilisateur().getEmail(),
+                validation.getUtilisateur().getNom(),
+                validation.getCode()
+        );
     }
 
     public void envoyerMedecin(Validation validation) {
-        MimeMessage message = javaMailSender.createMimeMessage();
-
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(validation.getMedecin().getEmail());
-            helper.setSubject("Votre code d'activation");
-
-            String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
-                    <p>Bonjour M/Mme/Mlle<strong>%s</strong>,</p>
-                    <p>Merci de vous être inscrit sur MonBonDocteur.</p>
-                    <p>Voici votre code d'activation :</p>
-                    <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-                    <p>⏳ Ce code est valable pendant 10 minutes.</p>
-                    <p style="color: #888; font-size: 12px; text-align: center;">
-                        Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
-                    </p>
-                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
-                </div>
-            </div>
-        """.formatted(validation.getMedecin().getNomMedecin(), validation.getCode());
-
-            helper.setText(htmlContent, true);
-            javaMailSender.send(message);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
+        envoyerActivation(
+                validation.getMedecin().getEmail(),
+                validation.getMedecin().getNomMedecin(),
+                validation.getCode()
+        );
     }
 
     public void envoyerStructure(Validation validation) {
-        MimeMessage message = javaMailSender.createMimeMessage();
-
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(validation.getStructureSanitaire().getEmail());
-            helper.setSubject("Votre code d'activation");
-
-            String logoSvgUrl = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.svg";
-            String logoPngUrl = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png"; // ← mets un PNG accessible ici
-
-            String htmlContent = """
-        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-          <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-            <div style="text-align:center;margin-bottom:16px">
-              <picture>
-                <source srcset="%s" type="image/svg+xml">
-                <img src="%s" alt="MonBonDocteur" style="height:48px"/>
-              </picture>
-            </div>
-            <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
-            <p>Bonjour <strong>%s</strong>,</p>
-            <p>Merci de vous être inscrit sur MonBonDocteur.</p>
-            <p>Voici votre code d'activation :</p>
-            <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-            <p>⏳ Ce code est valable pendant 10 minutes.</p>
-            <p style="color: #888; font-size: 12px; text-align: center;">
-              Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
-            </p>
-            <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
-          </div>
-        </div>
-        """.formatted(
-                    logoSvgUrl,
-                    logoPngUrl,
-                    validation.getStructureSanitaire().getNomStructureSanitaire(),
-                    validation.getCode()
-            );
-
-            helper.setText(htmlContent, true);
-            javaMailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        envoyerActivation(
+                validation.getStructureSanitaire().getEmail(),
+                validation.getStructureSanitaire().getNomStructureSanitaire(),
+                validation.getCode()
+        );
     }
 
+    private void envoyerActivation(String email, String nom, String code) {
+        String encodedCode = URLEncoder.encode(code, StandardCharsets.UTF_8);
+        String activationUrl = appUrl("/activation?code=" + encodedCode);
 
+        String body = buildActivationCard(nom, code);
+        String html = buildTemplate("Activation de votre compte", body, "Activer mon compte", activationUrl);
 
+        sendEmail(email, "Code d'activation", html);
+    }
+
+    // =====================================================
+    // RENDEZ-VOUS
+    // =====================================================
 
     public void envoyerAuPatient(String email, String nomPatient, String nomMedecin) {
-        MimeMessage message = javaMailSender.createMimeMessage();
+        envoyerAuPatient(email, nomPatient, nomMedecin, null, null, null);
+    }
 
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(email);
-            helper.setSubject("Confirmation de votre rendez-vous");
+    public void envoyerAuPatient(String email, String nomPatient, String nomMedecin, String date, String heure, String motif) {
+        String body = buildRdvPatientCard(nomPatient, nomMedecin, date, heure, motif)
+                + "<p style='margin:0;font-size:13px;color:" + MUTED + ";'>Vous pouvez consulter et g&eacute;rer vos rendez-vous depuis votre espace patient.</p>";
 
-            String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">MonBonDocteur 🩺</h2>
-                    <h3 style="color: #2c3e50;">Bonjour <strong>%s</strong>,</h3>
-                    <p>Votre rendez-vous avec le docteur <strong>%s</strong> a été <strong>confirmé</strong> avec succès.</p>
+        String html = buildTemplate(
+                "Rendez-vous confirmé",
+                body,
+                "Voir mes rendez-vous",
+                appUrl("/mes-rendez-vous")
+        );
 
-                    <p style="margin-top: 20px;">
-                        📅 Veuillez vous assurer d’être disponible à la date et à l’heure convenues.
-                        En cas d’empêchement, merci d’annuler ou modifier votre rendez-vous au moins 24h à l’avance.
-                    </p>
-
-                    <div style="margin: 30px 0; text-align: center;">
-                        <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
-                            Voir mes rendez-vous
-                        </a>
-                    </div>
-
-                    <p style="color: #888; font-size: 12px; text-align: center;">
-                        Ce message vous est envoyé automatiquement, merci de ne pas y répondre directement.
-                    </p>
-
-                    <p style="text-align: center; margin-top: 20px; color: #aaa;">
-                        — L’équipe MonBonDocteur
-                    </p>
-                </div>
-            </div>
-            """.formatted(nomPatient, nomMedecin);
-
-            helper.setText(htmlContent, true); // true = HTML
-            javaMailSender.send(message);
-
-        } catch (MessagingException e) {
-            e.printStackTrace(); // à remplacer par une vraie gestion d'erreur
-        }
+        sendEmail(email, "Confirmation de votre rendez-vous", html);
     }
 
     public void envoyerAuMedecin(String email, String nomMedecin, String nomPatient) {
-        MimeMessage message = javaMailSender.createMimeMessage();
-
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(email);
-            helper.setSubject("Nouveau rendez-vous programmé");
-
-            String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">Nouveau rendez-vous</h2>
-                    <p>Bonjour Dr <strong>%s</strong>,</p>
-                    <p>Un nouveau rendez-vous a été enregistré avec le patient : <strong>%s</strong>.</p>
-                    <p>📅 Merci de consulter votre planning depuis votre espace personnel.</p>
-                    <p style="text-align: center; margin-top: 30px;">
-                        <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
-                            Voir mon planning
-                        </a>
-                    </p>
-                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
-                </div>
-            </div>
-        """.formatted(nomMedecin, nomPatient);
-
-            helper.setText(htmlContent, true);
-            javaMailSender.send(message);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
+        envoyerAuMedecin(email, nomMedecin, nomPatient, null, null);
     }
 
+    public void envoyerAuMedecin(String email, String nomMedecin, String nomPatient, String date, String heure) {
+        String body = buildRdvMedecinCard(nomMedecin, nomPatient, date, heure)
+                + "<p style='margin:0;font-size:13px;color:" + MUTED + ";'>Connectez-vous pour consulter votre agenda.</p>";
 
-public void envoyerBienvenueAuMedecin(String email, String nomMedecin, Long idMedecin) {
-        MimeMessage message = javaMailSender.createMimeMessage();
+        String html = buildTemplate(
+                "Nouveau rendez-vous",
+                body,
+                "Voir mon agenda",
+                appUrl("/medecin/agenda")
+        );
 
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(email);
-            helper.setSubject("Bienvenue sur Mon Bon Docteur");
-
-            String htmlContent = """
-        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-            <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                <h2 style="text-align: center; color: #2c3e50;">Bienvenue Dr %s 👨‍⚕️</h2>
-                <p>Votre identifiant professionnel est : <strong>%s</strong></p>
-                <p>Merci d’avoir rejoint MonBonDocteur !</p>
-                <p>Vous pouvez maintenant gérer vos disponibilités, rendez-vous, et interagir avec vos patients.</p>
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="https://monbondocteur.com/login" style="background: #1e87f0; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">
-                        Accéder à mon espace
-                    </a>
-                </div>
-                <p style="text-align: center; color: #aaa; margin-top: 20px;">— L’équipe MonBonDocteur</p>
-            </div>
-        </div>
-        """.formatted(nomMedecin, idMedecin);
-
-            helper.setText(htmlContent, true);
-            javaMailSender.send(message);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
+        sendEmail(email, "Nouveau rendez-vous", html);
     }
 
+    // =====================================================
+    // BIENVENUE / IDENTIFIANTS
+    // =====================================================
 
-
-    public void envoyerAccuseEnregistrementStructure(String email,
-                                                    String nomStructureSanitaire) {
-        MimeMessage message = javaMailSender.createMimeMessage();
-
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(email);
-            helper.setSubject("Demande d’enregistrement de la structure sanitaire « " + nomStructureSanitaire + " »");
-
-            // (Optionnel) logo hébergé en PNG – évitez SVG en email
-            String logoUrlPng = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png";
-
-            String html = """
-<div style="font-family: Arial, sans-serif; background:#fff; padding:20px;">
-  <div style="max-width:900px; margin:auto;">
-    <div style="text-align:left; margin-bottom:12px;">
-      <img src="%1$s" alt="MonBonDocteur" height="26" style="display:inline-block;border:0;outline:none;text-decoration:none;">
-    </div>
-
-    <h1 style="font-size:22px; font-weight:600; margin:0 0 24px; color:#111;">
-      Demande d’enregistrement de la structure sanitaire « %2$s »
-    </h1>
-
-    <p style="margin:0 0 18px; color:#111;">Bonjour Madame/Monsieur,</p>
-
-    <p style="margin:0 0 12px; color:#111; line-height:1.5;">
-      Nous accusons réception de votre demande de création de la structure sanitaire dénommée
-      <strong>« %2$s »</strong>. Avant de créer votre compte, nous allons d’abord procéder à la vérification
-      auprès du Ministère de la Santé des informations que vous nous avez communiquées.
-      <em>Ce processus prendra quelques jours.</em>
-    </p>
-
-    <p style="margin:18px 0 12px; color:#111; line-height:1.5;">
-      Si à l’issue de cette vérification tout va bien, nous allons vous communiquer à l’adresse
-      <a href="mailto:%3$s" style="color:#1a73e8; text-decoration:underline;">%3$s</a>
-      les informations vous permettant de vous connecter et d’exploiter notre plateforme.
-    </p>
-
-    <p style="margin:24px 0 0; color:#111;">
-      Support technique de
-      <a href="https://monbondocteur.com" style="color:#1a73e8; text-decoration:underline;">Monbondocteur</a>
-    </p>
-  </div>
-</div>
-""".formatted(
-                    logoUrlPng,              // %1$s
-                    nomStructureSanitaire,   // %2$s
-                    email                    // %3$s (utilisé 2 fois)
-            );
-
-            helper.setText(html, true);
-            javaMailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public void envoyerBienvenueAuMedecin(String email, String nomMedecin, Long idMedecin) {
+        envoyerBienvenueAuMedecin(
+                email,
+                nomMedecin,
+                idMedecin != null ? String.valueOf(idMedecin) : "",
+                null
+        );
     }
 
+    public void envoyerBienvenueAuMedecin(String email, String nomMedecin, String identifiant, String motDePasse) {
+        String body = buildWelcomeCard("Dr " + nomMedecin, "Médecin", identifiant, motDePasse);
 
-    public void envoyerIdentifiantsStructure(String email,
-                                             String nomStructureSanitaire,
-                                             String idStructure,
-                                             String motDePassePlain) {
-        MimeMessage message = javaMailSender.createMimeMessage();
+        String html = buildTemplate(
+                "Bienvenue Dr " + escapeHtml(nomMedecin),
+                body,
+                "Accéder à mon espace",
+                appUrl("/login")
+        );
 
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(email);
-            helper.setSubject("Bienvenue sur Mon Bon Docteur");
+        sendEmail(email, "Bienvenue sur monBonDocteur", html);
+    }
 
-            String logoUrlPng = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png";
-            String loginUrl   = "https://monbondocteur.com/login";
+    public void envoyerAccuseEnregistrementStructure(String email, String nomStructureSanitaire) {
+        String body = buildSimpleCard(
+                nomStructureSanitaire,
+                "Votre demande d'enregistrement a bien &eacute;t&eacute; re&ccedil;ue. Notre &eacute;quipe va l'examiner dans les plus brefs d&eacute;lais. Vous recevrez un email d&egrave;s que votre compte sera activ&eacute;."
+        );
 
-            String html = """
-        <div style="font-family: Arial, sans-serif; background:#fff; padding:24px;">
-          <div style="max-width:900px; margin:auto; color:#111; line-height:1.55;">
-            
-            <div style="text-align:left; margin-bottom:12px;">
-              <img src="%1$s" alt="MonBonDocteur" height="26" style="display:inline-block;border:0;outline:none;text-decoration:none;">
-            </div>
+        String html = buildTemplate("Demande reçue", body, null, null);
 
-            <h1 style="font-size:24px; font-weight:700; margin:0 0 24px;">Bienvenue sur Mon Bon Docteur</h1>
+        sendEmail(email, "Confirmation de réception", html);
+    }
 
-            <p style="margin:0 0 16px;">Bonjour Madame/Monsieur,</p>
+    public void envoyerIdentifiantsStructure(String email, String nomStructureSanitaire, String idStructure, String motDePassePlain) {
+        String body = buildWelcomeCard(
+                nomStructureSanitaire,
+                "Structure sanitaire",
+                idStructure,
+                motDePassePlain
+        );
 
-            <p style="margin:0 0 16px;">
-              Après vérification des informations fournies, nous avons le plaisir de vous informer que votre
-              structure sanitaire « <strong>%2$s</strong> » a été créée avec succès.
-            </p>
+        String html = buildTemplate(
+                "Vos identifiants",
+                body,
+                "Se connecter",
+                appUrl("/login")
+        );
 
-            <p style="margin:16px 0 16px;">
-              <span style="display:block; margin:6px 0;">Votre ID est : <strong>%3$s</strong></span>
-              <span style="display:block; margin:6px 0;">Votre email de conextion : <strong>%6$s</strong></span>            
-              <span style="display:block; margin:6px 0;">Votre mot de passe conextion : <strong>%4$s</strong></span>
-            </p>
-
-            <p style="margin:0 0 24px;">
-              Avec ces informations, vous pouvez maintenant vous connecter à notre plateforme.
-            </p>
-
-            <div style="text-align:center; margin:28px 0 8px;">
-              <a href="%5$s"
-                 style="display:inline-block; padding:12px 28px; background:#3B82F6; color:#fff; text-decoration:none; border-radius:8px; font-weight:600;">
-                 Mon bon docteur
-              </a>
-            </div>
-          </div>
-        </div>
-        """.formatted(logoUrlPng, nomStructureSanitaire, idStructure, motDePassePlain, loginUrl, email);
-
-            helper.setText(html, true);
-            javaMailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        sendEmail(email, "Vos identifiants monBonDocteur", html);
     }
 
     public void envoyerLienReinitMdpStructure(String email, String nomStructureSanitaire, String resetUrl) {
+        String body = buildSimpleCard(
+                nomStructureSanitaire,
+                "Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour d&eacute;finir un nouveau mot de passe. Ce lien est valable pendant 60 minutes et utilisable une seule fois."
+        );
+
+        String html = buildTemplate(
+                "Réinitialisation du mot de passe",
+                body,
+                "Réinitialiser mon mot de passe",
+                resetUrl
+        );
+
+        sendEmail(email, "Réinitialisation de mot de passe", html);
+    }
+
+    // =====================================================
+    // ENVOI FINAL
+    // =====================================================
+
+    private void sendEmail(String to, String subject, String html) {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(email);
-            helper.setSubject("Réinitialisation de votre mot de passe");
 
-            String logoUrlPng = "https://moubengou-bodri.highticketdeveloper.com/image/LOGO-MON.png";
-            String html = """
-        <div style="font-family: Arial, sans-serif; background:#fff; padding:20px;">
-          <div style="max-width:900px; margin:auto;">
-            <div style="text-align:left; margin-bottom:12px;">
-              <img src="%1$s" alt="MonBonDocteur" height="40" style="display:inline-block;border:0;outline:none;text-decoration:none;">
-            </div>
-
-            <h1 style="font-size:22px; font-weight:600; margin:0 0 24px; color:#111;">
-              Réinitialisation de mot de passe — %2$s
-            </h1>
-
-            <p style="margin:0 0 12px; color:#111; line-height:1.5;">
-              Nous avons reçu une demande de réinitialisation du mot de passe pour votre compte.<br>
-              Si vous êtes à l’origine de cette demande, cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.<br>
-              <strong>Ce lien est valable pendant 60 minutes et utilisable une seule fois.</strong>
-            </p>
-
-            <p style="text-align:center; margin:24px 0;">
-              <a href="%3$s" style="background:#1e87f0; color:#fff; padding:14px 28px; font-size:16px; border-radius:6px; text-decoration:none;">
-                Réinitialiser mon mot de passe
-              </a>
-            </p>
-
-            <p style="margin:0; color:#555;">
-              Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :
-            </p>
-            <p style="word-break:break-all; color:#1a73e8; font-size:14px;">%3$s</p>
-
-            <p style="margin-top:24px; color:#111;">— L’équipe MonBonDocteur</p>
-          </div>
-        </div>
-        """.formatted(logoUrlPng, nomStructureSanitaire, resetUrl);
-
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
             helper.setText(html, true);
+
+            attachLogoIfAvailable(helper);
+
             javaMailSender.send(message);
         } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException("Erreur envoi email: " + e.getMessage(), e);
         }
     }
 
+    // =====================================================
+    // UTILITAIRES
+    // =====================================================
 
+    private String appUrl(String path) {
+        if (path == null || path.isBlank()) {
+            return frontUrl;
+        }
+
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return path;
+        }
+
+        String base = frontUrl != null ? frontUrl.trim() : "https://monbondocteur.com";
+
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        return base + path;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String escapeHtml(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.toString()
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
 }

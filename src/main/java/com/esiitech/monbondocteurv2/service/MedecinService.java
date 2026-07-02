@@ -2,30 +2,40 @@ package com.esiitech.monbondocteurv2.service;
 
 import com.esiitech.monbondocteurv2.dto.ChangementMotDePasseDto;
 import com.esiitech.monbondocteurv2.dto.MedecinDto;
+import com.esiitech.monbondocteurv2.dto.StructureSanitaireDto;
+import com.esiitech.monbondocteurv2.enums.Role;
 import com.esiitech.monbondocteurv2.exception.MedecinNonTrouveException;
 import com.esiitech.monbondocteurv2.mapper.MedecinMapper;
+import com.esiitech.monbondocteurv2.mapper.StructureSanitaireMapper;
 import com.esiitech.monbondocteurv2.model.Medecin;
-import com.esiitech.monbondocteurv2.enums.Role;
+import com.esiitech.monbondocteurv2.model.MedecinStructureSanitaire;
 import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.repository.MedecinRepository;
+import com.esiitech.monbondocteurv2.repository.MedecinStructureSanitaireRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import jakarta.annotation.PostConstruct;
-import java.util.concurrent.atomic.AtomicLong;
+
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,105 +45,106 @@ public class MedecinService implements UserDetailsService {
     private MedecinRepository repository;
 
     @Autowired
-    private MedecinMapper mapper;
+    private MedecinMapper medecinMapper;
+
     @Autowired
-    private  ValidationService validationService;
+    private ValidationService validationService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
-    @Autowired
-    private MedecinRepository medecinRepository;
 
     @Autowired
-    private NotificationService notificationService;  // Inject NotificationService here
+    private NotificationService notificationService;
 
-    @Value("${app.upload.dir.medecins}")  // Dossier où les photos des médecins sont stockées
+    @Autowired
+    private MedecinStructureSanitaireRepository medecinStructureSanitaireRepository;
+
+    @Autowired
+    private StructureSanitaireMapper structureSanitaireMapper;
+
+    @Value("${app.upload.dir.medecins}")
     private String uploadDir;
 
-    /**
-     * Enregistrer un médecin avec la photo envoyée en tant que fichier.
-     */
+    private static final long START_AT = 100000L;
+    private static final AtomicLong LAST_MEDECIN_ID = new AtomicLong(START_AT);
+
+    // ==================== CRÉATION ====================
+
+    @Transactional
     public MedecinDto save(MedecinDto dto, MultipartFile photo) throws IOException {
-        // Valider les données du DTO avant de les sauvegarder
         validateMedecinDto(dto);
 
-        // Affecter le rôle par défaut AVANT le mapping
         if (dto.getRole() == null) {
             dto.setRole(Role.MEDECIN);
         }
 
-        // Convertir le DTO en entité
-        Medecin entity = mapper.toEntity(dto);
+        Medecin entity = medecinMapper.toEntity(dto);
 
-        // Sauvegarder la photo si elle existe
         if (photo != null && !photo.isEmpty()) {
-            String photoPath = savePhoto(photo); // Sauvegarder la photo et obtenir son chemin
+            String photoPath = savePhoto(photo);
             entity.setPhotoPath(photoPath);
         }
 
-        // Encoder le mot de passe
         entity.setMotDePasse(passwordEncoder.encode(dto.getMotDePasse()));
+
         if (entity.getId() == null) {
             entity.setId(generateMedecinId());
         }
-        // Sauvegarder dans la base de données
-        Medecin savedMedecin = repository.save(entity);
-        this.validationService.enregisterMedecin(savedMedecin);
 
-        // Convertir l'entité sauvegardée en DTO et retourner le DTO
-        return mapper.toDto(savedMedecin);
+        Medecin savedMedecin = repository.save(entity);
+        validationService.enregisterMedecin(savedMedecin);
+
+        return medecinMapper.toDto(savedMedecin);
     }
 
-    // ------------------- ID generator persistant (comme ClientService) -------------------
+    // ==================== ID GÉNÉRATEUR ====================
 
-
-    private static final long START_AT = 100000L; // valeur de départ souhaitée
-    private static final AtomicLong LAST_MEDECIN_ID = new AtomicLong(START_AT);
-
-    /**
-     * Initialise LAST_STRUCTURE_ID au démarrage en prenant le plus grand id existant en base.
-     * S'appuie sur le repository pour lister les ids existants et extraire la valeur numérique.
-     */
     @PostConstruct
     public void initMedecinLastId() {
         long max = START_AT;
-        for (var s : repository.findAll()) {
+
+        for (Medecin medecin : repository.findAll()) {
             try {
-                String idStr = s.getId();
+                String idStr = medecin.getId();
+
                 if (idStr != null && idStr.matches("\\d{6}")) {
-                    long v = Long.parseLong(idStr);
-                    if (v > max) max = v;
+                    long value = Long.parseLong(idStr);
+
+                    if (value > max) {
+                        max = value;
+                    }
                 }
             } catch (NumberFormatException ignored) {
-                // ignore les IDs qui ne sont pas numériques
+                // Ignore les IDs qui ne sont pas numériques.
             }
         }
+
         LAST_MEDECIN_ID.set(max);
     }
 
-    /**
-     * Génère un nouvel id unique formaté sur 6 chiffres.
-     * Utilise AtomicLong + vérifie l'unicité via repository.existsById(...)
-     */
     private String generateMedecinId() {
         String id;
+
         do {
             long next = LAST_MEDECIN_ID.incrementAndGet();
             id = String.format("%06d", next);
-            // Tant que l'id existe déjà en base, on incrémente (protection en cas d'insert concurrent)
         } while (repository.existsById(id));
+
         return id;
     }
 
+    // ==================== ACTIVATION ====================
 
     @Transactional
     public void activation(Map<String, String> activation) {
         String code = activation.get("code");
+
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Code d'activation manquant.");
         }
 
         Validation validation = validationService.lireEnFonctionDuCode(code);
+
         if (validation == null) {
             throw new RuntimeException("Code d'activation invalide.");
         }
@@ -143,21 +154,24 @@ public class MedecinService implements UserDetailsService {
         }
 
         String medecinIdStr = validation.getMedecin().getId();
+
         Medecin medecinActiver = repository.findById(medecinIdStr)
                 .orElseThrow(() -> new RuntimeException("Utilisateur inconnu."));
 
         medecinActiver.setActif(true);
         repository.save(medecinActiver);
 
-        // Convertir l'ID (String) en Long si possible, sinon lever une erreur claire
         Long medecinIdLong;
+
         try {
             medecinIdLong = Long.parseLong(medecinIdStr);
         } catch (NumberFormatException ex) {
-            throw new RuntimeException("L'ID du médecin n'est pas au format numérique attendu (Long): " + medecinIdStr, ex);
+            throw new RuntimeException(
+                    "L'ID du médecin n'est pas au format numérique attendu : " + medecinIdStr,
+                    ex
+            );
         }
 
-        // Appel avec l'ID en Long (correspond à la signature requise)
         notificationService.envoyerBienvenueAuMedecin(
                 medecinActiver.getEmail(),
                 medecinActiver.getNomMedecin(),
@@ -165,35 +179,50 @@ public class MedecinService implements UserDetailsService {
         );
     }
 
+    // ==================== SPRING SECURITY ====================
 
+    @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return this.medecinRepository.findByEmail(username).orElseThrow (()
-                -> new UsernameNotFoundException(
-                "Aucun utilisateur ne conrespond à cet identifiant"
-        ));
+        return repository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "Aucun utilisateur ne correspond à cet identifiant"
+                ));
     }
 
+    // ==================== PHOTO ====================
 
-    /**
-     * Sauvegarder la photo et retourner son chemin
-     */
     private String savePhoto(MultipartFile photo) throws IOException {
-        // Créer un nom unique pour la photo
-        String photoName = System.currentTimeMillis() + "_" + photo.getOriginalFilename();
+        String originalFilename = photo.getOriginalFilename();
+
+        if (originalFilename == null || originalFilename.isBlank()) {
+            originalFilename = "medecin-photo";
+        }
+
+        String photoName = System.currentTimeMillis() + "_" + originalFilename;
         Path path = Paths.get(uploadDir, photoName);
 
-        // Créer les répertoires si nécessaires
         Files.createDirectories(path.getParent());
-
-        // Sauvegarder le fichier
         Files.write(path, photo.getBytes());
 
-        return "/uploads/medecins/" + photoName;  // Retourner l'URL relative pour afficher l'image
+        return "/uploads/medecins/" + photoName;
     }
 
-    /**
-     * Valider les données du DTO du médecin.
-     */
+    public byte[] getPhoto(String id) throws IOException {
+        Medecin entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
+
+        String photoPath = entity.getPhotoPath();
+
+        if (photoPath != null && !photoPath.isEmpty()) {
+            Path path = Paths.get(uploadDir, photoPath.substring(photoPath.lastIndexOf("/") + 1));
+            return Files.readAllBytes(path);
+        }
+
+        throw new RuntimeException("Aucune photo trouvée pour ce médecin.");
+    }
+
+    // ==================== VALIDATION ====================
+
     private void validateMedecinDto(MedecinDto dto) {
         if (dto.getNomMedecin() == null || dto.getNomMedecin().isEmpty()) {
             throw new IllegalArgumentException("Le nom du médecin ne peut pas être vide.");
@@ -206,17 +235,15 @@ public class MedecinService implements UserDetailsService {
         if (dto.getEmail() == null || dto.getEmail().isEmpty()) {
             throw new IllegalArgumentException("L'email du médecin ne peut pas être vide.");
         }
-
-        // Ajoutez des validations supplémentaires si nécessaire
     }
 
-    /**
-     * Mettre à jour un médecin.
-     */
-    public MedecinDto update(String id, MedecinDto dto, MultipartFile photo) throws IOException {
-        Medecin entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
+    // ==================== CRUD ====================
 
-        // Mettre à jour les informations
+    @Transactional
+    public MedecinDto update(String id, MedecinDto dto, MultipartFile photo) throws IOException {
+        Medecin entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
+
         entity.setNomMedecin(dto.getNomMedecin());
         entity.setPrenomMedecin(dto.getPrenomMedecin());
         entity.setEmail(dto.getEmail());
@@ -224,134 +251,195 @@ public class MedecinService implements UserDetailsService {
         entity.setRefSpecialite(dto.getRefSpecialite());
         entity.setActif(dto.isActif());
 
-        // Mettre à jour la photo si elle est présente
         if (photo != null && !photo.isEmpty()) {
-            String photoPath = savePhoto(photo); // Sauvegarder la photo
+            String photoPath = savePhoto(photo);
             entity.setPhotoPath(photoPath);
         }
 
-        // Sauvegarder les modifications
         Medecin updatedMedecin = repository.save(entity);
-
-        return mapper.toDto(updatedMedecin);
+        return medecinMapper.toDto(updatedMedecin);
     }
 
-    /**
-     * Supprimer un médecin par son ID.
-     */
+    @Transactional
     public void deleteById(String id) {
         repository.deleteById(id);
     }
 
-    /**
-     * Convertir le chemin de la photo en une URL complète.
-     * Cela permet d'afficher la photo depuis le front-end via une URL publique.
-     */
+    @Transactional
+    public void deleteByEmail(String email) {
+        Medecin entity = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
 
-    // 5. Méthode countAll()
+        repository.delete(entity);
+    }
+
+    @Transactional
+    public MedecinDto updateStatus(String id, boolean actif) {
+        Medecin entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
+
+        entity.setActif(actif);
+
+        Medecin updatedMedecin = repository.save(entity);
+        return medecinMapper.toDto(updatedMedecin);
+    }
+
+    // ==================== LECTURE ====================
+
     public long countAll() {
         return repository.count();
     }
 
-
-    // 1. Méthode findAll()
     public List<MedecinDto> findAll() {
         List<Medecin> medecins = repository.findAll();
+
         return medecins.stream()
-                .map(mapper::toDto)
+                .map(medecinMapper::toDto)
                 .collect(Collectors.toList());
     }
 
+    public MedecinDto findByIdDto(String id) {
+        Medecin medecin = repository.findById(id)
+                .orElseThrow(() -> new MedecinNonTrouveException(
+                        "Médecin introuvable avec l'id " + id
+                ));
 
-    // 3. Méthode updateStatus()
-    public MedecinDto updateStatus(String id, boolean actif) {
-        Medecin entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
-        entity.setActif(actif);
-        Medecin updatedMedecin = repository.save(entity);
-        return mapper.toDto(updatedMedecin);
+        return medecinMapper.toDto(medecin);
     }
 
-    // 2. Méthode findByEmail()
+    public Medecin findEntityById(String id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException(
+                        "Médecin introuvable avec l'id " + id
+                ));
+    }
+
     public MedecinDto findByEmail(String email) {
         Medecin entity = repository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
-        return mapper.toDto(entity);
-    }
-    // 4. Méthode deleteByEmail()
-    public void deleteByEmail(String email) {
-        Medecin entity = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Médecin avec cet email non trouvé"));
-        repository.delete(entity);
+
+        return medecinMapper.toDto(entity);
     }
 
-    // 6. Méthode getPhoto()
-    public byte[] getPhoto(String id) throws IOException {
-        Medecin entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
-        String photoPath = entity.getPhotoPath();
-        if (photoPath != null && !photoPath.isEmpty()) {
-            Path path = Paths.get(uploadDir, photoPath.substring(photoPath.lastIndexOf("/") + 1));
-            return Files.readAllBytes(path);
-        } else {
-            throw new RuntimeException("Aucune photo trouvée pour ce médecin.");
-        }
-    }
-
-    // 7. Méthode searchBySpeciality()
-    public List<MedecinDto> searchBySpeciality(String speciality) {
-        List<Medecin> medecins = repository.findByRefSpecialite(speciality);
-        return medecins.stream()
-                .map(mapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    // 8. Méthode getActiveMedecins()
-    public List<MedecinDto> getActiveMedecins() {
-        List<Medecin> medecins = repository.findByActif(true);
-        return medecins.stream()
-                .map(mapper::toDto)
-                .collect(Collectors.toList());
-    }
     public Medecin getById(String id) {
-        return medecinRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
-    }
-
-    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
-        if (!dto.getNouveauMotDePasse().equals(dto.getConfirmerMotDePasse())) {
-            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
-        }
-
-        Medecin medecin = medecinRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
-
-        medecin.setMotDePasse(passwordEncoder.encode(dto.getNouveauMotDePasse()));
-        medecinRepository.save(medecin);
-    }
-
-    // Retourne un MedecinDto à partir de l'id (utile pour le front)
-    public MedecinDto findByIdDto(String id) {
-        Medecin medecin = repository.findById(id)
-                .orElseThrow(() -> new MedecinNonTrouveException("Médecin introuvable avec l'id " + id));
-
-        return mapper.toDto(medecin);
-    }
-
-
-    // Recherche par id (retourne l'entité si tu as besoin de l'entité)
-    public Medecin findEntityById(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Médecin introuvable avec l'id " + id));
     }
 
-    // Recherche par nom ou prénom (partial, case-insensitive)
+    // ==================== RECHERCHE ====================
+
+    public List<MedecinDto> searchBySpeciality(String speciality) {
+        List<Medecin> medecins = repository.findByRefSpecialite(speciality);
+
+        return medecins.stream()
+                .map(medecinMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<MedecinDto> getActiveMedecins() {
+        List<Medecin> medecins = repository.findByActif(true);
+
+        return medecins.stream()
+                .map(medecinMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     public List<MedecinDto> searchByName(String name) {
         if (name == null || name.trim().isEmpty()) {
-            return findAll(); // ou Collections.emptyList(); selon ton choix
+            return findAll();
         }
+
         String query = name.trim();
-        List<Medecin> medecins = repository.findByNomMedecinIgnoreCaseContainingOrPrenomMedecinIgnoreCaseContaining(query, query);
-        return medecins.stream().map(mapper::toDto).collect(Collectors.toList());
+
+        List<Medecin> medecins = repository
+                .findByNomMedecinIgnoreCaseContainingOrPrenomMedecinIgnoreCaseContaining(
+                        query,
+                        query
+                );
+
+        return medecins.stream()
+                .map(medecinMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<MedecinDto> searchByNomOuPrenom(String searchTerm) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        Pageable limit = PageRequest.of(0, 10);
+
+        List<Medecin> medecins = repository.searchByNomOuPrenom(
+                searchTerm.trim(),
+                limit
+        );
+
+        return medecins.stream()
+                .map(medecinMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== STRUCTURES DU MÉDECIN ====================
+
+    public List<StructureSanitaireDto> getStructuresByMedecin(String medecinId) {
+        repository.findById(medecinId)
+                .orElseThrow(() -> new RuntimeException("Médecin non trouvé"));
+
+        List<MedecinStructureSanitaire> liaisons = medecinStructureSanitaireRepository
+                .findByMedecinIdAndActifTrue(medecinId);
+
+        return liaisons.stream()
+                .map(MedecinStructureSanitaire::getStructureSanitaire)
+                .filter(Objects::nonNull)
+                .map(structureSanitaireMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== MOT DE PASSE ====================
+
+    @Transactional
+    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
+        String nouveauMotDePasse = dto.getNouveauMotDePasse();
+        String confirmationMotDePasse = lireConfirmationMotDePasse(dto);
+
+        if (nouveauMotDePasse == null || nouveauMotDePasse.isBlank()) {
+            throw new IllegalArgumentException("Le nouveau mot de passe est obligatoire.");
+        }
+
+        if (!nouveauMotDePasse.equals(confirmationMotDePasse)) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        }
+
+        Medecin medecin = repository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+
+        medecin.setMotDePasse(passwordEncoder.encode(nouveauMotDePasse));
+        repository.save(medecin);
+    }
+
+    /*
+     * Compatibilité entre les deux versions du DTO :
+     * - ancienne version : getConfirmerMotDePasse()
+     * - nouvelle version : getConfirmationMotDePasse()
+     */
+    private String lireConfirmationMotDePasse(ChangementMotDePasseDto dto) {
+        try {
+            Method method = dto.getClass().getMethod("getConfirmationMotDePasse");
+            Object value = method.invoke(dto);
+            return value != null ? value.toString() : null;
+        } catch (ReflectiveOperationException ignored) {
+            // On tente l'ancien nom juste après.
+        }
+
+        try {
+            Method method = dto.getClass().getMethod("getConfirmerMotDePasse");
+            Object value = method.invoke(dto);
+            return value != null ? value.toString() : null;
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException(
+                    "Aucune méthode de confirmation de mot de passe trouvée dans ChangementMotDePasseDto.",
+                    ex
+            );
+        }
     }
 }

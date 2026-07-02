@@ -1,6 +1,8 @@
 package com.esiitech.monbondocteurv2.mapper;
 
 import com.esiitech.monbondocteurv2.dto.UtilisateurDto;
+import com.esiitech.monbondocteurv2.enums.Role;
+import com.esiitech.monbondocteurv2.enums.StatutCompte;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
 import org.springframework.stereotype.Component;
 
@@ -8,14 +10,18 @@ import org.springframework.stereotype.Component;
 public class UtilisateurMapper {
 
     /**
-     * Convertir l'entité Utilisateur en DTO de réponse
+     * =====================================================
+     * ENTITY -> DTO
+     * =====================================================
      */
     public UtilisateurDto toDto(Utilisateur utilisateur) {
+
         if (utilisateur == null) {
             return null;
         }
 
         UtilisateurDto dto = new UtilisateurDto();
+
         dto.setId(utilisateur.getId());
         dto.setNom(utilisateur.getNom());
         dto.setPrenom(utilisateur.getPrenom());
@@ -23,29 +29,52 @@ public class UtilisateurMapper {
         dto.setSexe(utilisateur.getSexe());
         dto.setPhotoPath(utilisateur.getPhotoPath());
         dto.setRole(utilisateur.getRole());
-        dto.setActif(utilisateur.isActif());
+        dto.setNumeroTelephone(utilisateur.getNumeroTelephone());
+
+        // ✅ Nouveau système
+        dto.setStatut(utilisateur.getStatutCompte());
 
         return dto;
     }
 
     /**
-     * Convertir le DTO de la demande utilisateur en entité Utilisateur
+     * =====================================================
+     * DTO -> ENTITY
+     * =====================================================
      */
     public Utilisateur toEntity(UtilisateurDto dto) {
+
         if (dto == null) {
             return null;
         }
 
         Utilisateur utilisateur = new Utilisateur();
+
         utilisateur.setId(dto.getId());
         utilisateur.setNom(dto.getNom());
         utilisateur.setPrenom(dto.getPrenom());
         utilisateur.setEmail(dto.getEmail());
-        utilisateur.setMotDePasse(dto.getMotDePasse());  // Hachage à effectuer ici avant de stocker dans la base
+        utilisateur.setNumeroTelephone(dto.getNumeroTelephone());
+        // ⚠️ Le mot de passe doit être hashé dans le service
+        // avant sauvegarde
+        // utilisateur.setMotDePasse(...)
+
         utilisateur.setSexe(dto.getSexe());
         utilisateur.setPhotoPath(dto.getPhotoPath());
-        utilisateur.setRole(dto.getRole());
-        utilisateur.setActif(dto.isActif());
+
+        // ✅ ROLE PAR DÉFAUT
+        utilisateur.setRole(
+                dto.getRole() != null
+                        ? dto.getRole()
+                        : Role.USER
+        );
+
+        // ✅ STATUT PAR DÉFAUT
+        utilisateur.setStatutCompte(
+                dto.getStatut() != null
+                        ? dto.getStatut()
+                        : StatutCompte.INVITE
+        );
 
         return utilisateur;
     }

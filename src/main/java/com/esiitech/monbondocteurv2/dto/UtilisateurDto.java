@@ -2,39 +2,66 @@ package com.esiitech.monbondocteurv2.dto;
 
 import com.esiitech.monbondocteurv2.enums.Role;
 import com.esiitech.monbondocteurv2.enums.Sexe;
+import com.esiitech.monbondocteurv2.enums.StatutCompte;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
-public class UtilisateurDto  {
+public class UtilisateurDto {
 
     private String id;
+
     private String nom;
+
     private String prenom;
+
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Email invalide")
     private String email;
-    @NotBlank(message = "Le mot de passe est obligatoire")
-    @Size(min = 12, message = "Le mot de passe doit contenir au moins 12 caractères")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
-            message = "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
-    )
-    private String motDePasse;
+
     private Sexe sexe;
+
+    private String numeroTelephone;
+
     private String photoPath;
+
     private Role role;
-    private boolean actif;
 
+    // Remplace actif par statut (clean architecture)
+    private StatutCompte statut;
 
-    // Getters and Setters
-    // Ajoutez un constructeur ou une initialisation pour définir un rôle par défaut
+    // =========================
+    // CONSTRUCTEUR
+    // =========================
+
     public UtilisateurDto() {
-        if (this.role == null) {
-            this.role = Role.USER;  // Attribuer un rôle par défaut
-        }
+        this.role = Role.USER;
+        this.statut = StatutCompte.INVITE;
     }
+
+    public UtilisateurDto(
+            String id,
+            String nom,
+            String prenom,
+            String email,
+            Sexe sexe,
+            String photoPath,
+            Role role,
+            StatutCompte statut
+    ) {
+        this.id = id;
+        this.nom = nom;
+        this.prenom = prenom;
+        this.email = email;
+        this.sexe = sexe;
+        this.photoPath = photoPath;
+        this.role = role;
+        this.statut = statut;
+    }
+
+    // =========================
+    // GETTERS & SETTERS
+    // =========================
 
     public String getId() {
         return id;
@@ -60,20 +87,16 @@ public class UtilisateurDto  {
         this.prenom = prenom;
     }
 
+    public String getNomComplet() {
+        return prenom + " " + nom;
+    }
+
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getMotDePasse() {
-        return motDePasse;
-    }
-
-    public void setMotDePasse(String motDePasse) {
-        this.motDePasse = motDePasse;
     }
 
     public Sexe getSexe() {
@@ -100,11 +123,32 @@ public class UtilisateurDto  {
         this.role = role;
     }
 
-    public boolean isActif() {
-        return actif;
+    public StatutCompte getStatut() {
+        return statut;
     }
 
-    public void setActif(boolean actif) {
-        this.actif = actif;
+    public void setStatut(StatutCompte statut) {
+        this.statut = statut;
+    }
+
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
+
+    // =========================
+    // TOSTRING
+    // =========================
+
+    @Override
+    public String toString() {
+        return "UtilisateurDto{" +
+                "id='" + id + '\'' +
+                ", nom='" + nom + '\'' +
+                ", prenom='" + prenom + '\'' +
+                ", email='" + email + '\'' +
+                ", sexe=" + sexe +
+                ", photoPath='" + photoPath + '\'' +
+                ", role=" + role +
+                ", statut=" + statut +
+                '}';
     }
 }
