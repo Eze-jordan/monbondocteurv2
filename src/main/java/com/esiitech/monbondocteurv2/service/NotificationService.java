@@ -618,4 +618,101 @@ public class NotificationService {
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
     }
+    
+
+    public void envoyerIdentifiantsUtilisateur(
+            String email,
+            String nomUtilisateur,
+            String identifiant,
+            String motDePassePlain
+    ) {
+        String body = buildWelcomeCard(
+                nomUtilisateur,
+                "Utilisateur",
+                identifiant,
+                motDePassePlain
+        );
+
+        String html = buildTemplate(
+                "Vos identifiants",
+                body,
+                "Se connecter",
+                appUrl("/login")
+        );
+
+        sendEmail(
+                email,
+                "Vos identifiants monBonDocteur",
+                html
+        );
+    }
+    public void envoyerConfirmationPaiementStructure(
+            String email,
+            String nomStructure,
+            String nomFormule,
+            String montant,
+            String referencePaiement,
+            String dateDebut,
+            String dateFin
+    ) {
+
+        String body = """
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        
+            <h2>Paiement confirmé</h2>
+        
+            <p>Bonjour <strong>%s</strong>,</p>
+        
+            <p>
+                Nous vous confirmons que votre paiement a été effectué
+                avec succès et que votre abonnement MonBonDocteur
+                est désormais actif.
+            </p>
+        
+            <div style="
+                margin: 20px 0;
+                padding: 15px;
+                background-color: #f5f5f5;
+                border-radius: 8px;
+            ">
+                <p><strong>Formule :</strong> %s</p>
+                <p><strong>Montant :</strong> %s FCFA</p>
+                <p><strong>Référence :</strong> %s</p>
+                <p><strong>Début de l'abonnement :</strong> %s</p>
+                <p><strong>Fin de l'abonnement :</strong> %s</p>
+            </div>
+        
+            <p>
+                Votre structure bénéficie maintenant des services
+                correspondant à votre formule pendant toute la durée
+                de votre abonnement.
+            </p>
+        
+            <p>
+                Merci d'utiliser MonBonDocteur.
+            </p>
+        
+        </div>
+        """.formatted(
+                nomStructure,
+                nomFormule,
+                montant,
+                referencePaiement,
+                dateDebut,
+                dateFin
+        );
+
+        String html = buildTemplate(
+                "Confirmation de votre abonnement",
+                body,
+                "Accéder à MonBonDocteur",
+                appUrl("/login")
+        );
+
+        sendEmail(
+                email,
+                "Paiement confirmé - Votre abonnement MonBonDocteur est actif",
+                html
+        );
+    }
 }

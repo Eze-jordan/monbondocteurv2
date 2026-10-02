@@ -30,7 +30,6 @@ public class PaymentFormuleController {
     }
 
     @PostMapping("/initiate")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Initier le paiement d'une formule pour une structure sanitaire")
     public ResponseEntity<PaymentFormuleResponse> initiate(@RequestBody PaymentFormuleInitRequest request) {
         return ResponseEntity.ok(paymentService.initiatePayment(request));
@@ -54,14 +53,12 @@ public class PaymentFormuleController {
     }
 
     @GetMapping("/{paymentId}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Récupérer un paiement par ID")
     public ResponseEntity<PaymentFormuleResponse> getByPaymentId(@PathVariable String paymentId) {
         return ResponseEntity.ok(paymentService.getPaymentById(paymentId));
     }
 
     @GetMapping("/{paymentId}/status-provider")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Vérifier le statut du paiement chez le provider")
     public ResponseEntity<String> checkProviderStatus(@PathVariable String paymentId) {
         return ResponseEntity.ok(paymentService.checkProviderStatus(paymentId));

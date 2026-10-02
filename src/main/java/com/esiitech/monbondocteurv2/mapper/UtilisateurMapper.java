@@ -9,11 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class UtilisateurMapper {
 
-    /**
-     * =====================================================
-     * ENTITY -> DTO
-     * =====================================================
-     */
     public UtilisateurDto toDto(Utilisateur utilisateur) {
 
         if (utilisateur == null) {
@@ -26,22 +21,15 @@ public class UtilisateurMapper {
         dto.setNom(utilisateur.getNom());
         dto.setPrenom(utilisateur.getPrenom());
         dto.setEmail(utilisateur.getEmail());
+        dto.setNumeroTelephone(utilisateur.getNumeroTelephone());
         dto.setSexe(utilisateur.getSexe());
         dto.setPhotoPath(utilisateur.getPhotoPath());
         dto.setRole(utilisateur.getRole());
-        dto.setNumeroTelephone(utilisateur.getNumeroTelephone());
-
-        // ✅ Nouveau système
         dto.setStatut(utilisateur.getStatutCompte());
 
         return dto;
     }
 
-    /**
-     * =====================================================
-     * DTO -> ENTITY
-     * =====================================================
-     */
     public Utilisateur toEntity(UtilisateurDto dto) {
 
         if (dto == null) {
@@ -55,26 +43,28 @@ public class UtilisateurMapper {
         utilisateur.setPrenom(dto.getPrenom());
         utilisateur.setEmail(dto.getEmail());
         utilisateur.setNumeroTelephone(dto.getNumeroTelephone());
-        // ⚠️ Le mot de passe doit être hashé dans le service
-        // avant sauvegarde
-        // utilisateur.setMotDePasse(...)
-
         utilisateur.setSexe(dto.getSexe());
         utilisateur.setPhotoPath(dto.getPhotoPath());
 
-        // ✅ ROLE PAR DÉFAUT
         utilisateur.setRole(
                 dto.getRole() != null
                         ? dto.getRole()
                         : Role.USER
         );
 
-        // ✅ STATUT PAR DÉFAUT
         utilisateur.setStatutCompte(
                 dto.getStatut() != null
                         ? dto.getStatut()
                         : StatutCompte.INVITE
         );
+
+        /*
+         * IMPORTANT :
+         * ne jamais mapper le mot de passe ici.
+         *
+         * Le mot de passe est géré uniquement
+         * par UtilisateurService.
+         */
 
         return utilisateur;
     }

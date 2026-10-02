@@ -38,7 +38,7 @@ public class FormulesController {
         return ResponseEntity.ok(service.getById(id));
     }
 
-    @GetMapping
+    @GetMapping("/liste")
     @Operation(summary = "Lister toutes les formules")
     public ResponseEntity<List<Formules>> getAll() {
         return ResponseEntity.ok(service.getAll());
