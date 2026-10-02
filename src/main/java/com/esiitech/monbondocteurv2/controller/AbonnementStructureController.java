@@ -20,12 +20,6 @@ public class AbonnementStructureController {
         this.service = service;
     }
 
-    @PostMapping("/activation-test")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Activer ou prolonger une formule sans paiement")
-    public ResponseEntity<StructureSanitaire> activerTest(@RequestBody ActivationFormuleStructureRequest request) {
-        return ResponseEntity.ok(service.activerOuProlonger(request));
-    }
 
     @GetMapping("/structure/{structureId}/actif")
     @Operation(summary = "Vérifier si une structure a un abonnement actif")

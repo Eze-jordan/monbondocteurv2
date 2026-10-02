@@ -84,7 +84,15 @@ public class SecurityConfig {
                                 "/api/V2/structuresanitaires/specialites",
                                 "/api/V2/structuresanitaires/me",
                                 "/api/V2/liaisons/{structureId}/medecins",
-                                "api/V2/liaisons/medecins/structure/{structureId}/specialite"
+                                "api/V2/liaisons/medecins/structure/{structureId}/specialite",
+                                "/api/V2/formules/liste",
+                                "/api/V2/payments/formules/initiate",
+                                "/api/V2/payments/formules/callback",
+                                "/api/V2/payments/formules/{paymentId}",
+                                "/api/V2/payments/formules/{paymentId}/status-provider",
+                                "/api/V2/abonnements/structure/{structureId}/actif",
+                                "/api/V2/abonnements/structure/{structureId}/verifier-expiration"
+
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()   // ⬅⬅ Autoriser l'accès aux fichiers
                         .anyRequest().authenticated()

@@ -3,16 +3,14 @@ package com.esiitech.monbondocteurv2.dto;
 import com.esiitech.monbondocteurv2.enums.Role;
 import com.esiitech.monbondocteurv2.enums.Sexe;
 import com.esiitech.monbondocteurv2.enums.StatutCompte;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UtilisateurDto {
 
     private String id;
-
     private String nom;
-
     private String prenom;
 
     @NotBlank(message = "L'email est obligatoire")
@@ -20,48 +18,24 @@ public class UtilisateurDto {
     private String email;
 
     private Sexe sexe;
-
     private String numeroTelephone;
-
     private String photoPath;
-
     private Role role;
-
-    // Remplace actif par statut (clean architecture)
     private StatutCompte statut;
 
-    // =========================
-    // CONSTRUCTEUR
-    // =========================
+    /*
+     * false = création par invitation
+     * true  = génération automatique du mot de passe
+     *         + compte directement ACTIF
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private boolean genererMotDePasse;
 
     public UtilisateurDto() {
         this.role = Role.USER;
         this.statut = StatutCompte.INVITE;
+        this.genererMotDePasse = false;
     }
-
-    public UtilisateurDto(
-            String id,
-            String nom,
-            String prenom,
-            String email,
-            Sexe sexe,
-            String photoPath,
-            Role role,
-            StatutCompte statut
-    ) {
-        this.id = id;
-        this.nom = nom;
-        this.prenom = prenom;
-        this.email = email;
-        this.sexe = sexe;
-        this.photoPath = photoPath;
-        this.role = role;
-        this.statut = statut;
-    }
-
-    // =========================
-    // GETTERS & SETTERS
-    // =========================
 
     public String getId() {
         return id;
@@ -107,6 +81,14 @@ public class UtilisateurDto {
         this.sexe = sexe;
     }
 
+    public String getNumeroTelephone() {
+        return numeroTelephone;
+    }
+
+    public void setNumeroTelephone(String numeroTelephone) {
+        this.numeroTelephone = numeroTelephone;
+    }
+
     public String getPhotoPath() {
         return photoPath;
     }
@@ -131,12 +113,13 @@ public class UtilisateurDto {
         this.statut = statut;
     }
 
-    public String getNumeroTelephone() { return numeroTelephone; }
-    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
+    public boolean isGenererMotDePasse() {
+        return genererMotDePasse;
+    }
 
-    // =========================
-    // TOSTRING
-    // =========================
+    public void setGenererMotDePasse(boolean genererMotDePasse) {
+        this.genererMotDePasse = genererMotDePasse;
+    }
 
     @Override
     public String toString() {
@@ -146,9 +129,11 @@ public class UtilisateurDto {
                 ", prenom='" + prenom + '\'' +
                 ", email='" + email + '\'' +
                 ", sexe=" + sexe +
+                ", numeroTelephone='" + numeroTelephone + '\'' +
                 ", photoPath='" + photoPath + '\'' +
                 ", role=" + role +
                 ", statut=" + statut +
+                ", genererMotDePasse=" + genererMotDePasse +
                 '}';
     }
 }

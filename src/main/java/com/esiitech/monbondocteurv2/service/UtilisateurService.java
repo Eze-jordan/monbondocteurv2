@@ -9,6 +9,7 @@ import com.esiitech.monbondocteurv2.mapper.UtilisateurMapper;
 import com.esiitech.monbondocteurv2.model.Utilisateur;
 import com.esiitech.monbondocteurv2.model.Validation;
 import com.esiitech.monbondocteurv2.repository.UtilisateurRepository;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,6 +24,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +43,21 @@ public class UtilisateurService implements UserDetailsService {
     @Value("${app.upload.dir.utilisateurs}")
     private String uploadDir;
 
-    private static final String DEFAULT_PHOTO_PATH = "/uploads/utilisateurs/default.jpg";
+    private static final String DEFAULT_PHOTO_PATH =
+            "/uploads/utilisateurs/default.jpg";
+
+    private static final String PASSWORD_CHARACTERS =
+            "ABCDEFGHJKLMNPQRSTUVWXYZ" +
+                    "abcdefghijkmnopqrstuvwxyz" +
+                    "23456789" ;
+    private static final int PASSWORD_LENGTH = 12;
+
+    private static final SecureRandom SECURE_RANDOM =
+            new SecureRandom();
+
+    // =====================================================
+    // CONSTRUCTEUR
+    // =====================================================
 
     public UtilisateurService(
             UtilisateurRepository repository,
@@ -58,257 +74,560 @@ public class UtilisateurService implements UserDetailsService {
     }
 
     // =====================================================
-    // CRÉATION UTILISATEUR AVEC MOT DE PASSE
-    // Ancienne méthode conservée pour compatibilité.
+    // CRÉATION UTILISATEUR
+    // MOT DE PASSE GÉNÉRÉ AUTOMATIQUEMENT
+    // COMPTE DIRECTEMENT ACTIF
     // =====================================================
 
     @Transactional
-    public UtilisateurDto save(UtilisateurDto dto, MultipartFile photo) throws IOException {
+    public UtilisateurDto createUser(
+            UtilisateurDto dto,
+            MultipartFile photo
+    ) throws IOException {
+
         validateUtilisateurDto(dto);
 
-        if (dto.getRole() == null) {
-            dto.setRole(Role.USER);
+        // Vérifier que l'adresse email n'est pas déjà utilisée
+        if (repository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new IllegalArgumentException(
+                    "Un utilisateur avec cet email existe déjà."
+            );
         }
 
+        // Conversion DTO -> Entity
         Utilisateur utilisateur = mapper.toEntity(dto);
 
-        if (utilisateur.getId() == null || utilisateur.getId().isBlank()) {
-            utilisateur.setId(generateUserId());
-        }
+        // Génération de l'identifiant utilisateur
+        utilisateur.setId(generateUserId());
 
+        // Génération du mot de passe temporaire
+        String motDePassePlain = generatePassword();
 
-        utilisateur.setRole(dto.getRole());
-        utilisateur.setStatutCompte(StatutCompte.INVITE);
-        utilisateur.setActif(false);
+        // IMPORTANT :
+        // seul le hash est enregistré dans la base de données
+        utilisateur.setMotDePasse(
+                passwordEncoder.encode(motDePassePlain)
+        );
 
-        if (photo != null && !photo.isEmpty()) {
-            utilisateur.setPhotoPath(savePhoto(photo));
-        } else if (utilisateur.getPhotoPath() == null || utilisateur.getPhotoPath().isBlank()) {
-            utilisateur.setPhotoPath(DEFAULT_PHOTO_PATH);
-        }
+        // Le compte est directement actif
+        utilisateur.setStatutCompte(StatutCompte.ACTIF);
+        utilisateur.setActif(true);
 
+        // Rôle choisi par l'administrateur
+        // USER par défaut si aucun rôle n'est fourni
+        utilisateur.setRole(
+                dto.getRole() != null
+                        ? dto.getRole()
+                        : Role.USER
+        );
+
+        // Photo utilisateur
+        utilisateur.setPhotoPath(
+                savePhotoOrDefault(photo)
+        );
+
+        // Sauvegarde en base
         Utilisateur saved = repository.save(utilisateur);
 
-        validationService.enregister(saved);
+        // Envoi des identifiants par email
+        notificationService.envoyerIdentifiantsUtilisateur(
+                saved.getEmail(),
+                saved.getPrenom() + " " + saved.getNom(),
+                saved.getEmail(),
+                motDePassePlain
+        );
 
         return mapper.toDto(saved);
     }
 
     // =====================================================
-    // CRÉATION UTILISATEUR PAR INVITATION
-    // Nouvelle méthode conservée.
+    // ANCIENNE CRÉATION PAR INVITATION
+    // CONSERVÉE SI TU EN AS ENCORE BESOIN
     // =====================================================
 
     @Transactional
-    public UtilisateurDto createUser(UtilisateurDto dto, MultipartFile photo) throws IOException {
+    public UtilisateurDto createUserByInvitation(
+            UtilisateurDto dto,
+            MultipartFile photo
+    ) throws IOException {
+
         validateUtilisateurDto(dto);
+
+        if (repository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new IllegalArgumentException(
+                    "Un utilisateur avec cet email existe déjà."
+            );
+        }
 
         Utilisateur utilisateur = mapper.toEntity(dto);
 
         utilisateur.setId(generateUserId());
+
         utilisateur.setMotDePasse(null);
-        utilisateur.setStatutCompte(StatutCompte.INVITE);
+
+        utilisateur.setStatutCompte(
+                StatutCompte.INVITE
+        );
+
         utilisateur.setActif(false);
-        utilisateur.setRole(dto.getRole() == null ? Role.USER : dto.getRole());
-        utilisateur.setPhotoPath(savePhotoOrDefault(photo));
 
-        Utilisateur saved = repository.save(utilisateur);
+        utilisateur.setRole(
+                dto.getRole() != null
+                        ? dto.getRole()
+                        : Role.USER
+        );
 
+        utilisateur.setPhotoPath(
+                savePhotoOrDefault(photo)
+        );
+
+        Utilisateur saved =
+                repository.save(utilisateur);
+
+        // Génération et envoi OTP
         validationService.enregister(saved);
 
         return mapper.toDto(saved);
     }
 
+    // =====================================================
+    // ANCIENNE MÉTHODE SAVE
+    // CONSERVÉE POUR COMPATIBILITÉ
+    // =====================================================
+
+    @Transactional
+    public UtilisateurDto save(
+            UtilisateurDto dto,
+            MultipartFile photo
+    ) throws IOException {
+
+        return createUser(dto, photo);
+    }
+
+    // =====================================================
+    // GÉNÉRATION ID UTILISATEUR
+    // =====================================================
+
     private String generateUserId() {
+
         return "user-" + UUID.randomUUID();
     }
 
     // =====================================================
+    // GÉNÉRATION MOT DE PASSE
+    // =====================================================
+
+    private String generatePassword() {
+
+        StringBuilder password =
+                new StringBuilder(PASSWORD_LENGTH);
+
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+
+            int index = SECURE_RANDOM.nextInt(
+                    PASSWORD_CHARACTERS.length()
+            );
+
+            password.append(
+                    PASSWORD_CHARACTERS.charAt(index)
+            );
+        }
+
+        return password.toString();
+    }
+
+    // =====================================================
     // ACTIVATION AVEC CODE SIMPLE
-    // Ancienne méthode conservée.
+    // ANCIEN SYSTÈME
     // =====================================================
 
     @Transactional
-    public void activation(Map<String, String> activation) {
+    public void activation(
+            Map<String, String> activation
+    ) {
+
         String code = activation.get("code");
 
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("Code d'activation manquant.");
+            throw new IllegalArgumentException(
+                    "Code d'activation manquant."
+            );
         }
 
-        Validation validation = validationService.lireEnFonctionDuCode(code);
+        Validation validation =
+                validationService.lireEnFonctionDuCode(code);
 
         if (validation == null) {
-            throw new RuntimeException("Code invalide");
+            throw new RuntimeException(
+                    "Code invalide"
+            );
         }
 
-        if (Instant.now().isAfter(validation.getExpiration())) {
-            throw new RuntimeException("Votre code a expiré");
+        if (Instant.now().isAfter(
+                validation.getExpiration()
+        )) {
+            throw new RuntimeException(
+                    "Votre code a expiré"
+            );
         }
 
-        Utilisateur utilisateurActiver = repository.findById(validation.getUtilisateur().getId())
-                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu"));
+        Utilisateur utilisateur =
+                repository
+                        .findById(
+                                validation
+                                        .getUtilisateur()
+                                        .getId()
+                        )
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur inconnu"
+                                )
+                        );
 
-        utilisateurActiver.setActif(true);
-        utilisateurActiver.setStatutCompte(StatutCompte.ACTIF);
+        utilisateur.setActif(true);
 
-        repository.save(utilisateurActiver);
+        utilisateur.setStatutCompte(
+                StatutCompte.ACTIF
+        );
+
+        repository.save(utilisateur);
     }
 
     // =====================================================
     // ACTIVATION AVEC CODE + MOT DE PASSE
-    // Nouvelle méthode conservée.
+    // ANCIEN SYSTÈME INVITATION
     // =====================================================
 
     @Transactional
-    public void activation(ActivationRequest request) {
+    public void activation(
+            ActivationRequest request
+    ) {
+
         if (request == null) {
-            throw new IllegalArgumentException("La demande d'activation est obligatoire.");
+            throw new IllegalArgumentException(
+                    "La demande d'activation est obligatoire."
+            );
         }
 
-        String motDePasse = request.getMotDePasse();
-        String confirmationMotDePasse = lireConfirmationMotDePasse(request);
+        String motDePasse =
+                request.getMotDePasse();
 
-        if (motDePasse == null || motDePasse.isBlank()
-                || confirmationMotDePasse == null || confirmationMotDePasse.isBlank()) {
-            throw new IllegalArgumentException("Le mot de passe est obligatoire.");
+        String confirmationMotDePasse =
+                lireConfirmationMotDePasse(request);
+
+        if (motDePasse == null
+                || motDePasse.isBlank()
+                || confirmationMotDePasse == null
+                || confirmationMotDePasse.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Le mot de passe est obligatoire."
+            );
         }
 
-        if (!motDePasse.equals(confirmationMotDePasse)) {
-            throw new IllegalArgumentException("Les mots de passe ne correspondent pas");
+        if (!motDePasse.equals(
+                confirmationMotDePasse
+        )) {
+
+            throw new IllegalArgumentException(
+                    "Les mots de passe ne correspondent pas"
+            );
         }
 
-        Validation validation = validationService.lireEnFonctionDuCode(request.getCode());
+        Validation validation =
+                validationService
+                        .lireEnFonctionDuCode(
+                                request.getCode()
+                        );
 
         if (validation == null) {
-            throw new RuntimeException("Code invalide");
+            throw new RuntimeException(
+                    "Code invalide"
+            );
         }
 
-        if (Instant.now().isAfter(validation.getExpiration())) {
-            throw new IllegalArgumentException("Code expiré");
+        if (Instant.now().isAfter(
+                validation.getExpiration()
+        )) {
+
+            throw new IllegalArgumentException(
+                    "Code expiré"
+            );
         }
 
-        Utilisateur utilisateur = repository.findById(validation.getUtilisateur().getId())
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        Utilisateur utilisateur =
+                repository
+                        .findById(
+                                validation
+                                        .getUtilisateur()
+                                        .getId()
+                        )
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur introuvable"
+                                )
+                        );
 
-        utilisateur.setMotDePasse(passwordEncoder.encode(motDePasse));
-        utilisateur.setStatutCompte(StatutCompte.ACTIF);
+        utilisateur.setMotDePasse(
+                passwordEncoder.encode(
+                        motDePasse
+                )
+        );
+
+        utilisateur.setStatutCompte(
+                StatutCompte.ACTIF
+        );
+
         utilisateur.setActif(true);
 
         repository.save(utilisateur);
     }
 
     // =====================================================
-    // UPDATE PROFIL
+    // UPDATE UTILISATEUR
     // =====================================================
 
     @Transactional
-    public UtilisateurDto update(String id, UtilisateurDto dto) {
-        Utilisateur utilisateur = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+    public UtilisateurDto update(
+            String id,
+            UtilisateurDto dto
+    ) {
+
+        Utilisateur utilisateur =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur non trouvé"
+                                )
+                        );
 
         if (dto.getNom() != null) {
-            utilisateur.setNom(dto.getNom());
+            utilisateur.setNom(
+                    dto.getNom()
+            );
         }
 
         if (dto.getPrenom() != null) {
-            utilisateur.setPrenom(dto.getPrenom());
+            utilisateur.setPrenom(
+                    dto.getPrenom()
+            );
         }
 
         if (dto.getEmail() != null) {
-            utilisateur.setEmail(dto.getEmail());
+
+            // Vérifier uniquement si l'adresse change
+            if (!dto.getEmail().equals(
+                    utilisateur.getEmail()
+            )) {
+
+                repository
+                        .findByEmail(dto.getEmail())
+                        .ifPresent(existing -> {
+
+                            if (!existing
+                                    .getId()
+                                    .equals(id)) {
+
+                                throw new IllegalArgumentException(
+                                        "Un utilisateur avec cet email existe déjà."
+                                );
+                            }
+                        });
+            }
+
+            utilisateur.setEmail(
+                    dto.getEmail()
+            );
         }
 
         if (dto.getRole() != null) {
-            utilisateur.setRole(dto.getRole());
+            utilisateur.setRole(
+                    dto.getRole()
+            );
         }
 
+        if (dto.getNumeroTelephone() != null) {
+            utilisateur.setNumeroTelephone(
+                    dto.getNumeroTelephone()
+            );
+        }
 
-        Utilisateur updated = repository.save(utilisateur);
+        if (dto.getSexe() != null) {
+            utilisateur.setSexe(
+                    dto.getSexe()
+            );
+        }
+
+        Utilisateur updated =
+                repository.save(utilisateur);
 
         return mapper.toDto(updated);
     }
 
     // =====================================================
-    // ADMIN STATUS CONTROL
+    // SUSPENDRE UTILISATEUR
     // =====================================================
 
     @Transactional
     public void suspendUser(String id) {
-        Utilisateur utilisateur = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        utilisateur.setStatutCompte(StatutCompte.SUSPENDU);
+        Utilisateur utilisateur =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur introuvable"
+                                )
+                        );
+
+        utilisateur.setStatutCompte(
+                StatutCompte.SUSPENDU
+        );
+
         utilisateur.setActif(false);
 
         repository.save(utilisateur);
     }
 
+    // =====================================================
+    // ACTIVER UTILISATEUR
+    // =====================================================
+
     @Transactional
     public void activateUser(String id) {
-        Utilisateur utilisateur = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        utilisateur.setStatutCompte(StatutCompte.ACTIF);
+        Utilisateur utilisateur =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur introuvable"
+                                )
+                        );
+
+        utilisateur.setStatutCompte(
+                StatutCompte.ACTIF
+        );
+
         utilisateur.setActif(true);
 
         repository.save(utilisateur);
     }
 
     // =====================================================
-    // MOT DE PASSE
+    // MODIFICATION MOT DE PASSE
     // =====================================================
 
     @Transactional
-    public void updatePasswordByEmail(ChangementMotDePasseDto dto) {
-        String nouveauMotDePasse = dto.getNouveauMotDePasse();
-        String confirmationMotDePasse = lireConfirmationMotDePasse(dto);
+    public void updatePasswordByEmail(
+            ChangementMotDePasseDto dto
+    ) {
 
-        if (nouveauMotDePasse == null || nouveauMotDePasse.isBlank()
-                || confirmationMotDePasse == null || confirmationMotDePasse.isBlank()) {
-            throw new IllegalArgumentException("Le mot de passe est obligatoire.");
+        if (dto == null) {
+            throw new IllegalArgumentException(
+                    "Les informations sont obligatoires."
+            );
         }
 
-        if (!nouveauMotDePasse.equals(confirmationMotDePasse)) {
-            throw new IllegalArgumentException("Les mots de passe ne correspondent pas.");
+        String nouveauMotDePasse =
+                dto.getNouveauMotDePasse();
+
+        String confirmationMotDePasse =
+                lireConfirmationMotDePasse(dto);
+
+        if (nouveauMotDePasse == null
+                || nouveauMotDePasse.isBlank()
+                || confirmationMotDePasse == null
+                || confirmationMotDePasse.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Le mot de passe est obligatoire."
+            );
         }
 
-        Utilisateur utilisateur = repository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+        if (!nouveauMotDePasse.equals(
+                confirmationMotDePasse
+        )) {
 
-        utilisateur.setMotDePasse(passwordEncoder.encode(nouveauMotDePasse));
+            throw new IllegalArgumentException(
+                    "Les mots de passe ne correspondent pas."
+            );
+        }
+
+        Utilisateur utilisateur =
+                repository
+                        .findByEmail(dto.getEmail())
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur avec cet email non trouvé"
+                                )
+                        );
+
+        utilisateur.setMotDePasse(
+                passwordEncoder.encode(
+                        nouveauMotDePasse
+                )
+        );
 
         repository.save(utilisateur);
     }
 
     // =====================================================
-    // LECTURE
+    // RÉCUPÉRER UTILISATEUR PAR ID
     // =====================================================
 
     public UtilisateurDto findById(String id) {
-        Utilisateur utilisateur = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        Utilisateur utilisateur =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur non trouvé"
+                                )
+                        );
 
         return mapper.toDto(utilisateur);
     }
 
+    // =====================================================
+    // RÉCUPÉRER TOUS LES UTILISATEURS
+    // =====================================================
+
     public List<UtilisateurDto> findAll() {
-        return repository.findAll()
+
+        return repository
+                .findAll()
                 .stream()
                 .map(mapper::toDto)
                 .toList();
     }
 
     public Iterable<UtilisateurDto> getAllUsers() {
-        return repository.findAll()
+
+        return repository
+                .findAll()
                 .stream()
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    public Utilisateur findByEmail(String email) {
-        return repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    // =====================================================
+    // RÉCUPÉRER PAR EMAIL
+    // =====================================================
+
+    public Utilisateur findByEmail(
+            String email
+    ) {
+
+        return repository
+                .findByEmail(email)
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+                );
     }
 
     // =====================================================
@@ -316,9 +635,18 @@ public class UtilisateurService implements UserDetailsService {
     // =====================================================
 
     @Transactional
-    public void deleteByEmail(String email) {
-        Utilisateur utilisateur = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur avec cet email non trouvé"));
+    public void deleteByEmail(
+            String email
+    ) {
+
+        Utilisateur utilisateur =
+                repository
+                        .findByEmail(email)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Utilisateur avec cet email non trouvé"
+                                )
+                        );
 
         repository.delete(utilisateur);
     }
@@ -327,7 +655,10 @@ public class UtilisateurService implements UserDetailsService {
     // PHOTO
     // =====================================================
 
-    private String savePhotoOrDefault(MultipartFile photo) throws IOException {
+    private String savePhotoOrDefault(
+            MultipartFile photo
+    ) throws IOException {
+
         if (photo == null || photo.isEmpty()) {
             return DEFAULT_PHOTO_PATH;
         }
@@ -335,73 +666,143 @@ public class UtilisateurService implements UserDetailsService {
         return savePhoto(photo);
     }
 
-    private String savePhoto(MultipartFile photo) throws IOException {
+    private String savePhoto(
+            MultipartFile photo
+    ) throws IOException {
+
         if (photo == null || photo.isEmpty()) {
             return DEFAULT_PHOTO_PATH;
         }
 
-        String contentType = photo.getContentType();
+        String contentType =
+                photo.getContentType();
 
-        if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png"))) {
-            throw new IllegalArgumentException("Le fichier doit être une image JPEG ou PNG.");
+        if (contentType == null
+                || (!contentType.equals("image/jpeg")
+                && !contentType.equals("image/png"))) {
+
+            throw new IllegalArgumentException(
+                    "Le fichier doit être une image JPEG ou PNG."
+            );
         }
 
-        String originalFilename = photo.getOriginalFilename();
+        String originalFilename =
+                photo.getOriginalFilename();
 
-        if (originalFilename == null || originalFilename.isBlank()) {
-            originalFilename = "utilisateur-photo";
+        if (originalFilename == null
+                || originalFilename.isBlank()) {
+
+            originalFilename =
+                    "utilisateur-photo";
         }
 
-        String photoName = System.currentTimeMillis() + "_" + originalFilename;
-        Path path = Paths.get(uploadDir, photoName);
+        String photoName =
+                System.currentTimeMillis()
+                        + "_"
+                        + originalFilename;
 
-        Files.createDirectories(path.getParent());
-        Files.write(path, photo.getBytes());
+        Path path =
+                Paths.get(
+                        uploadDir,
+                        photoName
+                );
 
-        return "/uploads/utilisateurs/" + photoName;
+        Files.createDirectories(
+                path.getParent()
+        );
+
+        Files.write(
+                path,
+                photo.getBytes()
+        );
+
+        return "/uploads/utilisateurs/"
+                + photoName;
     }
 
     // =====================================================
-    // VALIDATION
+    // VALIDATION DTO
     // =====================================================
 
-    private void validateUtilisateurDto(UtilisateurDto dto) {
+    private void validateUtilisateurDto(
+            UtilisateurDto dto
+    ) {
+
         if (dto == null) {
-            throw new IllegalArgumentException("Les informations de l'utilisateur sont obligatoires.");
+            throw new IllegalArgumentException(
+                    "Les informations de l'utilisateur sont obligatoires."
+            );
         }
 
-        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-            throw new IllegalArgumentException("L'email de l'utilisateur ne peut pas être vide.");
+        if (dto.getEmail() == null
+                || dto.getEmail().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "L'email de l'utilisateur ne peut pas être vide."
+            );
         }
 
-        if (dto.getNom() == null || dto.getNom().isBlank()) {
-            throw new IllegalArgumentException("Le nom de l'utilisateur ne peut pas être vide.");
+        if (dto.getNom() == null
+                || dto.getNom().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Le nom de l'utilisateur ne peut pas être vide."
+            );
         }
 
-        if (dto.getPrenom() == null || dto.getPrenom().isBlank()) {
-            throw new IllegalArgumentException("Le prénom de l'utilisateur ne peut pas être vide.");
+        if (dto.getPrenom() == null
+                || dto.getPrenom().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Le prénom de l'utilisateur ne peut pas être vide."
+            );
         }
     }
 
-    /*
-     * Compatibilité entre les deux versions des DTO :
-     * - nouvelle version : getConfirmationMotDePasse()
-     * - ancienne version : getConfirmerMotDePasse()
-     */
-    private String lireConfirmationMotDePasse(Object dto) {
+    // =====================================================
+    // COMPATIBILITÉ CONFIRMATION MOT DE PASSE
+    // =====================================================
+
+    private String lireConfirmationMotDePasse(
+            Object dto
+    ) {
+
         try {
-            Method method = dto.getClass().getMethod("getConfirmationMotDePasse");
-            Object value = method.invoke(dto);
-            return value != null ? value.toString() : null;
+
+            Method method =
+                    dto.getClass()
+                            .getMethod(
+                                    "getConfirmationMotDePasse"
+                            );
+
+            Object value =
+                    method.invoke(dto);
+
+            return value != null
+                    ? value.toString()
+                    : null;
+
         } catch (ReflectiveOperationException ignored) {
-            // On tente l'ancien nom après.
+            // Tentative avec ancien nom
         }
 
         try {
-            Method method = dto.getClass().getMethod("getConfirmerMotDePasse");
-            Object value = method.invoke(dto);
-            return value != null ? value.toString() : null;
+
+            Method method =
+                    dto.getClass()
+                            .getMethod(
+                                    "getConfirmerMotDePasse"
+                            );
+
+            Object value =
+                    method.invoke(dto);
+
+            return value != null
+                    ? value.toString()
+                    : null;
+
         } catch (ReflectiveOperationException ex) {
+
             throw new IllegalStateException(
                     "Aucune méthode de confirmation de mot de passe trouvée dans le DTO.",
                     ex
@@ -414,10 +815,16 @@ public class UtilisateurService implements UserDetailsService {
     // =====================================================
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return repository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "Aucun utilisateur ne correspond à cet identifiant"
-                ));
+    public UserDetails loadUserByUsername(
+            String username
+    ) throws UsernameNotFoundException {
+
+        return repository
+                .findByEmail(username)
+                .orElseThrow(
+                        () -> new UsernameNotFoundException(
+                                "Aucun utilisateur ne correspond à cet identifiant"
+                        )
+                );
     }
 }
