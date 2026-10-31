@@ -167,7 +167,7 @@ public class AuthController {
             description = "Envoie un email avec un lien de réinitialisation. Réponse 200 même si l'email n'existe pas."
     )
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
-        String frontendResetBaseUrl = "http://localhost:4200/api/V2/auth/reset";
+        String frontendResetBaseUrl = "http://localhost:3000/reset-password";
 
         passwordResetService.demandeResetParEmail(
                 req.getEmail(),
